@@ -1,11 +1,56 @@
-// Talks to Auth0's Management API. Stubbed until the machine-to-machine app exists (docs/AUTH0_SETUP.md).
-import { AppError } from "../utils/AppError.js";
+// The only door to Auth0's Management API for the rest of the server (tests mock this module).
+// `ctx` is optional: { log: req.log, userId } so every line carries the request id.
+import { config } from "../config/env.js";
+import { logger } from "../config/logger.js";
+import { createManagementClient, AuthProviderError } from "./auth0ManagementClient.js";
 
-/** Will ask Auth0 to send a new verification email. For now it says it cannot. */
-export async function resendVerificationEmail() {
-  throw new AppError(
-    "RESEND_UNAVAILABLE",
-    503,
-    "We can't resend the email from here yet. Check your spam folder, or sign out and sign in again.",
-  );
+export { AuthProviderError };
+
+let client; // built on first use, so the server starts without M2M keys
+const getClient = () =>
+  (client ??= createManagementClient({
+    domain: config.AUTH0_DOMAIN,
+    clientId: config.AUTH0_M2M_CLIENT_ID,
+    clientSecret: config.AUTH0_M2M_CLIENT_SECRET,
+    logger,
+  }));
+
+const assertAuth0Id = (auth0Id) => {
+  // The id comes from our own database record, never from a request body; still refuse junk.
+  if (typeof auth0Id !== "string" || auth0Id.length === 0 || auth0Id.length > 128) {
+    throw new TypeError("auth0Id must be a non-empty string of at most 128 characters");
+  }
+};
+
+/** Asks Auth0 to email a new verification link. Resolves on 201; throws AuthProviderError otherwise. */
+export async function resendVerificationEmail(auth0Id, ctx = {}) {
+  assertAuth0Id(auth0Id);
+  await getClient().request({
+    op: "resendVerification",
+    method: "POST",
+    path: "/api/v2/jobs/verification-email",
+    pathTemplate: "/api/v2/jobs/verification-email",
+    body: { user_id: auth0Id },
+    retry: "limited", // sending twice would mean two emails, so retry only when Auth0 says it did nothing
+    okStatus: [201],
+    log: ctx.log ?? logger,
+    userId: ctx.userId,
+  });
+}
+
+/** Sets app_metadata.mfa_required in Auth0 (the post-login Action enrols and challenges on it). Idempotent. */
+export async function setMfaRequired(auth0Id, flag, ctx = {}) {
+  assertAuth0Id(auth0Id);
+  if (typeof flag !== "boolean") throw new TypeError("flag must be a boolean");
+  await getClient().request({
+    op: "setMfaRequired",
+    method: "PATCH",
+    path: `/api/v2/users/${encodeURIComponent(auth0Id)}`,
+    pathTemplate: "/api/v2/users/{id}",
+    body: { app_metadata: { mfa_required: flag } },
+    retry: "idempotent",
+    okStatus: [200],
+    log: ctx.log ?? logger,
+    userId: ctx.userId,
+  });
 }

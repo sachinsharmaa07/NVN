@@ -1,28 +1,22 @@
-import { resendVerificationEmail } from "../services/authProviderService.js";
 import {
-  assertActive,
-  findByAuth0Id,
-  readClaims,
-  syncFromToken,
+  resendVerification as resend,
   toPublicUser,
-  toRequestUser,
+  withGeoNames,
+  updateOwnProfile,
 } from "../services/userService.js";
-import { AppError } from "../utils/AppError.js";
 
-/** The first call after sign-in creates the citizen record; later calls refresh it. */
+/** req.user was loaded (and created on first sight) by loadUser, so there is nothing to sync here. */
 export async function getMe(req, res) {
-  const claims = readClaims(req.auth.payload);
-  // A suspended account is turned away before we write anything to its record.
-  const existing = await findByAuth0Id(claims.auth0Id);
-  if (existing) assertActive(existing);
-  const record = await syncFromToken(claims);
-  res.json({ user: toPublicUser(toRequestUser(record, claims)) });
+  res.json({ user: await withGeoNames(toPublicUser(req.user)) });
+}
+
+export async function patchMe(req, res) {
+  // Only req.user.id picks the row: there is no :id param, so nobody can edit someone else here.
+  const changes = await updateOwnProfile(req.user.id, req.valid.body);
+  res.json({ user: await withGeoNames(toPublicUser({ ...req.user, ...changes })) });
 }
 
 export async function resendVerification(req, res) {
-  if (req.user.emailVerified) {
-    throw new AppError("ALREADY_VERIFIED", 409, "Your email is already verified.");
-  }
-  await resendVerificationEmail(req.user.auth0Id);
+  await resend(req.user, { log: req.log });
   res.status(202).json({ sent: true });
 }

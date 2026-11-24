@@ -49,8 +49,9 @@ export function createApp() {
   );
   // 3. Security headers (CSP, HSTS, nosniff, ...).
   app.use(helmet());
-  // 4. Only our own front end may call the API from a browser, with cookies allowed.
-  app.use(cors({ origin: [config.CLIENT_URL], credentials: true }));
+  // 4. Only our own front end may call the API from a browser. Tokens travel in the Authorization
+  // header, so no cookies (credentials) are needed or allowed.
+  app.use(cors({ origin: [config.CLIENT_URL], credentials: false }));
   // 5. Parse JSON bodies; larger than 100 kB is refused with 413.
   app.use(express.json({ limit: "100kb" }));
   // 6. Global rate limit per IP (in memory; fine for one server instance, see ADR 0001).

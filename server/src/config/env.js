@@ -36,6 +36,16 @@ const envSchema = z.object({
   ),
   // The "API identifier" you set in Auth0 (e.g. https://api.nivaran.in). It is a name, not a URL we call.
   AUTH0_AUDIENCE: optional(z.string().min(1)),
+  // How far the token's exp/nbf may be off our clock, in seconds. Explicit, never above 30.
+  AUTH_CLOCK_TOLERANCE_SECONDS: optional(z.coerce.number().int().min(0).max(30)).default(5),
+  // Auth0 Machine-to-Machine app for the Management API (resend verification, MFA flag). Server only,
+  // never in client/.env. Scopes: update:users, update:users_app_metadata. The secret is never logged.
+  AUTH0_M2M_CLIENT_ID: optional(z.string().min(1)),
+  AUTH0_M2M_CLIENT_SECRET: optional(z.string().min(1)),
+  // Email of the first super admin; only scripts/bootstrapSuperAdmin.js reads it.
+  SUPER_ADMIN_EMAIL: optional(
+    z.preprocess((v) => (typeof v === "string" ? v.trim().toLowerCase() : v), z.email()),
+  ),
 });
 
 // The test database may be wiped by tests, so refuse anything that could be the real one.
@@ -75,6 +85,12 @@ export function parseEnv(raw) {
     }
     if (!raw.AUTH0_DOMAIN) problems.push("AUTH0_DOMAIN: required in production");
     if (!raw.AUTH0_AUDIENCE) problems.push("AUTH0_AUDIENCE: required in production");
+    if (!raw.AUTH0_M2M_CLIENT_ID) problems.push("AUTH0_M2M_CLIENT_ID: required in production");
+    if (!raw.AUTH0_M2M_CLIENT_SECRET)
+      problems.push("AUTH0_M2M_CLIENT_SECRET: required in production");
+  } else if (Boolean(raw.AUTH0_M2M_CLIENT_ID) !== Boolean(raw.AUTH0_M2M_CLIENT_SECRET)) {
+    // Half a credential pair is always a mistake; say so at start-up, not on the first resend.
+    problems.push("AUTH0_M2M_CLIENT_ID and AUTH0_M2M_CLIENT_SECRET: set both or neither");
   }
   problems.push(...testDbProblems(raw));
 
