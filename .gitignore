@@ -5,6 +5,12 @@ node_modules/
 .env*
 !.env.example
 
+# Other credential files (registry tokens, keys, cloud service accounts)
+.npmrc
+*.pem
+*.key
+*service-account*.json
+
 # Build output and tool caches
 dist/
 .vite/
