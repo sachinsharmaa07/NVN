@@ -1,0 +1,48 @@
+# Lint, format check, unit tests and a client build on every push and pull request.
+name: CI
+
+# Pushes to main and every pull request. Feature branches are checked through their PR, which also
+# keeps the test-database secret away from arbitrary branch pushes.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Least privilege: this workflow only needs to read the code.
+permissions:
+  contents: read
+
+# A newer push to the same branch or PR cancels the run that is still going.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false # the job never pushes, so don't leave a token on disk
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # Installs both workspaces exactly as pinned in the root package-lock.json.
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm run format:check
+
+      # Server DB tests use MONGODB_URI_TEST from the repo secret. On forks or when the secret
+      # is not set it is empty, and those tests are skipped with a message (the rest still run).
+      - run: npm test
+        env:
+          NODE_ENV: test
+          MONGODB_URI_TEST: ${{ secrets.MONGODB_URI_TEST }}
+
+      - run: npm run build
