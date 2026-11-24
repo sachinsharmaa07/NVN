@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Environment files (secrets) - keep only the template
+.env*
+!.env.example
+
+# Build output and tool caches
+dist/
+.vite/
+
+# Test output
+coverage/
+playwright-report/
+test-results/
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+
+# Claude Code personal overrides
+.claude/settings.local.json
