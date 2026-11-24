@@ -29,3 +29,6 @@ logs/
 
 # Claude Code personal overrides
 .claude/settings.local.json
+
+# Graphify knowledge graph (regenerate with: graphify extract . --code-only)
+graphify-out/
