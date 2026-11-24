@@ -37,7 +37,7 @@ official, never bureaucratic. It is not a startup dashboard: no gradients, no gl
 
 ## 2. Colour tokens
 
-shadcn/ui Tailwind v4 format: define in `client/src/index.css`, then map with `@theme inline` (section 2.2). OKLCH, all values inside the sRGB gamut.
+shadcn/ui Tailwind v4 format: define in `client/src/styles/globals.css`, then map with `@theme inline` (section 2.2). OKLCH, all values inside the sRGB gamut.
 
 ```css
 :root {
@@ -241,6 +241,11 @@ Motion explains a change the user caused. Nothing moves on its own except the sk
 status badge colour changes, numbers/counters/SLA countdowns (they just update; the one exception is dashboard KPI tiles via NumberFlow, §6.1), layout reflow when data changes, scroll position, anything on page load that
 the user did not ask for, autoplaying carousels, parallax.
 
+**Scroll (added 24 Nov 2026):** native scrolling only: no smooth-scroll libraries (Lenis etc.) and no scroll-jacking.
+Sections may reveal once as they scroll into view (motion `whileInView`, `once: true`): opacity plus a rise of 8px at most,
+`base` duration, 30ms stagger, and the status timeline draws its connector in `slow`. Under reduced motion everything
+is already visible. Shared variants live in `client/src/lib/motion.js`; never write raw durations in components.
+
 ```css
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -276,7 +281,7 @@ Generate with the shadcn CLI into `client/src/components/ui/`; feature component
 | Component | Rules |
 |---|---|
 | **Button** | `default` (peacock): the one main action per screen. `secondary`: other actions. `outline`: actions in cards and toolbars. `ghost`: icon buttons, nav. `destructive`: delete/reject, always behind a confirm. `link`: inline text actions only. Sizes `default` (h-11 on touch screens) and `icon` (size-11). Loading = spinner icon + same label ("Submitting…"), button disabled, width unchanged. Labels are verb-first: "Submit report", never "Submit" or "OK". |
-| **Card** | Groups one thing (an issue, a post, a step). Border, no shadow, `rounded-lg`. A card that is a link makes the whole card the target and has one focusable element. Don't nest cards. |
+| **Card** | Groups one thing (an issue, a post, a step). Border, no shadow, `rounded-lg`. A card that is a link makes the whole card the target and has one focusable element; on hover it rises 2px and its border becomes `input` (still no shadow). Don't nest cards. |
 | **Dialog vs Sheet vs Drawer** | **AlertDialog**: confirming destructive or irreversible actions (reject issue, delete post), any screen size. **Dialog**: short focused tasks on desktop (≥1024px), e.g. assign staff. **Drawer** (shadcn Drawer on Vaul, drag to dismiss): the same tasks on mobile as a bottom sheet, plus filters, the chat panel and issue quick view. **Sheet**: side panels on desktop only (issue quick view from the staff queue, filters). Use a `useMediaQuery('(min-width: 1024px)')` switch, not two features. Never stack two overlays. |
 | **Form + Zod** | shadcn `Form` with react-hook-form + `zodResolver`. Share the Zod schema with the server where possible. Every input has a visible `FormLabel` (no placeholder-only labels), `FormDescription` for format hints ("6 digits, e.g. 144401"), `FormMessage` for errors. Validate on blur, then on change once an error is shown. |
 | **Toast (sonner)** | Feedback after an action: "Report submitted", "Status updated". Max one line + optional action ("Undo", "Retry"). Success 4s; toasts with an action (Undo, Retry) 8s; errors stay until dismissed; all pause on hover and focus. Never the only place an error appears in a form; never for information the user must act on later. `<Toaster position="top-center" />` on mobile (clear of the bottom bar), `bottom-right` offset above the chat bubble on desktop. |
@@ -295,7 +300,7 @@ Radix (through shadcn/ui) is the only primitive layer. Each library below has on
 | **Base UI** | Only a primitive Radix lacks (likely candidates: combobox, number field, meter), added when a screen needs it and recorded in ADR 0001 | Anything Radix already covers. Never two versions of the same component. Not installed until needed. |
 | **Sonner** | Toasts (rules in §6) | Form errors, anything the user must act on later |
 | **Vaul** (shadcn `Drawer`) | Mobile bottom sheets below 1024px, behind the same `useMediaQuery` switch as Dialog/Sheet. Uses `z-sheet`, our `slow` duration and the reduced-motion rule in §4 (edit the generated `drawer.jsx`). | Desktop, confirmations (AlertDialog), stacking on another overlay |
-| **NumberFlow** (`@number-flow/react`) | Headline numbers on dashboard KPI tiles (open issues, resolved this week, SLA met %). `locales="en-IN"` for Indian grouping, `respectMotionPreference` on, lazy-loaded with the dashboard route. Animates on data change only, `base` duration. | Tables, badges, SLA countdowns, ticket IDs, forms, anything citizens read on slow pages |
+| **NumberFlow** (`@number-flow/react`) | Headline numbers on dashboard KPI tiles (open issues, resolved this week, SLA met %), and the stats row on the public Landing page (counts up once when scrolled into view; added 24 Nov 2026). `locales="en-IN"` for Indian grouping, `respectMotionPreference` on, lazy-loaded with the dashboard route. Animates on data change only, `base` duration. | Tables, badges, SLA countdowns, ticket IDs, forms, anything citizens read on slow pages |
 | **Magic UI** | Copy-paste accents on the public Home page and the report-success counterfoil only, one component at a time, CSS-only components first, restyled to our tokens and motion durations, fully off under reduced motion. | Forms, the report wizard steps, staff queue, admin, community. Anything that conflicts with §1 (gradients, glass, confetti, particles, marquees) or moves without user action. A component that imports `motion` needs Sachin's OK first. |
 
 ## 7. UX patterns

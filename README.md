@@ -5,8 +5,16 @@ pin inside that pincode's boundary, adds a photo and details, and gets a ticket 
 (`NIV-YYYY-NNNNNN`). Staff work an SLA-driven queue. There is an AI help chatbot (Gemini) and a
 moderated community feed.
 
-This repository is at **Phase 0**: a working skeleton (Express API with a health check, React shell
-that calls it, lint, tests and CI). There is no auth, no data model and no feature yet.
+This repository has the **Phase 0 skeleton** (Express API with a health check, lint, tests and CI)
+and the **visual foundation**: design tokens, a design system, the app shell (top bar, sidebar on
+desktop, bottom bar on phones), page transitions and a landing page. There is no auth, no data model
+and no report feature yet.
+
+| Address (dev server) | What is there |
+| --- | --- |
+| `/` | Landing page: pincode entry, how it works, a sample ticket timeline |
+| `/report`, `/issues`, `/community` | Placeholder pages inside the shell (the real screens come in later phases) |
+| `/dev/styleguide` | Every design-system component in light and dark. Development builds only |
 
 - Product and data design: [docs/DESIGN.md](docs/DESIGN.md)
 - Visual and copy rules: [docs/UI.md](docs/UI.md)
@@ -83,7 +91,7 @@ Run these from the repository root.
 | `npm run lint`         | Lints the whole repo with ESLint                                    |
 | `npm run format`       | Formats the code with Prettier                                      |
 | `npm run format:check` | Checks formatting without changing files (used in CI)               |
-| `npm run check`        | Lint, then tests: run this before you push                          |
+| `npm run check`        | Lint, format check, tests and build: what CI runs. Run this before you push |
 
 To run one workspace on its own, add `-w server` or `-w client`, for example
 `npm run test -w server`.
@@ -100,11 +108,13 @@ secret. Give that secret its own Atlas database user with access to `nivaran_tes
 ├── client/                    React + Vite app (JavaScript)
 │   ├── e2e/                   Playwright tests (later phase)
 │   └── src/
-│       ├── components/        ui/ (shadcn, generated), layout/, map/, chat/
-│       ├── pages/
+│       ├── components/        ui/ (shadcn, generated), system/ (StatusBadge, SlaCountdown,
+│       │                      TicketId...), nav/, theme/, chat/, map/
+│       ├── layouts/           AppLayout (the shell) and PageTransition
+│       ├── pages/             Landing/, Report, Issues, Community, dev/StyleGuide
 │       ├── hooks/
-│       ├── lib/               api.js and helpers
-│       ├── i18n/              en.json and the t() helper
+│       ├── lib/               api.js, motion.js (shared animation variants) and helpers
+│       ├── i18n/              en.json, en/*.json (copy by area) and the t() helper
 │       ├── styles/            globals.css (design tokens from docs/UI.md)
 │       ├── App.jsx
 │       └── main.jsx

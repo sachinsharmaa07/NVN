@@ -72,12 +72,13 @@ docs/         DESIGN.md, UI.md, adr/
 - server: express, mongoose, zod, pino, pino-http, helmet, cors, express-rate-limit, dotenv
 - client: react, react-dom, react-router, @tanstack/react-query, tailwindcss, shadcn/ui deps
   (radix-ui, lucide-react, sonner, vaul, class-variance-authority, clsx, tailwind-merge, tw-animate-css),
-  react-hook-form + @hookform/resolvers (shadcn Form), leaflet (Phase 3), @fontsource packages
+  react-hook-form + @hookform/resolvers (shadcn Form), leaflet (Phase 3), @fontsource packages,
+  motion (shared variants in `client/src/lib/motion.js`), @number-flow/react (dashboard tiles + Landing stats)
 - dev (root): eslint 9 + @eslint/js, globals, eslint-plugin-react, -react-hooks, -react-refresh, -jsx-a11y, -n,
   eslint-config-prettier, prettier, concurrently
 - dev (apps): vite, @vitejs/plugin-react, tailwindcss + @tailwindcss/vite, vitest, supertest, jsdom,
   @testing-library/react, @testing-library/dom, @testing-library/jest-dom
-- added with their phase: @number-flow/react (dashboards), @base-ui-components/react (only for a primitive Radix
+- added with their phase: @base-ui-components/react (only for a primitive Radix
   lacks), Magic UI copy-paste accents (Home only; scopes in docs/UI.md §6.1), @google/genai (chatbot),
   express-oauth2-jwt-bearer + @auth0/auth0-react (auth), @playwright/test (report wizard), marked + sanitize-html together (only if posts get Markdown)
 - built in-house, no package: request-id middleware (pino-http does the logging), Cloudinary upload signing (`node:crypto`),
