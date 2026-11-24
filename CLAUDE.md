@@ -23,7 +23,7 @@ client/
 server/
   src/        config/ (env.js, db.js, logger.js), middleware/, routes/, controllers/, services/,
               models/, validators/, utils/, jobs/, app.js, server.js
-  scripts/    one-off data scripts (importPincodes.js)
+  scripts/    one-off scripts (bootstrapSuperAdmin.js, syncMfaFlags.js, migrateUsersV1.js)
   tests/      unit/ (Vitest) and api/ (Vitest + Supertest)
 docs/         DESIGN.md, UI.md, AUTH0_SETUP.md, adr/
 ```
@@ -33,10 +33,24 @@ docs/         DESIGN.md, UI.md, AUTH0_SETUP.md, adr/
 - **Layers:** route -> controller -> service -> model. Controllers never touch Mongoose. See ADR 0002.
 - **Validate everything:** a Zod `.strict()` schema on `body`, `params` and `query` of every route.
 - **Trust nothing from the client:** `role`, `cityId` and `departmentId` come only from `req.user`,
-  never from the body. Every `:id` route checks ownership or scope.
-- **Auth chain** (`middleware/auth.js`, `access.js`): `authenticate` (Auth0 RS256 token) -> `loadUser` (reads
-  MongoDB each request; roles live there, not in the token) -> `requireVerifiedEmail` -> `requirePermission` ->
-  `requireScope`. Rules are pure functions in `utils/access.js`. Setup: `docs/AUTH0_SETUP.md`.
+  never from the body. Every `:id` route checks ownership or scope. One carve-out: the admin role-change body may
+  carry the target's `cityId`, `departmentId` and `stateCode`; the service validates them against the actor's scope.
+- **Auth chain** (`middleware/auth.js`, `middleware/access.js`): `authenticate` (Auth0 RS256 token) -> `loadUser`
+  (reads MongoDB on every request) -> `requireActive` -> `requireVerifiedEmail` -> `requirePermission(perm)` ->
+  service scope check (`requireScope` no longer exists; the service applies the scope inside the DB query).
+  Rules are pure functions in `utils/permissions.js` (matrix, scope rules, `can`); scope and level checks live in the services. Setup: `docs/AUTH0_SETUP.md`.
+- **Auth rules:**
+  - The database is the source of truth for `role`, scope (`cityId`, `departmentId`, `stateCode`) and `status`.
+    Never read them from the token or the request body.
+  - Out of scope or missing `:id` is **404**, with an identical body, never 403.
+  - Nobody grants, changes or suspends a level >= their own, and nobody changes themselves.
+  - Every role or status change writes an AuditLog row in the **same transaction** as the user update.
+  - Admin writes follow the Auth0 order in `docs/phase-1-auth.md` section 7.2 (MFA flag first when raising to
+    level >= 4; flag cleared after the transaction when lowering).
+  - Tokens live in memory only, never in localStorage or sessionStorage.
+  - No own passwords, JWT signing or OTP: Auth0 does all of it.
+  - The Auth0 Management client (`services/auth0ManagementClient.js`) is mocked only in tests, never in app code.
+    M2M secrets stay server-side and are never logged.
 - **Lists:** cursor-paginated (`createdAt` + `_id`), page size max 50. Every query is backed by an
   index declared in its model file. Use `.lean()` and projections for reads.
 - **Errors:** always `{ "error": { "code": "OUTSIDE_PINCODE", "message": "..." } }`. Codes are
@@ -54,7 +68,8 @@ docs/         DESIGN.md, UI.md, AUTH0_SETUP.md, adr/
 
 ## Tests
 - Vitest unit tests for pure logic in `server/src/utils/` (ticket IDs, state machine, haversine, india.js).
-- Supertest API tests in `server/tests/api/` against `MONGODB_URI_TEST` only (tests may wipe it).
+- Supertest API tests in `server/tests/api/` need a MongoDB replica set: `MONGODB_URI_TEST` (name ends `_test`; tests wipe it)
+  or, when unset, an in-memory replica set from mongodb-memory-server (downloads mongod from fastdl.mongodb.org).
 - Playwright e2e in `client/e2e/` (installed when the report wizard exists).
 - Every bug fix comes with a test that failed before the fix.
 - Done = tests pass and lint is clean in both apps.
@@ -74,16 +89,17 @@ docs/         DESIGN.md, UI.md, AUTH0_SETUP.md, adr/
 ## Dependencies (canonical list and reasons: ADR 0001)
 - server: express, mongoose, zod, pino, pino-http, helmet, cors, express-rate-limit, dotenv
 - client: react, react-dom, react-router, @tanstack/react-query, tailwindcss, shadcn/ui deps
-  (radix-ui, lucide-react, sonner, vaul, class-variance-authority, clsx, tailwind-merge, tw-animate-css),
+  (radix-ui, lucide-react, sonner, class-variance-authority, clsx, tailwind-merge, tw-animate-css),
   react-hook-form + @hookform/resolvers (shadcn Form), leaflet (Phase 3), @fontsource packages,
   motion (shared variants in `client/src/lib/motion.js`), @number-flow/react (dashboard tiles + Landing stats)
 - dev (root): eslint 9 + @eslint/js, globals, eslint-plugin-react, -react-hooks, -react-refresh, -jsx-a11y, -n,
   eslint-config-prettier, prettier, concurrently
 - dev (apps): vite, @vitejs/plugin-react, tailwindcss + @tailwindcss/vite, vitest, supertest, jsdom,
   @testing-library/react, @testing-library/dom, @testing-library/jest-dom
+- Drawer: built on Radix Dialog (`components/ui/drawer.jsx`); `vaul` is NOT installed. Swapping to vaul needs approval.
 - added with their phase: @base-ui-components/react (only for a primitive Radix
   lacks), Magic UI copy-paste accents (Home only; scopes in docs/UI.md §6.1), @google/genai (chatbot),
-  express-oauth2-jwt-bearer + @auth0/auth0-react (auth), @playwright/test (report wizard), marked + sanitize-html together (only if posts get Markdown)
+  express-oauth2-jwt-bearer + @auth0/auth0-react (auth; both now installed), @playwright/test (report wizard), marked + sanitize-html together (only if posts get Markdown)
 - built in-house, no package: request-id middleware (pino-http does the logging), Cloudinary upload signing (`node:crypto`),
   SLA timer (`setInterval`), point-in-polygon (`utils/geo.js`, unit-tested), i18n `t()` helper
   (`client/src/i18n/en.json`)
@@ -93,6 +109,7 @@ docs/         DESIGN.md, UI.md, AUTH0_SETUP.md, adr/
 npm run dev            server + client together (concurrently)
 npm run check          lint + all tests (what CI runs, plus format:check and build)
 npm test | npm run lint | npm run build | npm run format | npm run test:e2e (from Phase 3)
+npm run bootstrap:super-admin -w server | sync:mfa-flags | migrate:users-v1   (see README)
 npm run dev -w server  one app only (-w client for the client)
 ```
 
