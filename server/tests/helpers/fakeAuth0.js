@@ -25,21 +25,35 @@ export async function startKeyServer() {
   };
 }
 
+export const NS = "https://nivaran.in/";
+const SIGNED_CLAIMS = ["email", "email_verified", "name", "picture", "mfa"];
+const CLAIM_DEFAULTS = { email: "asha@example.com", email_verified: true, name: "Asha" };
+
 /**
- * Signs a token. `payload` overrides the defaults (a valid token for user-1, expires in an hour).
- * `header` and `key` let a test forge a bad one: another algorithm, or another key.
+ * Signs a token the way our Auth0 Action would. `opts` (all optional):
+ *   sub, aud, iss, exp, iat  registered claims (defaults: auth0|user-1, our audience and issuer, +1 hour)
+ *   email, email_verified, name, picture, mfa   custom claims under NS; `null` leaves the claim out
+ *   kid                      key id in the header (default: the key the key server publishes)
+ *   anything else            copied into the payload as is (e.g. a forged `role`)
+ * `header` and `key` let a test forge a bad token: another algorithm, or another key.
  */
-export function signToken(payload = {}, { header = {}, key = privateKey } = {}) {
+export function signToken(opts = {}, { header = {}, key = privateKey } = {}) {
+  const { sub, aud, iss, exp, iat, kid, ...rest } = opts;
   const now = Math.floor(Date.now() / 1000);
-  const head = { alg: "RS256", typ: "JWT", kid: KID, ...header };
+  const head = { alg: "RS256", typ: "JWT", kid: kid ?? KID, ...header };
   const body = {
-    iss: ISSUER,
-    aud: AUDIENCE,
-    sub: "auth0|user-1",
-    iat: now,
-    exp: now + 3600,
-    ...payload,
+    iss: iss ?? ISSUER,
+    aud: aud ?? AUDIENCE,
+    sub: sub ?? "auth0|user-1",
+    iat: iat ?? now,
+    exp: exp ?? now + 3600,
   };
+  for (const name of SIGNED_CLAIMS) {
+    const value = name in rest ? rest[name] : CLAIM_DEFAULTS[name];
+    if (value !== undefined && value !== null) body[`${NS}${name}`] = value;
+    delete rest[name];
+  }
+  Object.assign(body, rest);
   const data = `${b64url(JSON.stringify(head))}.${b64url(JSON.stringify(body))}`;
   if (head.alg === "none") return `${data}.`;
   const signature =
@@ -50,16 +64,7 @@ export function signToken(payload = {}, { header = {}, key = privateKey } = {}) 
 }
 
 /** A token signed by a different key pair but claiming the same key id. */
-export function signWithWrongKey(payload) {
+export function signWithWrongKey(payload = {}) {
   const { privateKey: other } = crypto.generateKeyPairSync("rsa", { modulusLength: 2048 });
   return signToken(payload, { key: other });
 }
-
-export const NS = "https://nivaran.in/";
-/** The custom claims our Auth0 Action adds. */
-export const claims = (extra = {}) => ({
-  [`${NS}email`]: "asha@example.com",
-  [`${NS}name`]: "Asha",
-  [`${NS}email_verified`]: true,
-  ...extra,
-});

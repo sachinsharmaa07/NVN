@@ -1,22 +1,27 @@
-// Live check against the real test database. Skipped when MONGODB_URI_TEST is not set (e.g. a fork's CI).
-import { describe, it, expect, afterAll } from "vitest";
+// Live check against the real test database (a replica set started by tests/setup/globalSetup.js,
+// or MONGODB_URI_TEST). Never skipped: if there is no database, the run fails and says why.
+import { describe, it, expect, afterAll, beforeAll } from "vitest";
 import mongoose from "mongoose";
-import { config } from "../../src/config/env.js";
+import { inject } from "vitest";
 import { connectDb, disconnectDb, isDbUp } from "../../src/config/db.js";
 
-const uri = config.MONGODB_URI_TEST;
-const SKIP_MESSAGE = "MONGODB_URI_TEST not set: skipping live DB test";
-// Written straight to stderr because Vitest hides console output from files whose tests all skip.
-if (!uri) process.stderr.write(`\n${SKIP_MESSAGE}\n`);
-
-// The suite title carries the reason too, so it shows up in Vitest's list of skipped tests.
-describe.skipIf(!uri)(uri ? "MongoDB (live, MONGODB_URI_TEST)" : SKIP_MESSAGE, () => {
+describe("MongoDB (live test database)", () => {
+  beforeAll(() => {
+    const { uri, error } = inject("mongo");
+    if (!uri) throw new Error(`No test database. Reason: ${error}`);
+  });
   afterAll(() => disconnectDb());
 
   it("connects and answers a ping", async () => {
-    await connectDb(uri);
+    await connectDb(inject("mongo").uri);
     expect(isDbUp()).toBe(true);
     const reply = await mongoose.connection.db.admin().ping();
     expect(reply.ok).toBe(1);
+  });
+
+  it("is a replica set, so transactions work", async () => {
+    const hello = await mongoose.connection.db.admin().command({ hello: 1 });
+    expect(hello.setName).toBeTruthy();
+    expect(mongoose.connection.name.endsWith("_test")).toBe(true);
   });
 });
