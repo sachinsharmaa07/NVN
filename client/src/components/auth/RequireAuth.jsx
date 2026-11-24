@@ -1,29 +1,36 @@
 import { LockIcon, TriangleAlertIcon } from "lucide-react";
 import { Navigate, useLocation } from "react-router";
+import { ForbiddenView } from "@/components/auth/ForbiddenView";
 import { EmptyState } from "@/components/system/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
+import { useCan } from "@/hooks/useCan";
 import { t } from "@/i18n/t";
 
 const frame = "mx-auto flex w-full max-w-160 flex-col px-4 py-12 md:px-6 lg:px-8";
 
 /*
- * Wrap a page's element to keep signed-out visitors out of it:
- *   <RequireAuth>...</RequireAuth>           signed in
- *   <RequireAuth verified>...</RequireAuth>  signed in with a verified email
- * This only decides what to SHOW. The server checks the same rules on every request.
+ * Wrap a page's element to decide who may see it:
+ *   <RequireAuth>...</RequireAuth>                         signed in
+ *   <RequireAuth verified>...</RequireAuth>                + verified email
+ *   <RequireAuth permission="user:read_scope">             + holds that permission
+ *   <RequireAuth minLevel={2}>                             + role level 2 or higher
+ * Checked top to bottom (docs/phase-1-auth.md 10.3). This only decides what to SHOW.
+ * The server checks the same rules on every request.
  */
-export function RequireAuth({ children, verified = false }) {
+export function RequireAuth({ children, verified = false, permission, minLevel }) {
   const auth = useAuth();
+  const can = useCan();
   const location = useLocation();
   const returnTo = location.pathname + location.search;
 
+  // 1. Still finding out who this is: show a page-shaped skeleton, never the page.
   if (auth.status === "loading") {
     return (
       <div className={frame} role="status" aria-busy="true">
         <span className="sr-only">{t("auth.guard.loading")}</span>
-        <Skeleton className="h-40 w-full" />
+        <Skeleton aria-hidden="true" className="h-40 w-full" />
       </div>
     );
   }
@@ -50,6 +57,7 @@ export function RequireAuth({ children, verified = false }) {
       </div>
     );
   }
+  if (auth.status === "suspended") return <Navigate to="/suspended" replace />;
   if (auth.status === "error") {
     return (
       <div className={frame}>
@@ -58,9 +66,15 @@ export function RequireAuth({ children, verified = false }) {
           title={t("auth.guard.errorTitle")}
           hint={auth.error?.message || t("auth.guard.errorHint")}
           action={
-            <Button variant="secondary" onClick={() => auth.refresh()}>
-              {t("auth.guard.retry")}
-            </Button>
+            auth.error?.kind === "claims" || auth.error?.kind === "mfa" ? (
+              <Button variant="secondary" onClick={() => auth.logout()}>
+                {t("auth.account.signOut")}
+              </Button>
+            ) : (
+              <Button variant="secondary" onClick={() => auth.retry()}>
+                {t("auth.guard.retry")}
+              </Button>
+            )
           }
         />
       </div>
@@ -68,6 +82,10 @@ export function RequireAuth({ children, verified = false }) {
   }
   if (verified && !auth.user.emailVerified) {
     return <Navigate to="/verify-email" replace state={{ returnTo }} />;
+  }
+  // 403 in place: the URL stays, so Back works.
+  if ((permission && !can(permission)) || (minLevel && (auth.level ?? 0) < minLevel)) {
+    return <ForbiddenView />;
   }
   return children;
 }

@@ -1,5 +1,6 @@
-import { UserRoundIcon } from "lucide-react";
-import { useLocation } from "react-router";
+import { ShieldCheckIcon, TriangleAlertIcon, UserRoundIcon, UsersIcon } from "lucide-react";
+import { Link, useLocation } from "react-router";
+import { AccountAvatar } from "@/components/auth/AccountAvatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -9,32 +10,94 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
+import { useCan } from "@/hooks/useCan";
+import { useDelayedFlag } from "@/hooks/useDelayedFlag";
+import { useSignInPrompt } from "@/hooks/useSignInPrompt";
 import { t } from "@/i18n/t";
 
+// The slot is always 44px wide, so the header does not jump when the answer arrives.
+const SLOT = "flex size-11 items-center justify-center";
+
 /*
- * Top bar: "Sign in" when signed out, an account menu with "Sign out" when signed in.
- * Shows nothing while Auth0 is still checking (so the button never flashes) and when
- * sign-in is not set up (no button that does nothing).
+ * The account slot in the top bar. One state at a time, chosen from auth.status (docs 10.1):
+ *   loading      reserved slot, round skeleton after 200ms, "Checking your sign-in" for screen readers
+ *   signedOut    "Sign in" (opens the sheet)         unconfigured  nothing
+ *   signedIn     avatar menu (+ "Verify your email" if unverified, + Admin link for admins)
+ *   suspended    menu with Sign out only             error  warning button: Try again / Sign out
+ * Until the status is known, nothing that depends on it is shown (no Sign in flash).
  */
 export function AccountMenu() {
   const auth = useAuth();
+  const can = useCan();
   const location = useLocation();
+  const { openSignIn } = useSignInPrompt();
+  const showSkeleton = useDelayedFlag(auth.status === "loading");
 
+  if (auth.status === "loading") {
+    return (
+      <div role="status" className={SLOT}>
+        <span className="sr-only">{t("auth.account.loading")}</span>
+        {showSkeleton && <Skeleton aria-hidden="true" className="size-10 rounded-full" />}
+      </div>
+    );
+  }
   if (auth.status === "signedOut") {
     return (
-      <Button variant="secondary" onClick={() => auth.login(location.pathname + location.search)}>
+      <Button
+        variant="secondary"
+        onClick={() => openSignIn({ returnTo: location.pathname + location.search })}
+      >
         {t("auth.account.signIn")}
       </Button>
     );
   }
-  if (auth.status !== "signedIn" || !auth.user) return null;
+  if (auth.status === "suspended") {
+    return (
+      <Button variant="ghost" onClick={() => auth.logout()}>
+        {t("auth.account.signOut")}
+      </Button>
+    );
+  }
+  if (auth.status === "error") {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" aria-label={t("auth.account.unavailable")}>
+            <TriangleAlertIcon aria-hidden="true" className="size-5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-56">
+          {/* Sign-in without an email can't be fixed by retrying, so only Sign out is offered. */}
+          {auth.error?.kind !== "claims" && auth.error?.kind !== "mfa" && (
+            <DropdownMenuItem onSelect={() => auth.retry()}>
+              {t("auth.account.retry")}
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuItem onSelect={() => auth.logout()}>
+            {t("auth.account.signOut")}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+  if (auth.status !== "signedIn" || !auth.user) return null; // "unconfigured"
+
+  const { user } = auth;
+  // "Admin: Users" is for level 2 and up who also hold the permission (both cosmetic checks).
+  const showAdmin = auth.level >= 2 && can("user:read_scope");
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label={t("auth.account.menu")}>
-          <UserRoundIcon aria-hidden="true" className="size-5" />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-full"
+          aria-label={t("auth.account.menu")}
+        >
+          <AccountAvatar user={user} />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-56">
@@ -43,12 +106,35 @@ export function AccountMenu() {
             {t("auth.account.signedInAs")}
           </span>
           <span className="block truncate font-medium text-foreground">
-            {auth.user.name || auth.user.email}
+            {user.name || user.email}
           </span>
-          {auth.user.name && (
-            <span className="block truncate text-xs text-muted-foreground">{auth.user.email}</span>
+          {user.name && (
+            <span className="block truncate text-xs text-muted-foreground">{user.email}</span>
           )}
         </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {!user.emailVerified && (
+          <DropdownMenuItem asChild>
+            <Link to="/verify-email" state={{ returnTo: location.pathname + location.search }}>
+              <ShieldCheckIcon aria-hidden="true" />
+              {t("auth.account.verifyItem")}
+            </Link>
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem asChild>
+          <Link to="/profile">
+            <UserRoundIcon aria-hidden="true" />
+            {t("auth.account.profile")}
+          </Link>
+        </DropdownMenuItem>
+        {showAdmin && (
+          <DropdownMenuItem asChild>
+            <Link to="/admin/users">
+              <UsersIcon aria-hidden="true" />
+              {t("auth.account.adminUsers")}
+            </Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => auth.logout()}>
           {t("auth.account.signOut")}

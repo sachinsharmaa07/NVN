@@ -23,7 +23,8 @@ describe("apiGet", () => {
     expect(error).toBeInstanceOf(ApiError);
     expect(error).toMatchObject({
       code: "OUTSIDE_PINCODE",
-      message: "Move the pin inside.",
+      message: "Something didn't work. Try again in a moment.",
+      serverMessage: "Move the pin inside.",
       status: 400,
     });
   });
@@ -76,5 +77,29 @@ describe("apiGet", () => {
     const pending = apiGet("/api/health", { signal: caller.signal }).catch((e) => e);
     caller.abort();
     expect(await pending).toMatchObject({ code: "ABORTED" });
+  });
+});
+
+describe("error copy", () => {
+  it("replaces the server's text with our copy for known codes, and keeps details", async () => {
+    const body = {
+      error: { code: "SUSPENDED", message: "raw server words", details: { reason: "Spam" } },
+    };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(403, body)));
+    const error = await apiGet("/api/me").catch((e) => e);
+    expect(error.message).toMatch(/Your account is suspended/);
+    expect(error.message).not.toMatch(/raw server words/);
+    expect(error.details).toEqual({ reason: "Spam" });
+  });
+
+  it("turns Retry-After into minutes for RATE_LIMITED, and a generic line without it", async () => {
+    const body = { error: { code: "RATE_LIMITED", message: "x" } };
+    const limited = (headers) => new Response(JSON.stringify(body), { status: 429, headers });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(limited({ "Retry-After": "600" })));
+    const withWait = await apiGet("/api/x").catch((e) => e);
+    expect(withWait.message).toBe("You've asked for this too many times. Try again in 10 minutes.");
+    expect(withWait.retryAfter).toBe(600);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(limited({})));
+    expect((await apiGet("/api/x").catch((e) => e)).message).toMatch(/Too many attempts/);
   });
 });

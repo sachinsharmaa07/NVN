@@ -1,7 +1,20 @@
 import { createBrowserRouter } from "react-router";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { AppLayout } from "@/layouts/AppLayout";
-import { Community, Issues, Landing, NotFound, Report, StyleGuide, VerifyEmail } from "./lazyPages";
+import { SuspendedLayout } from "@/layouts/SuspendedLayout";
+import {
+  AdminUsers,
+  Community,
+  Forbidden,
+  Issues,
+  Landing,
+  NotFound,
+  Profile,
+  Report,
+  StyleGuide,
+  Suspended,
+  VerifyEmail,
+} from "./lazyPages";
 
 /*
  * Route table (React Router data mode). Created once, outside React, as the docs require.
@@ -9,6 +22,11 @@ import { Community, Issues, Landing, NotFound, Report, StyleGuide, VerifyEmail }
  * and PageTransition shows a skeleton while a page's file downloads.
  */
 export const routes = [
+  // Suspended users see only this minimal frame (wordmark, reason, Sign out).
+  {
+    element: <SuspendedLayout />,
+    children: [{ path: "suspended", element: <Suspended /> }],
+  },
   {
     element: <AppLayout />,
     children: [
@@ -23,6 +41,9 @@ export const routes = [
         ),
       },
       { path: "verify-email", element: <VerifyEmail /> },
+      { path: "profile", element: <Profile /> },
+      { path: "forbidden", element: <Forbidden /> },
+      { path: "admin/users", element: <AdminUsers /> },
       { path: "issues", element: <Issues /> },
       { path: "community", element: <Community /> },
       // Development only: /dev/styleguide (StyleGuide is null in production builds).
