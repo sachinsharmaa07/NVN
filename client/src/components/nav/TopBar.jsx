@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+import { AccountMenu } from "@/components/auth/AccountMenu";
 import { ThemeMenu } from "@/components/theme/ThemeMenu";
 import { t } from "@/i18n/t";
 import { cn } from "@/lib/utils";
@@ -7,8 +8,8 @@ import { focusRing } from "./navStyles";
 /*
  * The app bar at the top of every page, on every screen size (docs/UI.md §5).
  * Left: the wordmark, which links home. Right: the theme menu.
- * The account button and the city name join it when sign-in and pincode lookup exist; we leave
- * them out instead of showing a disabled button that does nothing.
+ * Right: the theme menu and the account button (Sign in, or the account menu once signed in).
+ * The city name joins when pincode lookup exists; we leave it out instead of showing a disabled stub.
  */
 export function TopBar() {
   return (
@@ -24,7 +25,10 @@ export function TopBar() {
         >
           {t("app.name")}
         </Link>
-        <ThemeMenu />
+        <div className="flex items-center gap-1">
+          <ThemeMenu />
+          <AccountMenu />
+        </div>
       </div>
     </header>
   );
