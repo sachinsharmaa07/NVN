@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- Browser UI colour = the --background token (docs/UI.md §2), one per colour scheme. -->
+    <meta
+      name="theme-color"
+      content="oklch(0.985 0.004 220)"
+      media="(prefers-color-scheme: light)"
+    />
+    <meta name="theme-color" content="oklch(0.18 0.018 235)" media="(prefers-color-scheme: dark)" />
+    <meta
+      name="description"
+      content="Report civic issues in your city and track them to resolution."
+    />
+    <title>Nivaran</title>
+    <!--
+      Runs before the app and before first paint, so the page never flashes the wrong theme.
+      Must stay in sync with ThemeProvider (same storage key and values: system | light | dark).
+    -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("nivaran-theme");
+          var theme = stored === "light" || stored === "dark" ? stored : "system";
+          var dark =
+            theme === "dark" ||
+            (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          if (dark) document.documentElement.classList.add("dark");
+        } catch (e) {
+          // localStorage can throw (private mode, blocked storage): fall back to the light theme.
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

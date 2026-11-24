@@ -1,0 +1,324 @@
+/*
+ * Nivaran design tokens. Source of truth: docs/UI.md (§2 colour, §3 shape/depth/layers, §4 motion).
+ * UI.md names this file client/src/index.css; the Phase 0 brief puts it at src/styles/globals.css.
+ * Never hardcode a colour, font or duration in a component: add or reuse a token here.
+ */
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* `dark:` utilities apply inside an element with class "dark" (set on <html> by index.html + ThemeProvider). */
+@custom-variant dark (&:is(.dark *));
+
+/* ---------- §2 Colour tokens (light) ---------- */
+:root {
+  --radius: 0.625rem;
+  --background: oklch(0.985 0.004 220);
+  --foreground: oklch(0.22 0.02 235);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0.02 235);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.22 0.02 235);
+  --primary: oklch(0.47 0.08 215);
+  --primary-foreground: oklch(0.985 0.004 220);
+  --secondary: oklch(0.955 0.008 220);
+  --secondary-foreground: oklch(0.26 0.02 235);
+  --muted: oklch(0.955 0.008 220);
+  --muted-foreground: oklch(0.5 0.02 235);
+  --accent: oklch(0.94 0.025 210);
+  --accent-foreground: oklch(0.3 0.055 220);
+  --destructive: oklch(0.52 0.19 25);
+  --destructive-foreground: oklch(0.985 0.004 220);
+  --border: oklch(0.9 0.008 225);
+  --input: oklch(0.62 0.015 230);
+  --ring: oklch(0.47 0.08 215);
+  --chart-1: oklch(0.47 0.08 215);
+  --chart-2: oklch(0.7 0.13 75);
+  --chart-3: oklch(0.55 0.03 250);
+  --chart-4: oklch(0.58 0.11 150);
+  --chart-5: oklch(0.56 0.13 350);
+  --sidebar: oklch(0.97 0.006 220);
+  --sidebar-foreground: oklch(0.22 0.02 235);
+  --sidebar-primary: oklch(0.47 0.08 215);
+  --sidebar-primary-foreground: oklch(0.985 0.004 220);
+  --sidebar-accent: oklch(0.93 0.02 215);
+  --sidebar-accent-foreground: oklch(0.26 0.04 225);
+  --sidebar-border: oklch(0.9 0.008 225);
+  --sidebar-ring: oklch(0.47 0.08 215);
+  --status-submitted: oklch(0.95 0.008 250);
+  --status-submitted-foreground: oklch(0.4 0.03 250);
+  --status-assigned: oklch(0.95 0.025 290);
+  --status-assigned-foreground: oklch(0.42 0.13 290);
+  --status-in-progress: oklch(0.95 0.02 250);
+  --status-in-progress-foreground: oklch(0.42 0.12 250);
+  --status-resolved: oklch(0.95 0.04 150);
+  --status-resolved-foreground: oklch(0.42 0.1 150);
+  --status-closed: oklch(0.92 0.005 250);
+  --status-closed-foreground: oklch(0.36 0.01 250);
+  --status-reopened: oklch(0.95 0.03 60);
+  --status-reopened-foreground: oklch(0.45 0.12 50);
+  --status-rejected: oklch(0.95 0.025 20);
+  --status-rejected-foreground: oklch(0.45 0.15 20);
+  --sla-on-track: oklch(0.95 0.04 150);
+  --sla-on-track-foreground: oklch(0.42 0.1 150);
+  --sla-at-risk: oklch(0.95 0.06 90);
+  --sla-at-risk-foreground: oklch(0.43 0.09 70);
+  --sla-breached: oklch(0.94 0.03 25);
+  --sla-breached-foreground: oklch(0.45 0.17 25);
+  --sla-paused: oklch(0.95 0.008 250);
+  --sla-paused-foreground: oklch(0.4 0.03 250);
+
+  /* §3 Z-index layers (only these; never a raw z-[999]) */
+  --z-sticky: 20;
+  --z-bottombar: 30;
+  --z-chat: 40;
+  --z-sheet: 50;
+  --z-dialog: 60;
+  --z-toast: 70;
+
+  /* §4 Motion */
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+}
+
+/* ---------- §2 Colour tokens (dark) ---------- */
+.dark {
+  --background: oklch(0.18 0.018 235);
+  --foreground: oklch(0.95 0.008 220);
+  --card: oklch(0.21 0.018 235);
+  --card-foreground: oklch(0.95 0.008 220);
+  --popover: oklch(0.23 0.018 235);
+  --popover-foreground: oklch(0.95 0.008 220);
+  --primary: oklch(0.76 0.1 205);
+  --primary-foreground: oklch(0.16 0.02 230);
+  --secondary: oklch(0.26 0.02 235);
+  --secondary-foreground: oklch(0.92 0.01 220);
+  --muted: oklch(0.26 0.02 235);
+  --muted-foreground: oklch(0.72 0.02 230);
+  --accent: oklch(0.3 0.045 220);
+  --accent-foreground: oklch(0.92 0.03 210);
+  --destructive: oklch(0.72 0.15 22);
+  --destructive-foreground: oklch(0.16 0.02 230);
+  --border: oklch(0.3 0.02 235);
+  --input: oklch(0.52 0.02 235);
+  --ring: oklch(0.76 0.1 205);
+  --chart-1: oklch(0.76 0.1 205);
+  --chart-2: oklch(0.8 0.13 80);
+  --chart-3: oklch(0.7 0.03 250);
+  --chart-4: oklch(0.74 0.12 150);
+  --chart-5: oklch(0.72 0.13 350);
+  --sidebar: oklch(0.2 0.018 235);
+  --sidebar-foreground: oklch(0.95 0.008 220);
+  --sidebar-primary: oklch(0.76 0.1 205);
+  --sidebar-primary-foreground: oklch(0.16 0.02 230);
+  --sidebar-accent: oklch(0.28 0.03 225);
+  --sidebar-accent-foreground: oklch(0.95 0.008 220);
+  --sidebar-border: oklch(0.3 0.02 235);
+  --sidebar-ring: oklch(0.76 0.1 205);
+  --status-submitted: oklch(0.3 0.02 250);
+  --status-submitted-foreground: oklch(0.88 0.02 250);
+  --status-assigned: oklch(0.31 0.07 290);
+  --status-assigned-foreground: oklch(0.86 0.07 290);
+  --status-in-progress: oklch(0.31 0.07 250);
+  --status-in-progress-foreground: oklch(0.86 0.07 250);
+  --status-resolved: oklch(0.3 0.06 150);
+  --status-resolved-foreground: oklch(0.86 0.1 150);
+  --status-closed: oklch(0.26 0.005 250);
+  --status-closed-foreground: oklch(0.9 0.005 250);
+  --status-reopened: oklch(0.31 0.06 50);
+  --status-reopened-foreground: oklch(0.86 0.08 60);
+  --status-rejected: oklch(0.31 0.07 20);
+  --status-rejected-foreground: oklch(0.86 0.07 20);
+  --sla-on-track: oklch(0.3 0.06 150);
+  --sla-on-track-foreground: oklch(0.86 0.1 150);
+  --sla-at-risk: oklch(0.31 0.06 70);
+  --sla-at-risk-foreground: oklch(0.88 0.12 85);
+  --sla-breached: oklch(0.32 0.09 25);
+  --sla-breached-foreground: oklch(0.87 0.06 25);
+  --sla-paused: oklch(0.3 0.02 250);
+  --sla-paused-foreground: oklch(0.88 0.02 250);
+}
+
+/*
+ * `@theme inline` turns the variables above into Tailwind utilities (bg-primary, text-status-resolved, ...).
+ * "inline" makes utilities use the var() itself, so switching .dark updates every utility.
+ */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-status-submitted: var(--status-submitted);
+  --color-status-submitted-foreground: var(--status-submitted-foreground);
+  --color-status-assigned: var(--status-assigned);
+  --color-status-assigned-foreground: var(--status-assigned-foreground);
+  --color-status-in-progress: var(--status-in-progress);
+  --color-status-in-progress-foreground: var(--status-in-progress-foreground);
+  --color-status-resolved: var(--status-resolved);
+  --color-status-resolved-foreground: var(--status-resolved-foreground);
+  --color-status-closed: var(--status-closed);
+  --color-status-closed-foreground: var(--status-closed-foreground);
+  --color-status-reopened: var(--status-reopened);
+  --color-status-reopened-foreground: var(--status-reopened-foreground);
+  --color-status-rejected: var(--status-rejected);
+  --color-status-rejected-foreground: var(--status-rejected-foreground);
+  --color-sla-on-track: var(--sla-on-track);
+  --color-sla-on-track-foreground: var(--sla-on-track-foreground);
+  --color-sla-at-risk: var(--sla-at-risk);
+  --color-sla-at-risk-foreground: var(--sla-at-risk-foreground);
+  --color-sla-breached: var(--sla-breached);
+  --color-sla-breached-foreground: var(--sla-breached-foreground);
+  --color-sla-paused: var(--sla-paused);
+  --color-sla-paused-foreground: var(--sla-paused-foreground);
+
+  --font-display: "Anek Devanagari Variable", "Mukta", system-ui, sans-serif;
+  --font-sans: "Mukta", system-ui, sans-serif;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /*
+   * Tailwind v4 reads z-index utilities from the --z-index-* namespace and duration utilities from
+   * --transition-duration-*. Mapping our UI.md tokens here is what makes `z-sticky`, `z-dialog`,
+   * `duration-fast`, `duration-slow` etc. real utilities.
+   */
+  --z-index-sticky: var(--z-sticky);
+  --z-index-bottombar: var(--z-bottombar);
+  --z-index-chat: var(--z-chat);
+  --z-index-sheet: var(--z-sheet);
+  --z-index-dialog: var(--z-dialog);
+  --z-index-toast: var(--z-toast);
+
+  --transition-duration-fast: var(--duration-fast);
+  --transition-duration-base: var(--duration-base);
+  --transition-duration-slow: var(--duration-slow);
+}
+
+/* §1 type scale (1.25 ratio), §3 shadows (three levels) and §4 easings: plain values, so a normal @theme block. */
+@theme {
+  /* Tailwind's xs/sm/base/xl already are 12/14/16/20px; these three move 2xl-4xl onto our 25/31/39px steps. */
+  --text-2xl: 1.5625rem; /* 25px */
+  --text-2xl--line-height: 1.2;
+  --text-3xl: 1.9375rem; /* 31px: mobile h1 */
+  --text-3xl--line-height: 1.2;
+  --text-4xl: 2.4375rem; /* 39px: desktop h1 */
+  --text-4xl--line-height: 1.2;
+
+  --shadow-sm: 0 1px 2px oklch(0.22 0.02 235 / 0.06); /* inputs, pressed chips */
+  --shadow-md:
+    0 2px 6px oklch(0.22 0.02 235 / 0.08), 0 1px 2px oklch(0.22 0.02 235 / 0.06); /* bottom bar, popover, chat bubble */
+  --shadow-lg: 0 12px 32px oklch(0.22 0.02 235 / 0.14); /* dialog, sheet */
+
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1); /* moves and stays on screen */
+  --ease-enter: cubic-bezier(0.05, 0.7, 0.1, 1); /* arriving */
+  --ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15); /* leaving (fast or base only) */
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    /* Lets native controls (scrollbars, date pickers) follow the theme. */
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+    line-height: 1.6;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-display font-semibold;
+    line-height: 1.2;
+  }
+  /* Devanagari matras need more room (UI.md §1 Typography). */
+  :lang(hi) body,
+  body:lang(hi) {
+    line-height: 1.75;
+  }
+  :lang(hi) :is(h1, h2, h3) {
+    line-height: 1.35;
+  }
+}
+
+/*
+ * Skeleton shimmer (UI.md §4): a 1.6s linear sweep over bg-muted. Three passes (4.8s) and then it stops,
+ * leaving a static block, so nothing keeps moving after 5s (WCAG 2.2.2).
+ */
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+/* In the components layer so utility classes passed to <Skeleton className> can still override it. */
+@layer components {
+  .skeleton {
+    background-color: var(--muted);
+    background-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in oklch, var(--background) 60%, transparent) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    background-repeat: no-repeat;
+    animation: skeleton-shimmer 1.6s linear 3;
+  }
+}
+
+/* §4 Reduced motion: copied from docs/UI.md. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .skeleton {
+    background-image: none;
+  } /* static muted block, no shimmer */
+  [data-slot="sheet-content"],
+  [data-slot="drawer-content"],
+  [data-slot="dialog-content"] {
+    transform: none !important;
+  } /* appear, don't slide */
+}
