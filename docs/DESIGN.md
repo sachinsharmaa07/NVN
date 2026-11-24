@@ -458,7 +458,7 @@ stateDiagram-v2
 
 1. **Auth0 application:** type *Single Page Application*. `@auth0/auth0-react` uses the OAuth 2.0 Authorization Code flow with PKCE, so no secret lives in the browser.
 2. **Auth0 API:** create an API with your identifier (e.g. `https://api.nivaran.in`), signing algorithm **RS256**, and turn on **RBAC** and **"Add Permissions in the Access Token"**.
-3. **Connections:** Google, plus email/password (Auth0 sends the verification email for email sign-ups).
+3. **Connections:** Google (`google-oauth2`) and passwordless email (`email`, a 6-digit code). No passwords.
 4. **Post-login Action:** add namespaced claims to the access token, e.g. `https://nivaran.in/email_verified` and `https://nivaran.in/roles`, so the API can read them.
 5. **Server check** on every request:
 
