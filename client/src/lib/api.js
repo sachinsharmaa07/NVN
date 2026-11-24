@@ -1,4 +1,5 @@
 import { t } from "@/i18n/t";
+import { messageForError } from "@/lib/apiErrors";
 
 // Empty VITE_API_URL means "same origin" (paths like /api/health are used as they are).
 const BASE_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/+$/, "");
@@ -6,15 +7,27 @@ const DEFAULT_TIMEOUT_MS = 10_000;
 
 /**
  * Every failure from this module is an ApiError, so callers only handle one shape:
- * { code: "UPPER_SNAKE", message: "readable text", status: HTTP status or 0, data: parsed body or null }
+ * { code: "UPPER_SNAKE", message: "readable text", status: HTTP status or 0, data: parsed body or null,
+ *   details: the server's error.details (e.g. { reason } or { fields }), retryAfter: seconds or null }
  */
 export class ApiError extends Error {
-  constructor({ code, message, status = 0, data = null }) {
+  constructor({
+    code,
+    message,
+    status = 0,
+    data = null,
+    details = null,
+    retryAfter = null,
+    serverMessage = "",
+  }) {
     super(message);
     this.name = "ApiError";
     this.code = code;
     this.status = status;
     this.data = data;
+    this.details = details;
+    this.retryAfter = retryAfter;
+    this.serverMessage = serverMessage;
   }
 }
 
@@ -72,12 +85,18 @@ export async function request(path, options = {}) {
   if (!response.ok) {
     // Server errors follow { error: { code, message } } (CLAUDE.md); anything else gets a generic code.
     const serverError = data?.error;
+    const code =
+      typeof serverError?.code === "string" ? serverError.code : `HTTP_${response.status}`;
+    const retryAfter = Number(response.headers.get("Retry-After")) || null;
     throw new ApiError({
-      code: typeof serverError?.code === "string" ? serverError.code : `HTTP_${response.status}`,
-      message:
-        typeof serverError?.message === "string" ? serverError.message : t("errors.common.server"),
+      code,
+      // Our own copy for every code; the server's wording is kept only for logs and debugging.
+      message: messageForError({ code, status: response.status, retryAfter }),
+      serverMessage: typeof serverError?.message === "string" ? serverError.message : "",
       status: response.status,
       data,
+      details: serverError?.details ?? null,
+      retryAfter,
     });
   }
   return data;
@@ -109,4 +128,12 @@ async function parseBody(response) {
 
 export function apiGet(path, options) {
   return request(path, { ...options, method: "GET" });
+}
+
+export function apiPost(path, options) {
+  return request(path, { ...options, method: "POST" });
+}
+
+export function apiPatch(path, options) {
+  return request(path, { ...options, method: "PATCH" });
 }

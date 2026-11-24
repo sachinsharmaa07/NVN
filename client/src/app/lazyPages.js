@@ -10,6 +10,10 @@ export const Report = lazy(() => import("@/pages/Report"));
 export const Issues = lazy(() => import("@/pages/Issues"));
 export const Community = lazy(() => import("@/pages/Community"));
 export const VerifyEmail = lazy(() => import("@/pages/VerifyEmail"));
+export const Profile = lazy(() => import("@/pages/Profile"));
+export const Suspended = lazy(() => import("@/pages/Suspended"));
+export const Forbidden = lazy(() => import("@/pages/Forbidden"));
+export const AdminUsers = lazy(() => import("@/pages/admin/AdminUsers"));
 export const NotFound = lazy(() => import("@/pages/NotFound"));
 
 // Style guide for developers only. import.meta.env.DEV is false in a production build, so the

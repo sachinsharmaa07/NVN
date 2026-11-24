@@ -1,65 +1,55 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { MemoryRouter, Route, Routes, useLocation } from "react-router";
-import { describe, expect, it, vi } from "vitest";
-import { AuthContext } from "./authContext";
+import { fireEvent, screen } from "@testing-library/react";
+import { useLocation } from "react-router";
+import { describe, expect, it } from "vitest";
+import { authState, people, renderWithAuth } from "@/test/renderWithAuth";
 import { RequireAuth } from "./RequireAuth";
 
-const verifiedUser = { id: "1", email: "asha@example.com", name: "Asha", emailVerified: true };
+function Where() {
+  const { pathname, state } = useLocation();
+  return (
+    <p>
+      at {pathname} from {state?.returnTo ?? "nowhere"}
+    </p>
+  );
+}
 
-// Renders a protected page at /report?pincode=144401, with a fake auth state.
-function renderAt(auth, { verified = false } = {}) {
-  function Where() {
-    const { pathname, state } = useLocation();
-    return (
-      <p>
-        at {pathname} from {state?.returnTo ?? "nowhere"}
-      </p>
-    );
-  }
-  return render(
-    <AuthContext.Provider value={auth}>
-      <MemoryRouter initialEntries={["/report?pincode=144401"]}>
-        <Routes>
-          <Route
-            path="/report"
-            element={
-              <RequireAuth verified={verified}>
-                <p>secret page</p>
-              </RequireAuth>
-            }
-          />
-          <Route path="/verify-email" element={<Where />} />
-        </Routes>
-      </MemoryRouter>
-    </AuthContext.Provider>,
+// Renders a protected page at /report?pincode=144401 with a fake auth state.
+function renderAt(auth, props = {}) {
+  return renderWithAuth(
+    <RequireAuth {...props}>
+      <p>secret page</p>
+    </RequireAuth>,
+    {
+      auth,
+      path: "/report?pincode=144401",
+      routePath: "/report",
+      routes: { "/verify-email": <Where />, "/suspended": <p>suspended page</p> },
+    },
   );
 }
 
 describe("RequireAuth", () => {
   it("shows the page to a signed-in user", () => {
-    renderAt({ status: "signedIn", user: verifiedUser });
+    renderAt(authState("verified"));
     expect(screen.getByText("secret page")).toBeInTheDocument();
   });
 
-  it("asks a signed-out visitor to sign in and remembers where they were going", async () => {
-    const login = vi.fn();
-    renderAt({ status: "signedOut", user: null, login });
+  it("asks a signed-out visitor to sign in and remembers where they were going", () => {
+    const auth = authState("signedOut");
+    renderAt(auth);
     expect(screen.queryByText("secret page")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
-    expect(login).toHaveBeenCalledWith("/report?pincode=144401");
+    expect(auth.login).toHaveBeenCalledWith("/report?pincode=144401");
   });
 
-  it("sends a signed-in user with an unverified email to /verify-email when verification is required", () => {
-    renderAt(
-      { status: "signedIn", user: { ...verifiedUser, emailVerified: false } },
-      { verified: true },
-    );
+  it("sends an unverified user to /verify-email when verification is required", () => {
+    renderAt(authState("unverified"), { verified: true });
     expect(screen.queryByText("secret page")).not.toBeInTheDocument();
     expect(screen.getByText("at /verify-email from /report?pincode=144401")).toBeInTheDocument();
   });
 
   it("lets an unverified user into a page that does not require verification", () => {
-    renderAt({ status: "signedIn", user: { ...verifiedUser, emailVerified: false } });
+    renderAt(authState("unverified"));
     expect(screen.getByText("secret page")).toBeInTheDocument();
   });
 
@@ -69,17 +59,61 @@ describe("RequireAuth", () => {
     expect(screen.queryByText("secret page")).not.toBeInTheDocument();
   });
 
-  it("shows a loading state, never the page, while it checks", () => {
-    renderAt({ status: "loading", user: null });
+  it("loading never renders children: a busy skeleton instead", () => {
+    renderAt(authState("loading"));
     expect(screen.getByRole("status")).toHaveAttribute("aria-busy", "true");
+    expect(screen.queryByText("secret page")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Sign in" })).not.toBeInTheDocument();
+  });
+
+  it("offers a retry when the account could not be loaded", () => {
+    const auth = authState("error", { error: { kind: "network", message: "Network down" } });
+    renderAt(auth);
+    expect(screen.getByText("Network down")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(auth.retry).toHaveBeenCalled();
+  });
+
+  it("a claims error offers only Sign out, no retry", () => {
+    const auth = authState("error", { error: { kind: "claims", message: "no email" } });
+    renderAt(auth);
+    expect(screen.queryByRole("button", { name: "Try again" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+    expect(auth.logout).toHaveBeenCalled();
+  });
+
+  it("a suspended user is sent to /suspended", () => {
+    renderAt(authState("suspended"));
+    expect(screen.getByText("suspended page")).toBeInTheDocument();
     expect(screen.queryByText("secret page")).not.toBeInTheDocument();
   });
 
-  it("offers a retry when the account could not be loaded", async () => {
-    const refresh = vi.fn();
-    renderAt({ status: "error", user: null, error: new Error("Network down"), refresh });
-    expect(screen.getByText("Network down")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
-    expect(refresh).toHaveBeenCalled();
+  describe("permission guard", () => {
+    it("a citizen sees the 403 page in place, not the page", () => {
+      renderAt(authState("verified"), { permission: "user:read_scope" });
+      expect(
+        screen.getByRole("heading", { name: "You don't have access to this page" }),
+      ).toBeInTheDocument();
+      expect(screen.queryByText("secret page")).not.toBeInTheDocument();
+    });
+    it("an admin sees the page", () => {
+      renderAt(authState("admin"), { permission: "user:read_scope" });
+      expect(screen.getByText("secret page")).toBeInTheDocument();
+    });
+    it("minLevel blocks a lower level and lets a higher one in", () => {
+      renderAt(authState("verified"), { minLevel: 2 });
+      expect(screen.queryByText("secret page")).not.toBeInTheDocument();
+      renderAt(authState("admin"), { minLevel: 2 });
+      expect(screen.getByText("secret page")).toBeInTheDocument();
+    });
+    it("the server's permissions[] wins over the local matrix", () => {
+      renderAt(
+        authState("verified", { user: { ...people.citizen, permissions: ["user:read_scope"] } }),
+        {
+          permission: "user:read_scope",
+        },
+      );
+      expect(screen.getByText("secret page")).toBeInTheDocument();
+    });
   });
 });

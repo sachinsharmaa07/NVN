@@ -1,9 +1,10 @@
-import { ScrollRestoration } from "react-router";
+import { Navigate, ScrollRestoration } from "react-router";
 import { ChatBubble } from "@/components/chat/ChatBubble";
 import { BottomBar } from "@/components/nav/BottomBar";
 import { Sidebar } from "@/components/nav/Sidebar";
 import { SkipLink } from "@/components/nav/SkipLink";
 import { TopBar } from "@/components/nav/TopBar";
+import { useAuth } from "@/hooks/useAuth";
 import { PageTransition } from "./PageTransition";
 
 /*
@@ -15,6 +16,10 @@ import { PageTransition } from "./PageTransition";
  * The landing page (/) uses this same frame, so Report is one tap away from the first screen.
  */
 export function AppLayout() {
+  // A suspended account may only see /suspended, on every route (public ones too).
+  const { status } = useAuth();
+  if (status === "suspended") return <Navigate to="/suspended" replace />;
+
   return (
     <div className="flex min-h-dvh flex-col">
       <SkipLink />

@@ -11,5 +11,14 @@
   "errors.common.timeout": "Nivaran is taking too long to answer. Try again in a moment.",
   "errors.common.aborted": "The request was cancelled.",
   "errors.common.server": "The server couldn't finish this request. Try again in a moment.",
-  "errors.common.badResponse": "Nivaran sent an answer we couldn't read. Try again in a moment."
+  "errors.common.badResponse": "Nivaran sent an answer we couldn't read. Try again in a moment.",
+  "common.signOut": "Sign out",
+  "common.cancel": "Cancel",
+  "common.role.citizen": "Citizen",
+  "common.role.moderator": "Moderator",
+  "common.role.staff": "Staff",
+  "common.role.deptHead": "Department head",
+  "common.role.cityAdmin": "City admin",
+  "common.role.stateOfficer": "State officer",
+  "common.role.superAdmin": "Super admin"
 }
