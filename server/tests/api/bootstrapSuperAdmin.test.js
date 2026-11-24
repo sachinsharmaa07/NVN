@@ -86,7 +86,7 @@ describe("A34 bootstrap super admin", () => {
     expect(r.flagCalls).toEqual([
       {
         method: "PATCH",
-        path: `/api/v2/users/${user.auth0Id}`,
+        path: `/api/v2/users/${user.auth0Ids[0]}`,
         app_metadata: { mfa_required: true },
       },
     ]);
@@ -158,15 +158,22 @@ describe("A34 bootstrap super admin", () => {
   });
 
   it("A34 two accounts with that email: refuses (exit 3), lists both ids, changes nothing", async () => {
-    const a = await verifiedUser();
-    const b = await verifiedUser();
-    const r = await bootstrap();
-    expect(r.code).toBe(3);
-    expect(r.stderr).toContain(String(a._id));
-    expect(r.stderr).toContain(String(b._id));
-    expect((await row(a)).role).toBe("citizen");
-    expect((await row(b)).role).toBe("citizen");
-    expect(await audits()).toHaveLength(0);
+    // email_verified_unique forbids this now; the guard still matters on a DB not yet migrated to v2.
+    await User.collection.dropIndex("email_verified_unique");
+    try {
+      const a = await verifiedUser();
+      const b = await verifiedUser();
+      const r = await bootstrap();
+      expect(r.code).toBe(3);
+      expect(r.stderr).toContain(String(a._id));
+      expect(r.stderr).toContain(String(b._id));
+      expect((await row(a)).role).toBe("citizen");
+      expect((await row(b)).role).toBe("citizen");
+      expect(await audits()).toHaveLength(0);
+    } finally {
+      await User.collection.deleteMany({}); // the index cannot be rebuilt over the duplicates
+      await User.createIndexes();
+    }
   });
 
   it("A34 Auth0 unreachable: exit 5 and nothing is written", async () => {

@@ -109,7 +109,7 @@ describe("first request: JIT user (A6, A7)", () => {
     const rows = await User.collection.find({}).toArray();
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
-      auth0Id: "auth0|first",
+      auth0Ids: ["auth0|first"],
       email: "asha@example.com",
       emailVerified: true,
       name: "Asha Rao",
@@ -168,9 +168,9 @@ describe("first request: JIT user (A6, A7)", () => {
     }
   });
 
-  it("A7 the unique index on auth0Id exists (it is what makes the race safe)", async () => {
+  it("A7 the unique index on auth0Ids exists (it is what makes the race safe)", async () => {
     const indexes = await User.collection.indexes();
-    const byAuth0Id = indexes.find((i) => i.key.auth0Id === 1);
+    const byAuth0Id = indexes.find((i) => i.key.auth0Ids === 1);
     expect(byAuth0Id?.unique).toBe(true);
   });
 });
@@ -188,7 +188,7 @@ describe("the database decides, not the token (A8, A9, A10, A21)", () => {
     const res = await me(token);
     expect(res.body.user.role).toBe("citizen");
     expect(res.body.user.permissions).not.toContain("user:promote");
-    const row = await User.collection.findOne({ auth0Id: "auth0|sneaky" });
+    const row = await User.collection.findOne({ auth0Ids: "auth0|sneaky" });
     expect(row.role).toBe("citizen");
     const admin = await request(app).get("/api/admin/users").set(bearer(token));
     expect(admin.status).toBe(403);
@@ -293,7 +293,7 @@ describe("MFA for level 4 and above (A35)", () => {
 describe("the 15-minute refresh (A29)", () => {
   const T0 = new Date("2026-03-10T09:00:00.000Z");
   const minutes = (n) => new Date(T0.getTime() + n * 60 * 1000);
-  const lastLogin = async (sub) => (await User.collection.findOne({ auth0Id: sub })).lastLoginAt;
+  const lastLogin = async (sub) => (await User.collection.findOne({ auth0Ids: sub })).lastLoginAt;
 
   it("A29 lastLoginAt is written at t0 and t0+16 min only, not at t0+10 min", async () => {
     // Only Date is faked (not timers), so the key server and the database keep working normally.
@@ -341,7 +341,7 @@ describe("the 15-minute refresh (A29)", () => {
     vi.setSystemTime(T0);
     const sub = "auth0|refresh";
     await me(signToken({ sub, name: "Original", picture: "https://x.example/1.png" }));
-    await User.collection.updateOne({ auth0Id: sub }, { $set: { name: "Edited by user" } });
+    await User.collection.updateOne({ auth0Ids: sub }, { $set: { name: "Edited by user" } });
     vi.setSystemTime(minutes(20));
     await me(
       signToken({
@@ -352,7 +352,7 @@ describe("the 15-minute refresh (A29)", () => {
         role: "super_admin",
       }),
     );
-    const row = await User.collection.findOne({ auth0Id: sub });
+    const row = await User.collection.findOne({ auth0Ids: sub });
     expect(row).toMatchObject({
       email: "new@example.com",
       avatarUrl: "https://x.example/2.png",
@@ -367,10 +367,10 @@ describe("the 15-minute refresh (A29)", () => {
     vi.setSystemTime(T0);
     const sub = "auth0|verify-now";
     await me(signToken({ sub, email_verified: false }));
-    expect((await User.collection.findOne({ auth0Id: sub })).emailVerified).toBe(false);
+    expect((await User.collection.findOne({ auth0Ids: sub })).emailVerified).toBe(false);
     vi.setSystemTime(minutes(2));
     await me(signToken({ sub, email_verified: true }));
-    expect((await User.collection.findOne({ auth0Id: sub })).emailVerified).toBe(true);
+    expect((await User.collection.findOne({ auth0Ids: sub })).emailVerified).toBe(true);
   });
 });
 

@@ -177,7 +177,7 @@ erDiagram
   }
   USER {
     ObjectId _id PK
-    string auth0Id UK
+    string[] auth0Ids UK
     string email
     string name
     string role
@@ -261,7 +261,7 @@ erDiagram
 | Collection | Index | Serves |
 | --- | --- | --- |
 | pincodes | `pin` unique; `boundary: 2dsphere` | Pincode lookup; point-in-area check |
-| users | `auth0Id` unique; `{cityId, role}` | Login; staff lists |
+| users | `auth0Ids` unique; verified `email` unique; `{cityId, role}` | Login; staff lists |
 | issues | `ticketId` unique; `location: 2dsphere`; `{cityId, status, priorityScore: -1}`; `{reporterIds: 1}` | Chatbot lookup; duplicate search; staff queue; "my issues" |
 | reports | `{issueId: 1, createdAt: -1}` | Issue timeline |
 | posts | `{status, createdAt: -1}`; `{cityId, status, createdAt: -1}`; text index on `title, bodyMd` | Feed, city feed, search |

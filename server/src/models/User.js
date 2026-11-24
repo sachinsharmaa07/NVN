@@ -4,6 +4,8 @@ import { ROLES, SCOPE_RULES } from "../utils/permissions.js";
 
 const { ObjectId } = mongoose.Schema.Types;
 
+export const MAX_SIGN_IN_IDS = 10;
+
 // Explicit validate functions, not `match`: Mongoose's `match` silently accepts "" (empty-string drift).
 const avatarOk = {
   validator: (v) => v == null || v === "" || /^https:\/\/\S+$/.test(v),
@@ -16,16 +18,16 @@ const pincodeOk = {
 
 const userSchema = new mongoose.Schema(
   {
-    // The token's `sub` (e.g. "google-oauth2|1234"). Our identity link to Auth0; never changes.
-    auth0Id: {
-      type: String,
-      required: true,
-      unique: true,
-      immutable: true,
-      trim: true,
-      maxlength: 128,
+    // Every token `sub` (e.g. "google-oauth2|1234") that signs in as this user. A new one is added
+    // only by verified-email linking (identityLinkService.js). Unique across users by index below.
+    auth0Ids: {
+      type: [{ type: String, trim: true, maxlength: 128 }],
+      validate: {
+        validator: (v) => v.length >= 1 && v.length <= MAX_SIGN_IN_IDS,
+        message: `auth0Ids must hold 1 to ${MAX_SIGN_IN_IDS} ids`,
+      },
     },
-    // Contact only, never an identity: NOT unique (a Google and a password login can share one address).
+    // Unique only among verified rows (index below), so verified-email linking has one target.
     email: { type: String, required: true, lowercase: true, trim: true, maxlength: 254 },
     // Mirror of the token claim, refreshed by the login throttle. The token decides on each request.
     emailVerified: { type: Boolean, required: true, default: false },
@@ -156,7 +158,17 @@ userSchema.pre("bulkWrite", function (ops, options) {
   }
 });
 
-// Indexes (docs/phase-1-auth.md 6.2). auth0Id is unique-indexed by its field option above.
+// Indexes (docs/phase-1-auth.md 6.2).
+userSchema.index({ auth0Ids: 1 }, { unique: true }); // every request; same-sub login race
+// One verified row per address: two concurrent first logins with one verified email make one user.
+userSchema.index(
+  { email: 1 },
+  {
+    unique: true,
+    name: "email_verified_unique",
+    partialFilterExpression: { emailVerified: true },
+  },
+);
 userSchema.index({ email: 1 }); // exact lookup and anchored email-prefix search
 userSchema.index({ cityId: 1, createdAt: -1, _id: -1 }); // city list without a role filter
 userSchema.index({ cityId: 1, role: 1, createdAt: -1, _id: -1 }); // city list with a role filter

@@ -14,7 +14,7 @@ async function main() {
   try {
     const t = await syncMfaFlags();
     console.log(
-      `Users ${t.total}: flag set ${t.required}, cleared ${t.cleared}, failed ${t.failed}.`,
+      `Sign-in ids ${t.total}: flag set ${t.required}, cleared ${t.cleared}, failed ${t.failed}.`,
     );
     return t.failed > 0 ? 1 : 0;
   } finally {
