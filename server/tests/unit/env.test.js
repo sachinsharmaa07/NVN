@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { parseEnv } from "../../src/config/env.js";
 
 const URI = "mongodb://127.0.0.1:27017/nivaran_dev";
+const M2M = { AUTH0_M2M_CLIENT_ID: "client-id", AUTH0_M2M_CLIENT_SECRET: "client-secret" };
 
 describe("parseEnv", () => {
   it("applies defaults when only MONGODB_URI is given", () => {
@@ -14,6 +15,7 @@ describe("parseEnv", () => {
       CLIENT_URL: "http://localhost:5173",
       LOG_LEVEL: "info",
       TRUST_PROXY: 0,
+      AUTH_CLOCK_TOLERANCE_SECONDS: 5,
     });
     expect(Object.isFrozen(result.config)).toBe(true);
   });
@@ -28,6 +30,7 @@ describe("parseEnv", () => {
         TRUST_PROXY: "1",
         AUTH0_DOMAIN: "nivaran.eu.auth0.com",
         AUTH0_AUDIENCE: "https://api.nivaran.in",
+        ...M2M,
       }).problems,
     ).toEqual(["MONGODB_URI: required"]);
   });
@@ -73,7 +76,14 @@ describe("parseEnv", () => {
     const keys = parseEnv({ NODE_ENV: "production", MONGODB_URI: URI }).problems.map(
       (p) => p.split(":")[0],
     );
-    expect(keys).toEqual(["CLIENT_URL", "TRUST_PROXY", "AUTH0_DOMAIN", "AUTH0_AUDIENCE"]);
+    expect(keys).toEqual([
+      "CLIENT_URL",
+      "TRUST_PROXY",
+      "AUTH0_DOMAIN",
+      "AUTH0_AUDIENCE",
+      "AUTH0_M2M_CLIENT_ID",
+      "AUTH0_M2M_CLIENT_SECRET",
+    ]);
   });
 
   it("rejects TRUST_PROXY=0 in production (one shared rate-limit bucket behind a proxy)", () => {
@@ -84,6 +94,7 @@ describe("parseEnv", () => {
       TRUST_PROXY: "0",
       AUTH0_DOMAIN: "nivaran.eu.auth0.com",
       AUTH0_AUDIENCE: "https://api.nivaran.in",
+      ...M2M,
     });
     expect(result.problems).toEqual([expect.stringMatching(/^TRUST_PROXY/)]);
   });
@@ -99,5 +110,27 @@ describe("parseEnv", () => {
     expect(
       parseEnv({ MONGODB_URI: URI, CLIENT_URL: "https://nivaran.in/" }).config.CLIENT_URL,
     ).toBe("https://nivaran.in");
+  });
+
+  it("keeps the clock tolerance explicit, defaulting to 5 s and refusing more than 30 s", () => {
+    expect(parseEnv({ MONGODB_URI: URI }).config.AUTH_CLOCK_TOLERANCE_SECONDS).toBe(5);
+    expect(
+      parseEnv({ MONGODB_URI: URI, AUTH_CLOCK_TOLERANCE_SECONDS: "10" }).config
+        .AUTH_CLOCK_TOLERANCE_SECONDS,
+    ).toBe(10);
+    const bad = parseEnv({ MONGODB_URI: URI, AUTH_CLOCK_TOLERANCE_SECONDS: "31" });
+    expect(bad.problems[0]).toMatch(/^AUTH_CLOCK_TOLERANCE_SECONDS/);
+  });
+
+  it("lowercases SUPER_ADMIN_EMAIL and rejects a malformed one", () => {
+    const ok = parseEnv({ MONGODB_URI: URI, SUPER_ADMIN_EMAIL: "  Sachin@Example.COM " });
+    expect(ok.config.SUPER_ADMIN_EMAIL).toBe("sachin@example.com");
+    expect(parseEnv({ MONGODB_URI: URI, SUPER_ADMIN_EMAIL: "nope" }).ok).toBe(false);
+  });
+
+  it("outside production the M2M keys are optional but must come as a pair", () => {
+    expect(parseEnv({ MONGODB_URI: URI, ...M2M }).ok).toBe(true);
+    const half = parseEnv({ MONGODB_URI: URI, AUTH0_M2M_CLIENT_ID: "only-id" });
+    expect(half.problems).toEqual([expect.stringMatching(/set both or neither/)]);
   });
 });
