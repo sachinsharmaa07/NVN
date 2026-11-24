@@ -89,7 +89,6 @@ missing or invalid.
 | `VITE_AUTH0_CLIENT_ID` | from the Auth0 application | no | Client ID of the Single Page Application |
 | `VITE_AUTH0_AUDIENCE` | `https://api.nivaran.in` | no | Must equal the server's `AUTH0_AUDIENCE` |
 | `VITE_SUPPORT_CONTACT` | `your city admin` | no | Optional. Who a suspended user is told to contact. Default: "your city admin" |
-| `VITE_AUTH0_DB_CONNECTION` | `Username-Password-Authentication` | no | Optional. Name of the Auth0 database connection behind "Use email and password". Set it only if your tenant renamed it |
 
 Anything prefixed `VITE_` is bundled into the browser code, so never put a secret in `client/.env`.
 Nothing in this file is a secret. The Auth0 domain, client ID and audience are public by design. The

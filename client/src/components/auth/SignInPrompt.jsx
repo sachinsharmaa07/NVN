@@ -15,7 +15,7 @@ const COPY = {
 /*
  * The sign-in sheet: a bottom drawer on phones, a dialog on desktop. Both buttons start the
  * Auth0 redirect and come back to `returnTo` (cleaned by safePath so it can only be a page on
- * this site). Google is the primary choice; email and password is the quiet second one.
+ * this site). Google is the primary choice; email (a 6-digit code, no password) is the quiet second one.
  */
 export function SignInPrompt({ open, onOpenChange, returnTo = "/", variant = "default" }) {
   const auth = useAuth();
@@ -29,14 +29,16 @@ export function SignInPrompt({ open, onOpenChange, returnTo = "/", variant = "de
       title={t(copy.title)}
       description={t(copy.body)}
       footer={
-        <>
+        // Own column so the hint sits under both buttons (the dialog footer is a row on desktop).
+        <div className="flex w-full flex-col gap-2">
           <Button size="lg" onClick={() => go(GOOGLE_CONNECTION)}>
             {t("auth.signIn.google")}
           </Button>
           <Button size="lg" variant="outline" onClick={() => go(EMAIL_CONNECTION)}>
             {t("auth.signIn.email")}
           </Button>
-        </>
+          <p className="text-center text-sm text-muted-foreground">{t("auth.signIn.emailHint")}</p>
+        </div>
       }
     />
   );

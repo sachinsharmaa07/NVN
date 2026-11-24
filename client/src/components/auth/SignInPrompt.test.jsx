@@ -32,14 +32,15 @@ describe("SignInPrompt", () => {
     });
   });
 
-  it("email and password uses the database connection", () => {
+  it("email uses the passwordless email connection and says no password is needed", () => {
     const auth = authState("signedOut");
     setup(auth, { returnTo: "/issues" });
     fireEvent.click(screen.getByText("open it"));
-    fireEvent.click(screen.getByRole("button", { name: "Use email and password" }));
-    expect(auth.login).toHaveBeenCalledWith("/issues", {
-      connection: "Username-Password-Authentication",
-    });
+    expect(
+      screen.getByText("We'll email you a 6-digit code. No password needed."),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Continue with email" }));
+    expect(auth.login).toHaveBeenCalledWith("/issues", { connection: "email" });
   });
 
   it("never passes on a return path that leaves the site", () => {

@@ -37,10 +37,11 @@ Use a separate **dev tenant** (for example `nivaran-dev`). Make another one for 
 
 1. **Authentication > Social > Google** (connection name `google-oauth2`): switch it on and enable it for `Nivaran Web`.
    Auth0's built-in Google keys are fine for development. Before launch you must use your own Google OAuth client.
-2. **Authentication > Database**: keep the connection named `Username-Password-Authentication` enabled
-   for `Nivaran Web`. If you rename it, set `VITE_AUTH0_DB_CONNECTION` in `client/.env` to the new name.
-   Auth0 sends the verification email when someone signs up with email and password.
-   Google sign-ins arrive already verified.
+2. **Authentication > Passwordless > Email** (connection name `email`): switch it on, set it to send a
+   **code** (not a magic link) of 6 digits, and enable it for `Nivaran Web`. The app asks for this
+   connection by name, so do not rename it. Typing the code proves the address, so these users arrive
+   verified, as Google sign-ins do. Disable the `Username-Password-Authentication` database connection
+   for `Nivaran Web`: there are no passwords.
 3. **No automatic account linking.** Do not add any Action, rule or extension that links accounts with
    the same email. Someone who signs up by email and someone who signs in with Google using the same
    address stay two separate Auth0 users (and two Nivaran users). Linking by email can hand one person's
@@ -122,8 +123,7 @@ VITE_AUTH0_AUDIENCE=https://api.nivaran.in
 ```
 
 Domain is the host only: no `https://`, no trailing slash. Restart `npm run dev`.
-Optional client settings: `VITE_SUPPORT_CONTACT`, `VITE_AUTH0_DB_CONNECTION`
-(see the README).
+Optional client setting: `VITE_SUPPORT_CONTACT` (see the README).
 
 ## 8. Try it, and the manual test checklist
 

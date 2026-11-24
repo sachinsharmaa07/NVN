@@ -17,7 +17,7 @@ vi.mock("@/lib/authConfig", () => ({
   authConfig: { domain: "d", clientId: "c", audience: "a" },
   SUPPORT_CONTACT: "your city admin",
   GOOGLE_CONNECTION: "google-oauth2",
-  EMAIL_CONNECTION: "db",
+  EMAIL_CONNECTION: "email",
 }));
 
 function setAuth0(extra = {}) {
