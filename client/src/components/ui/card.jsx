@@ -1,10 +1,21 @@
 import { cn } from "@/lib/utils";
-function Card({ className, ...props }) {
+import { Slot } from "radix-ui";
+
+/**
+ * Card: groups one thing (an issue, a post, a step). Border, never a shadow (docs/UI.md §3).
+ * `interactive` is for a card that is itself a link: use it with `asChild` around a <Link>/<a> so the
+ * whole card is the one focusable target. Hover lifts it 2px and darkens the border to `input`.
+ */
+function Card({ className, interactive = false, asChild = false, ...props }) {
+  const Comp = asChild ? Slot.Root : "div";
   return (
-    <div
+    <Comp
       data-slot="card"
+      data-interactive={interactive ? "" : undefined}
       className={cn(
         "flex flex-col gap-4 rounded-lg border bg-card py-4 text-card-foreground md:gap-6 md:py-6",
+        interactive &&
+          "cursor-pointer transition-[translate,border-color] duration-fast ease-standard outline-none hover:-translate-y-0.5 hover:border-input focus-visible:border-input focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:hover:translate-y-0",
         className,
       )}
       {...props}
@@ -27,7 +38,7 @@ function CardTitle({ className, ...props }) {
   return (
     <div
       data-slot="card-title"
-      className={cn("font-display leading-tight font-semibold", className)}
+      className={cn("font-display text-xl leading-tight font-semibold", className)}
       {...props}
     />
   );

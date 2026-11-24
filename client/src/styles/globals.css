@@ -6,11 +6,16 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* `dark:` utilities apply inside an element with class "dark" (set on <html> by index.html + ThemeProvider). */
-@custom-variant dark (&:is(.dark *));
+/*
+ * `dark:` utilities apply inside an element with class "dark" (set on <html> by index.html + ThemeProvider).
+ * `.light` forces light tokens on a subtree even when <html> is dark (used by the dev style guide to show
+ * both themes side by side), so `dark:` is switched off again inside it.
+ */
+@custom-variant dark (&:is(.dark *):not(.light *));
 
 /* ---------- §2 Colour tokens (light) ---------- */
-:root {
+:root,
+.light {
   --radius: 0.625rem;
   --background: oklch(0.985 0.004 220);
   --foreground: oklch(0.22 0.02 235);
@@ -300,6 +305,21 @@
     background-size: 200% 100%;
     background-repeat: no-repeat;
     animation: skeleton-shimmer 1.6s linear 3;
+  }
+}
+
+/*
+ * Pressed feedback for buttons (UI.md: pressed buttons scale to 0.98). A named utility instead of the
+ * arbitrary `active:scale-[0.98]`, so the value lives with the other tokens. Off under reduced motion.
+ */
+@utility press-scale {
+  &:active:not(:disabled) {
+    scale: 0.98;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    &:active:not(:disabled) {
+      scale: none;
+    }
   }
 }
 

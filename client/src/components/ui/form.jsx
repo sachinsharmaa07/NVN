@@ -1,4 +1,5 @@
 import * as React from "react";
+import { CircleAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Slot } from "radix-ui";
 import { Controller, FormProvider, useFormContext, useFormState } from "react-hook-form";
@@ -85,10 +86,15 @@ function FormMessage({ className, ...props }) {
     <p
       data-slot="form-message"
       id={formMessageId}
-      className={cn("text-sm text-destructive", className)}
+      // Same look as system/FieldError: destructive text with a CircleAlert icon (UI.md §7).
+      className={cn("flex items-start gap-2 text-sm text-destructive", className)}
       {...props}
     >
-      {body}
+      {/* h-5 = one text-sm line, so the icon centres on the first line of a long message. */}
+      <span className="flex h-5 shrink-0 items-center">
+        <CircleAlert aria-hidden="true" className="size-4" />
+      </span>
+      <span>{body}</span>
     </p>
   );
 }
