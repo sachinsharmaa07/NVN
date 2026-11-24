@@ -5,10 +5,10 @@ pin inside that pincode's boundary, adds a photo and details, and gets a ticket 
 (`NIV-YYYY-NNNNNN`). Staff work an SLA-driven queue. There is an AI help chatbot (Gemini) and a
 moderated community feed.
 
-This repository has the **Phase 0 skeleton** (Express API with a health check, lint, tests and CI)
-and the **visual foundation**: design tokens, a design system, the app shell (top bar, sidebar on
-desktop, bottom bar on phones), page transitions and a landing page. There is no auth, no data model
-and no report feature yet.
+This repository has the **Phase 0 skeleton** (Express API with a health check, lint, tests and CI),
+the **visual foundation** (design tokens, design system, app shell, landing page) and **Phase 1
+sign-in**: Auth0 login, a user record with roles, and the access checks every later route uses.
+There is no report feature or data model beyond users yet.
 
 | Address (dev server) | What is there |
 | --- | --- |
@@ -18,6 +18,7 @@ and no report feature yet.
 
 - Product and data design: [docs/DESIGN.md](docs/DESIGN.md)
 - Visual and copy rules: [docs/UI.md](docs/UI.md)
+- Auth0 tenant setup (needed for sign-in): [docs/AUTH0_SETUP.md](docs/AUTH0_SETUP.md)
 - Architecture decisions: [docs/adr/](docs/adr/)
 - Rules for working in this repo: [CLAUDE.md](CLAUDE.md)
 
@@ -38,9 +39,12 @@ npm ci
 cp server/.env.example server/.env
 cp client/.env.example client/.env
 
-# 3. Fill in the values (see the table below), then start both apps
+# 3. Fill in the values (see the tables below), then start both apps
 npm run dev
 ```
+
+The app runs without Auth0 settings: there is no Sign in button and protected pages say sign-in is
+not set up. To turn sign-in on, follow [docs/AUTH0_SETUP.md](docs/AUTH0_SETUP.md).
 
 - Open the app: <http://localhost:5173>
 - Check the API: <http://localhost:5000/api/health> should return `"status"` and `"db": "up"`
@@ -65,7 +69,9 @@ Port 5000 is used by AirPlay Receiver on macOS 12 and later. Either turn it off 
 | `MONGODB_URI_TEST` | `mongodb+srv://.../nivaran_test`          | Test database; may be wiped, so its name must end in `_test`  |
 | `CLIENT_URL`       | `http://localhost:5173`                   | The client's origin; the only origin CORS allows (required in production) |
 | `LOG_LEVEL`        | `info`                                    | pino log level (`fatal`, `error`, `warn`, `info`, `debug`, `trace`) |
-| `TRUST_PROXY`      | `0`                                       | Proxies in front of the API (1 on Render); required in production |
+| `TRUST_PROXY`      | `0`                                       | Proxies in front of the API (1 on Render); must be 1 or more in production |
+| `AUTH0_DOMAIN`     | `nivaran-dev.us.auth0.com`                | Auth0 tenant host, no `https://`. Required in production      |
+| `AUTH0_AUDIENCE`   | `https://api.nivaran.in`                  | The Auth0 API identifier. Required in production              |
 
 The server checks these with Zod when it starts and exits with a list of the wrong keys if any are
 missing or invalid.
@@ -75,8 +81,30 @@ missing or invalid.
 | Variable       | Example                 | What it is                                   |
 | -------------- | ----------------------- | -------------------------------------------- |
 | `VITE_API_URL` | `http://localhost:5000` | Base URL of the API (must match the server's `PORT`) |
+| `VITE_AUTH0_DOMAIN` | `nivaran-dev.us.auth0.com` | Auth0 tenant host (same as the server's) |
+| `VITE_AUTH0_CLIENT_ID` | from the Auth0 application | Client ID of the Single Page Application |
+| `VITE_AUTH0_AUDIENCE` | `https://api.nivaran.in` | Must equal the server's `AUTH0_AUDIENCE` |
 
 Anything prefixed `VITE_` is bundled into the browser code, so never put a secret in `client/.env`.
+The three Auth0 values are public by design (the client ID identifies the app, it is not a secret).
+
+## Sign-in and access
+
+Login uses Auth0 (OAuth 2.0 authorization code with PKCE). The browser keeps tokens in memory only.
+The API checks every token (RS256, issuer and audience) and then loads the user from MongoDB on each
+request, so suspending or demoting someone works on their next call. Roles live in MongoDB, never
+in the token.
+
+| Endpoint | Who | What it does |
+| --- | --- | --- |
+| `GET /api/health` | anyone | Status and database state |
+| `GET /api/me` | signed in | Creates your citizen record on first sign-in, returns your profile |
+| `POST /api/me/resend-verification` | signed in, unverified | Asks Auth0 to resend the verification email (answers 503 until the Auth0 management app is set up) |
+
+Routes are protected by a chain of small middleware in `server/src/middleware/`: `authenticate`,
+`loadUser`, `requireVerifiedEmail`, `requirePermission(...)` and `requireScope(...)`. The role and
+scope rules are pure functions in `server/src/utils/access.js`. On the client, wrap a page in
+`<RequireAuth>` (or `<RequireAuth verified>`); the server enforces the same rules.
 
 ## Scripts
 
@@ -109,9 +137,9 @@ secret. Give that secret its own Atlas database user with access to `nivaran_tes
 │   ├── e2e/                   Playwright tests (later phase)
 │   └── src/
 │       ├── components/        ui/ (shadcn, generated), system/ (StatusBadge, SlaCountdown,
-│       │                      TicketId...), nav/, theme/, chat/, map/
+│       │                      TicketId...), nav/, auth/, theme/, chat/, map/
 │       ├── layouts/           AppLayout (the shell) and PageTransition
-│       ├── pages/             Landing/, Report, Issues, Community, dev/StyleGuide
+│       ├── pages/             Landing/, Report, Issues, Community, VerifyEmail, dev/StyleGuide
 │       ├── hooks/
 │       ├── lib/               api.js, motion.js (shared animation variants) and helpers
 │       ├── i18n/              en.json, en/*.json (copy by area) and the t() helper
@@ -121,7 +149,7 @@ secret. Give that secret its own Atlas database user with access to `nivaran_tes
 ├── server/                    Express 5 API (ES modules)
 │   ├── src/
 │   │   ├── config/            env.js, db.js, logger.js
-│   │   ├── middleware/
+│   │   ├── middleware/        requestId, validate, errorHandler, auth, access
 │   │   ├── routes/
 │   │   ├── controllers/
 │   │   ├── services/
@@ -131,8 +159,8 @@ secret. Give that secret its own Atlas database user with access to `nivaran_tes
 │   │   ├── app.js             builds the Express app
 │   │   └── server.js          connects the DB and listens
 │   ├── scripts/               one-off data scripts
-│   └── tests/                 unit/ and api/
-├── docs/                      DESIGN.md, UI.md, adr/
+│   └── tests/                 unit/, api/ and helpers/ (a fake Auth0 key server for tests)
+├── docs/                      DESIGN.md, UI.md, AUTH0_SETUP.md, adr/
 ├── .editorconfig
 ├── .nvmrc                     Node version (22)
 ├── .prettierrc
