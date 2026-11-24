@@ -9,7 +9,7 @@ SLA-driven queue. There is an AI help chatbot (Gemini) and a moderated community
 - Decisions: `docs/adr/` (0001 stack and dependencies, 0002 layering)
 
 **Stack:** Node 22, Express 5 (ESM), Zod 4, Mongoose on MongoDB Atlas | React + Vite (JavaScript, no
-TypeScript), React Router, TanStack Query, Tailwind CSS v4, shadcn/ui, Leaflet | Auth0 later.
+TypeScript), React Router, TanStack Query, Tailwind CSS v4, shadcn/ui, Leaflet | Auth0 (Phase 1).
 npm workspaces at the root (`client`, `server`); one `package-lock.json`. Server port 5000, client 5173.
 
 ## Folder tree (two apps in npm workspaces)
@@ -25,7 +25,7 @@ server/
               models/, validators/, utils/, jobs/, app.js, server.js
   scripts/    one-off data scripts (importPincodes.js)
   tests/      unit/ (Vitest) and api/ (Vitest + Supertest)
-docs/         DESIGN.md, UI.md, adr/
+docs/         DESIGN.md, UI.md, AUTH0_SETUP.md, adr/
 ```
 `.github/workflows/ci.yml` (lint + test) is added in Phase 0. No new top-level folders without asking.
 
@@ -34,6 +34,9 @@ docs/         DESIGN.md, UI.md, adr/
 - **Validate everything:** a Zod `.strict()` schema on `body`, `params` and `query` of every route.
 - **Trust nothing from the client:** `role`, `cityId` and `departmentId` come only from `req.user`,
   never from the body. Every `:id` route checks ownership or scope.
+- **Auth chain** (`middleware/auth.js`, `access.js`): `authenticate` (Auth0 RS256 token) -> `loadUser` (reads
+  MongoDB each request; roles live there, not in the token) -> `requireVerifiedEmail` -> `requirePermission` ->
+  `requireScope`. Rules are pure functions in `utils/access.js`. Setup: `docs/AUTH0_SETUP.md`.
 - **Lists:** cursor-paginated (`createdAt` + `_id`), page size max 50. Every query is backed by an
   index declared in its model file. Use `.lean()` and projections for reads.
 - **Errors:** always `{ "error": { "code": "OUTSIDE_PINCODE", "message": "..." } }`. Codes are
