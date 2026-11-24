@@ -22,22 +22,6 @@ const assertAuth0Id = (auth0Id) => {
   }
 };
 
-/** Asks Auth0 to email a new verification link. Resolves on 201; throws AuthProviderError otherwise. */
-export async function resendVerificationEmail(auth0Id, ctx = {}) {
-  assertAuth0Id(auth0Id);
-  await getClient().request({
-    op: "resendVerification",
-    method: "POST",
-    path: "/api/v2/jobs/verification-email",
-    pathTemplate: "/api/v2/jobs/verification-email",
-    body: { user_id: auth0Id },
-    retry: "limited", // sending twice would mean two emails, so retry only when Auth0 says it did nothing
-    okStatus: [201],
-    log: ctx.log ?? logger,
-    userId: ctx.userId,
-  });
-}
-
 /** Sets app_metadata.mfa_required in Auth0 (the post-login Action enrols and challenges on it). Idempotent. */
 export async function setMfaRequired(auth0Id, flag, ctx = {}) {
   assertAuth0Id(auth0Id);

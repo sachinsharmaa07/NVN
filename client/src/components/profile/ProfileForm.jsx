@@ -1,7 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link } from "react-router";
 import { z } from "zod";
 import { FieldError } from "@/components/system/FieldError";
 import { RoleBadge } from "@/components/auth/RoleBadge";
@@ -149,13 +148,9 @@ export function ProfileForm({ user }) {
           <dd className="flex min-w-0 flex-col gap-1">
             <span className="flex flex-wrap items-center gap-2">
               <span className="break-all">{user.email}</span>
-              {user.emailVerified ? (
-                <Badge variant="outline">{t("profile.form.verified")}</Badge>
-              ) : (
-                <Link to="/verify-email" className="text-primary underline underline-offset-4">
-                  {t("profile.form.verifyLink")}
-                </Link>
-              )}
+              <Badge variant="outline">
+                {t(user.emailVerified ? "profile.form.verified" : "profile.form.notVerified")}
+              </Badge>
             </span>
             <span className="text-sm text-muted-foreground">{t("profile.form.emailHint")}</span>
           </dd>

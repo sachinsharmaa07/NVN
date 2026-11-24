@@ -8,7 +8,6 @@ import { AppError } from "../utils/AppError.js";
 import { clock } from "../utils/clock.js";
 import { levelOf, MFA_MIN_LEVEL, permissionsOf } from "../utils/permissions.js";
 import { lookupGeoNames } from "./geoNames.js";
-import { resendVerificationEmail } from "./authProviderService.js";
 
 const log = logger.child({ component: "userService" });
 
@@ -232,12 +231,4 @@ export async function updateOwnProfile(userId, { name, preferredLanguage, defaul
     preferredLanguage: record.preferredLanguage,
     defaultPincode: record.defaultPincode ?? null,
   };
-}
-
-/** POST /api/me/resend-verification. The Auth0 user id comes from our record, never the request. */
-export async function resendVerification(user, { log: reqLog } = {}) {
-  if (user.emailVerified) {
-    throw new AppError("ALREADY_VERIFIED", 409, "Your email is already verified.");
-  }
-  await resendVerificationEmail(user.auth0Id, { log: reqLog, userId: user.id });
 }

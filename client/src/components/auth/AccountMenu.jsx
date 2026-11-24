@@ -1,4 +1,4 @@
-import { ShieldCheckIcon, TriangleAlertIcon, UserRoundIcon, UsersIcon } from "lucide-react";
+import { TriangleAlertIcon, UserRoundIcon, UsersIcon } from "lucide-react";
 import { Link, useLocation } from "react-router";
 import { AccountAvatar } from "@/components/auth/AccountAvatar";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,7 @@ const SLOT = "flex size-11 items-center justify-center";
  * The account slot in the top bar. One state at a time, chosen from auth.status (docs 10.1):
  *   loading      reserved slot, round skeleton after 200ms, "Checking your sign-in" for screen readers
  *   signedOut    "Sign in" (opens the sheet)         unconfigured  nothing
- *   signedIn     avatar menu (+ "Verify your email" if unverified, + Admin link for admins)
+ *   signedIn     avatar menu (+ Admin link for admins)
  *   suspended    menu with Sign out only             error  warning button: Try again / Sign out
  * Until the status is known, nothing that depends on it is shown (no Sign in flash).
  */
@@ -113,14 +113,6 @@ export function AccountMenu() {
           )}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {!user.emailVerified && (
-          <DropdownMenuItem asChild>
-            <Link to="/verify-email" state={{ returnTo: location.pathname + location.search }}>
-              <ShieldCheckIcon aria-hidden="true" />
-              {t("auth.account.verifyItem")}
-            </Link>
-          </DropdownMenuItem>
-        )}
         <DropdownMenuItem asChild>
           <Link to="/profile">
             <UserRoundIcon aria-hidden="true" />

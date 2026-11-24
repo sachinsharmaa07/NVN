@@ -87,9 +87,9 @@ Roles, scope and status are **not** in the token. They live in MongoDB (`users.r
 next request. For admins the server fails closed: a level 4+ user without the `mfa` claim gets 403
 `MFA_REQUIRED` on admin routes.
 
-## 6. Create the Machine-to-Machine app (resend email and MFA flag)
+## 6. Create the Machine-to-Machine app (MFA flag)
 
-The server calls Auth0's Management API to resend verification emails and to set the `mfa_required`
+The server calls Auth0's Management API to set the `mfa_required`
 flag when someone becomes an admin. This app is a **secret**: keep it server-side only.
 
 1. **Applications > Applications > Create Application**. Name `Nivaran Server`, type **Machine to Machine Applications**.
@@ -132,28 +132,24 @@ Run these in order against your dev tenant. Tick each when it behaves as describ
 1. **Google login.** Open http://localhost:5173, click **Sign in**, choose Google. You land back on the
    page you were on. `GET /api/me` (Network tab) returns 200 with `"role": "citizen"` and
    `"emailVerified": true`. A `users` document exists in `nivaran_dev`.
-2. **Email sign-up and verification.** Sign out, choose email and password, sign up with a different
-   address. You are sent to Verify your email. Open the link in the email, return, press "I've verified
-   it": protected pages now open. Until then, `/report` redirects to the verify page and the API answers
-   403 `EMAIL_NOT_VERIFIED`.
-3. **Resend and cooldown.** On the verify page press **Resend**: an email arrives and the button counts
-   down 60 seconds. Pressing it again early does nothing. The API allows 3 resends an hour per user,
-   after that 429 `RATE_LIMITED`. With the M2M values removed it answers 503 and the page says it can't yet.
-4. **Profile edit.** Open Profile, change your name, language and default pincode, save. The header and
+2. **Unverified email.** A token whose `email_verified` is not `true` gets 403 `EMAIL_NOT_VERIFIED` from
+   the API; the app shows a toast and opens the sign-in sheet. Signing in again with Google or an email
+   code gives a verified token. There is no verify page and no resend.
+3. **Profile edit.** Open Profile, change your name, language and default pincode, save. The header and
    the next `GET /api/me` show the new values. Sending `role` in the request is rejected (400).
-5. **Bootstrap the super admin.** Sign in once with the account whose email is `SUPER_ADMIN_EMAIL`
+4. **Bootstrap the super admin.** Sign in once with the account whose email is `SUPER_ADMIN_EMAIL`
    (email verified), then run `npm run bootstrap:super-admin -w server`. It prints the masked email,
    `citizen -> super_admin` and exits 0. Run it again: "already super_admin", no change, exit 0.
    Before the first sign-in it exits 2; with an unverified email it exits 4.
    Sign out and in again and enroll MFA when asked. **Admin > Users** now opens.
-6. **Promote a test account to city_admin and confirm MFA is required.** Sign in once with a second
+5. **Promote a test account to city_admin and confirm MFA is required.** Sign in once with a second
    account. As super admin, open Admin > Users, change that user's role to `city_admin`, pick a city,
    enter a reason. In Auth0 (User Management > Users > that user) `app_metadata.mfa_required` is
    `true`. With the test account's old session, `GET /api/admin/users` returns 403 `MFA_REQUIRED`.
    Sign out and in as the test account: Auth0 makes it enroll MFA, and then the Users page opens and
    lists only users in its own city. Another city's user id returns 404. The AuditLog has a
    `user.role_change` row with your reason.
-7. **Suspend and confirm the next request is blocked.** As the admin, suspend a third test account with a
+6. **Suspend and confirm the next request is blocked.** As the admin, suspend a third test account with a
    reason. In that account's still-open browser, click anything that calls the API: it answers 403
    `SUSPENDED` and the app shows the Suspended page with your reason. Reactivate it and reload: access is back.
 
@@ -164,7 +160,7 @@ Run these in order against your dev tenant. Tick each when it behaves as describ
 | Auth0 page says "Callback URL mismatch" | Step 2.3: the URL is missing or has a typo (check `http` vs `https`, the port, no trailing slash) |
 | `GET /api/me` returns 401 `UNAUTHENTICATED` | `AUTH0_AUDIENCE` or `AUTH0_DOMAIN` on the server differs from the client's, or the API identifier differs from step 3 |
 | 401 `TOKEN_CLAIMS_MISSING` | The Action in step 5 is not deployed or not in the post-login flow |
-| 503 `AUTH_NOT_CONFIGURED` | The server's `.env` has no `AUTH0_DOMAIN` or `AUTH0_AUDIENCE` (or, for resend and role changes, no M2M values) |
+| 503 `AUTH_NOT_CONFIGURED` | The server's `.env` has no `AUTH0_DOMAIN` or `AUTH0_AUDIENCE` (or, for role changes, no M2M values) |
 | 503 `AUTH_PROVIDER_UNAVAILABLE` | Auth0 (keys or Management API) is unreachable or the M2M app lacks the two scopes. Check the server log for `auth0.mgmt.misconfigured` |
 | 403 `MFA_REQUIRED` for an admin | The token has no `mfa` claim: sign out and in and finish MFA, and check the Action sets `${ns}mfa` |
 | No Sign in button at all | The client's `.env` is missing one of the three `VITE_AUTH0_*` values |

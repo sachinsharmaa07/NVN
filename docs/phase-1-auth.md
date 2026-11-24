@@ -2,6 +2,11 @@
 
 Status: Approved and built (Phase 1).
 
+> **Changed after Phase 1 (Nov 2026):** sign-in is Google or Auth0 email OTP only (no passwords, no
+> verification link). The `POST /api/me/resend-verification` endpoint, the VerifyEmail page,
+> `useResendVerification`/`useResendCooldown` and `ALREADY_VERIFIED` were removed. `EMAIL_NOT_VERIFIED`
+> now shows a toast and opens the sign-in sheet. Sections below that mention them are historical.
+
 Scope: Auth0 login, the request pipeline (`authenticate` → `loadUser` → `requireActive` → `requireVerifiedEmail` → `requirePermission` → scope check in the service), roles and scope, profile, admin user management, audit log, bootstrap of the first super admin, and the client screens that go with them.
 
 ## 1. Rules this design follows

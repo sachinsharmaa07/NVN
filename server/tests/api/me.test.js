@@ -1,10 +1,9 @@
-// /api/me: profile read and update, and the verification-email resend.
+// /api/me: profile read and update.
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import request from "supertest";
-import { signToken } from "../helpers/fakeAuth0.js";
 import { useFakeAuth0 } from "../helpers/authSeam.js";
 import { useTestDb, seedUser, tokenFor, bearer } from "../helpers/testDb.js";
-import { resetMgmt, resendCalls, failNext, request as mgmtRequest } from "../helpers/mgmtMock.js";
+import { resetMgmt } from "../helpers/mgmtMock.js";
 import { User } from "../../src/models/User.js";
 
 vi.mock("../../src/middleware/auth.js", async (orig) =>
@@ -133,96 +132,5 @@ describe("PATCH /api/me", () => {
     const user = await seedUser("citizen");
     const res = await patchMe(tokenFor(user), { name: "Zed" });
     expect(res.headers["cache-control"]).toBe("no-store");
-  });
-});
-
-describe("POST /api/me/resend-verification", () => {
-  const unverified = (extra = {}) => seedUser("citizen", {}, { emailVerified: false, ...extra });
-  const post = (user, claims = {}) =>
-    request(app)
-      .post("/api/me/resend-verification")
-      .set(bearer(tokenFor(user, { email_verified: false, ...claims })));
-
-  it("A26 an unverified user -> 202 { sent: true }, the Auth0 job is requested once, for this user's own id", async () => {
-    const user = await unverified();
-    const res = await post(user);
-    expect(res.status).toBe(202);
-    expect(res.body).toEqual({ sent: true });
-    expect(resendCalls()).toEqual([{ auth0Id: user.auth0Id }]);
-  });
-
-  it("A26 the 4th request in an hour -> 429 RATE_LIMITED, counted per user", async () => {
-    const spammer = await unverified();
-    for (let i = 0; i < 3; i++) expect((await post(spammer)).status).toBe(202);
-    const limited = await post(spammer);
-    expect(limited.status).toBe(429);
-    expect(limited.body.error.code).toBe("RATE_LIMITED");
-    expect(resendCalls()).toHaveLength(3);
-    // Another user, same IP, is not affected.
-    const other = await unverified();
-    expect((await post(other)).status).toBe(202);
-  });
-
-  it("A27 a verified user -> 409 ALREADY_VERIFIED, no Auth0 call", async () => {
-    const user = await seedUser("citizen");
-    const res = await request(app)
-      .post("/api/me/resend-verification")
-      .set(bearer(tokenFor(user, { email_verified: true })));
-    expect(res.status).toBe(409);
-    expect(res.body.error.code).toBe("ALREADY_VERIFIED");
-    expect(mgmtRequest).not.toHaveBeenCalled();
-  });
-
-  it("A28 Auth0 is down -> 503 AUTH_PROVIDER_UNAVAILABLE, no stack, no internals", async () => {
-    const user = await unverified();
-    await failNext("timeout");
-    const res = await post(user);
-    expect(res.status).toBe(503);
-    expect(res.body.error.code).toBe("AUTH_PROVIDER_UNAVAILABLE");
-    expect(JSON.stringify(res.body)).not.toMatch(/stack|node_modules|timeout|at .*\.js/i);
-  });
-
-  it("a failed upstream resend does not use up the 3 per hour", async () => {
-    const user = await unverified();
-    await failNext("upstream", 3);
-    for (let i = 0; i < 3; i++) expect((await post(user)).status).toBe(503);
-    expect((await post(user)).status).toBe(202);
-  });
-
-  it("the Auth0 user id comes from our record, never from the request", async () => {
-    const user = await unverified();
-    const res = await request(app)
-      .post("/api/me/resend-verification")
-      .set(bearer(tokenFor(user, { email_verified: false })))
-      .send({ user_id: "auth0|victim" });
-    expect(res.status).toBe(400); // strict empty body
-    expect(resendCalls()).toEqual([]);
-  });
-
-  it("a suspended user -> 403 SUSPENDED, no Auth0 call", async () => {
-    const admin = await seedUser("super_admin");
-    const user = await unverified({
-      status: "suspended",
-      suspendedReason: "spam links",
-      suspendedAt: new Date(),
-      suspendedBy: admin._id,
-    });
-    const res = await post(user);
-    expect(res.status).toBe(403);
-    expect(res.body.error.code).toBe("SUSPENDED");
-    expect(mgmtRequest).not.toHaveBeenCalled();
-  });
-
-  it("no token -> 401", async () => {
-    const res = await request(app).post("/api/me/resend-verification");
-    expect(res.status).toBe(401);
-  });
-
-  it("a brand new user (no row yet) can resend: the first request creates them", async () => {
-    const res = await request(app)
-      .post("/api/me/resend-verification")
-      .set(bearer(signToken({ sub: "auth0|brand-new", email_verified: false })));
-    expect(res.status).toBe(202);
-    expect(resendCalls()).toEqual([{ auth0Id: "auth0|brand-new" }]);
   });
 });

@@ -72,7 +72,7 @@ Port 5000 is used by AirPlay Receiver on macOS 12 and later. Either turn it off 
 | `TRUST_PROXY` | `0` | no | Proxies in front of the API (1 on Render); must be 1 or more in production |
 | `AUTH0_DOMAIN` | `nivaran-dev.us.auth0.com` | no | Auth0 tenant host, no `https://`. Required in production |
 | `AUTH0_AUDIENCE` | `https://api.nivaran.in` | no | The Auth0 API identifier. Required in production |
-| `AUTH0_M2M_CLIENT_ID` | from the Auth0 M2M app | **yes** (treat the pair as one secret) | Machine-to-Machine app for the Management API. Needed for "resend verification email", role changes that set the MFA flag, and the scripts. Without it those answer 503 `AUTH_NOT_CONFIGURED` |
+| `AUTH0_M2M_CLIENT_ID` | from the Auth0 M2M app | **yes** (treat the pair as one secret) | Machine-to-Machine app for the Management API. Needed for role changes that set the MFA flag, and the scripts. Without it those answer 503 `AUTH_NOT_CONFIGURED` |
 | `AUTH0_M2M_CLIENT_SECRET` | from the Auth0 M2M app | **yes** | Server only, never in `client/.env`, never logged. Set both M2M values or neither |
 | `SUPER_ADMIN_EMAIL` | `you@example.com` | no (personal data, keep out of git) | Read only by `npm run bootstrap:super-admin -w server`. That person must have signed in once with a verified email |
 | `AUTH_CLOCK_TOLERANCE_SECONDS` | `5` | no | Allowed clock difference when checking token expiry, 0 to 30. Keep hosts on NTP |
@@ -113,7 +113,6 @@ env vars above and run the bootstrap script to create the first super admin.
 | `GET /api/health` | anyone | Status and database state |
 | `GET /api/me` | signed in | Creates your citizen record on first sign-in, returns your profile |
 | `PATCH /api/me` | signed in | Edits your name, preferred language and default pincode |
-| `POST /api/me/resend-verification` | signed in, unverified | Asks Auth0 to resend the verification email (3 an hour per user; 503 until the M2M app is set up) |
 | `GET /api/admin/users` | city_admin, state_officer, super_admin; verified email, MFA | Lists users in your scope (cursor pages, search, role filter) |
 | `PATCH /api/admin/users/:id/role` | city_admin, super_admin | Changes a role below your own level, with a reason; writes an AuditLog |
 | `PATCH /api/admin/users/:id/status` | city_admin, super_admin | Suspends or reactivates a user below your level, with a reason |
@@ -187,7 +186,7 @@ its own Atlas database user with access to `nivaran_test` only.
 │       ├── components/        ui/ (shadcn, generated), system/ (StatusBadge, SlaCountdown,
 │       │                      TicketId...), nav/, auth/, theme/, chat/, map/
 │       ├── layouts/           AppLayout (the shell) and PageTransition
-│       ├── pages/             Landing/, Report, Issues, Community, Profile, VerifyEmail, Suspended,
+│       ├── pages/             Landing/, Report, Issues, Community, Profile, Suspended,
 │       │                      Forbidden, admin/AdminUsers, dev/StyleGuide
 │       ├── hooks/
 │       ├── lib/               api.js, motion.js (shared animation variants) and helpers
