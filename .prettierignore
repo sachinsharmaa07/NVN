@@ -1,0 +1,11 @@
+# Installed and generated files
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+package-lock.json
+
+# Hand-written docs: keep their line breaks and tables exactly as written
+docs/
+*.md
