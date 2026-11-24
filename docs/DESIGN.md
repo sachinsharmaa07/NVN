@@ -183,7 +183,7 @@ erDiagram
     string role
     ObjectId cityId FK
     ObjectId departmentId FK
-    bool verified
+    bool emailVerified
     string status
   }
   ISSUE {
@@ -271,7 +271,7 @@ erDiagram
 
 ### Key enums
 
-- `role`: `citizen`, `moderator`, `staff`, `city_admin`, `super_admin`
+- `role`: `citizen`, `moderator`, `staff`, `dept_head`, `city_admin`, `state_officer`, `super_admin` (7 levels, in this order)
 - `issue.status`: `submitted`, `assigned`, `in_progress`, `resolved`, `closed`, `reopened`, `rejected`
 - `closureType`: `citizen_confirmed`, `auto_closed`, `reopened`
 - `post.status` / `comment.status`: `published`, `hidden` (flagged, awaiting review), `deleted` (soft)
