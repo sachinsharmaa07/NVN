@@ -336,7 +336,7 @@ focus the first invalid field and show a summary at the top of the form for long
 | `OUTSIDE_PINCODE` | "This spot is outside pincode 144401. Move the pin inside the shaded area or change the pincode." | `report.location.outsidePincode` |
 | Pincode not served | "We don't cover 144401 yet. Leave your email and we'll tell you when we do." | `report.pincode.notServed` |
 | Photo too large | "This photo is over 5 MB. Choose a smaller one or take a new photo." | `report.details.photoTooLarge` |
-| Email not verified | "Verify your email to report issues. Check your inbox for the link, or resend it." + "Resend email" | `auth.verify.required` |
+| Email not verified | Toast "We couldn't confirm your email. Sign in again with Google or an email code." and the sign-in sheet opens | `errors.auth.emailNotVerified` |
 | Network / 5xx | "Couldn't reach Nivaran. Check your connection and try again. Your draft is saved." + "Try again" | `errors.common.network` |
 
 ## 8. Voice and tone

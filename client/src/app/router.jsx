@@ -13,7 +13,6 @@ import {
   Report,
   StyleGuide,
   Suspended,
-  VerifyEmail,
 } from "./lazyPages";
 
 /*
@@ -40,7 +39,6 @@ export const routes = [
           </RequireAuth>
         ),
       },
-      { path: "verify-email", element: <VerifyEmail /> },
       { path: "profile", element: <Profile /> },
       { path: "forbidden", element: <Forbidden /> },
       { path: "admin/users", element: <AdminUsers /> },

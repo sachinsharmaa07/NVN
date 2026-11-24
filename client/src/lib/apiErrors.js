@@ -14,7 +14,6 @@ const KEYS = {
   NOT_FOUND: "errors.common.notFound",
   VALIDATION_ERROR: "errors.common.validation",
   CONFLICT: "errors.common.conflict",
-  ALREADY_VERIFIED: "errors.auth.alreadyVerified",
   AUTH_PROVIDER_UNAVAILABLE: "errors.auth.providerUnavailable",
   AUTH_NOT_CONFIGURED: "errors.auth.providerUnavailable",
 };

@@ -5,7 +5,8 @@ import request from "supertest";
 import { signToken } from "../helpers/fakeAuth0.js";
 import { useFakeAuth0 } from "../helpers/authSeam.js";
 import { useTestDb, seedWorld, seedUser, tokenFor, bearer } from "../helpers/testDb.js";
-import { resetMgmt, failNext, request as mgmtRequest } from "../helpers/mgmtMock.js";
+import { resetMgmt, failNext } from "../helpers/mgmtMock.js";
+import { City } from "../../src/models/City.js";
 
 vi.mock("../../src/middleware/auth.js", async (orig) =>
   (await import("../helpers/authSeam.js")).authModule(await orig()),
@@ -126,34 +127,51 @@ describe("A33 error shape and leakage", () => {
     expectStandardShape(id, 400, "VALIDATION_ERROR");
   });
 
+  // Raising a moderator to dept_head calls Auth0 (MFA flag) first, so it can drive the provider errors.
+  async function promoteToHead() {
+    const { cityA, deptA1 } = await seedWorld();
+    const root = await seedUser("super_admin");
+    const mod = await seedUser("moderator", { cityId: cityA._id });
+    return request(app)
+      .patch(`/api/admin/users/${mod._id}/role`)
+      .set(bearer(tokenFor(root)))
+      .send({
+        role: "dept_head",
+        cityId: String(cityA._id),
+        departmentId: String(deptA1._id),
+        reason: "runs the roads department",
+      });
+  }
+
   it("429 RATE_LIMITED", async () => {
-    const user = await seedUser("citizen", {}, { emailVerified: false });
-    const token = tokenFor(user, { email_verified: false });
+    const root = await seedUser("super_admin");
+    const mod = await seedUser("moderator", { cityId: (await seedWorld()).cityA._id });
     let res;
-    for (let i = 0; i < 4; i++)
-      res = await request(app).post("/api/me/resend-verification").set(bearer(token));
+    for (let i = 0; i < 11; i++)
+      res = await request(app)
+        .patch(`/api/admin/users/${mod._id}/status`)
+        .set(bearer(tokenFor(root)))
+        .send({ status: "active", reason: "valid reason" });
     expectStandardShape(res, 429, "RATE_LIMITED");
   });
 
   it("503 AUTH_PROVIDER_UNAVAILABLE", async () => {
-    const user = await seedUser("citizen", {}, { emailVerified: false });
     await failNext("network");
-    const res = await request(app)
-      .post("/api/me/resend-verification")
-      .set(bearer(tokenFor(user, { email_verified: false })));
-    expectStandardShape(res, 503, "AUTH_PROVIDER_UNAVAILABLE");
+    expectStandardShape(await promoteToHead(), 503, "AUTH_PROVIDER_UNAVAILABLE");
   });
 
   it("500 an unhandled throw: generic message, request id, no stack, secret or connection string", async () => {
-    const user = await seedUser("citizen", {}, { emailVerified: false });
-    mgmtRequest.mockRejectedValueOnce(
-      new Error(
+    const { cityA } = await seedWorld();
+    const mod = await seedUser("moderator", { cityId: cityA._id });
+    // GET /api/me looks up the city name; make that read throw something nobody planned for.
+    vi.spyOn(City, "find").mockImplementationOnce(() => {
+      throw new Error(
         "boom mongodb://admin:hunter2@db.example/prod client_secret=hunter2\n    at Object.<anonymous> (/app/node_modules/x/index.js:1:1)",
-      ),
-    );
+      );
+    });
     const res = await request(app)
-      .post("/api/me/resend-verification")
-      .set(bearer(tokenFor(user, { email_verified: false })));
+      .get("/api/me")
+      .set(bearer(tokenFor(mod)));
     expectStandardShape(res, 500, "INTERNAL_ERROR");
     expect(res.body.error.requestId).toBe(res.headers["x-request-id"]);
     expect(res.text).not.toContain("boom");

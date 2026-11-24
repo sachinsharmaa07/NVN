@@ -1,9 +1,4 @@
-import {
-  resendVerification as resend,
-  toPublicUser,
-  withGeoNames,
-  updateOwnProfile,
-} from "../services/userService.js";
+import { toPublicUser, withGeoNames, updateOwnProfile } from "../services/userService.js";
 
 /** req.user was loaded (and created on first sight) by loadUser, so there is nothing to sync here. */
 export async function getMe(req, res) {
@@ -14,9 +9,4 @@ export async function patchMe(req, res) {
   // Only req.user.id picks the row: there is no :id param, so nobody can edit someone else here.
   const changes = await updateOwnProfile(req.user.id, req.valid.body);
   res.json({ user: await withGeoNames(toPublicUser({ ...req.user, ...changes })) });
-}
-
-export async function resendVerification(req, res) {
-  await resend(req.user, { log: req.log });
-  res.status(202).json({ sent: true });
 }

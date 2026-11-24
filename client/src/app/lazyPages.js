@@ -9,7 +9,6 @@ export const Landing = lazy(() => import("@/pages/Landing"));
 export const Report = lazy(() => import("@/pages/Report"));
 export const Issues = lazy(() => import("@/pages/Issues"));
 export const Community = lazy(() => import("@/pages/Community"));
-export const VerifyEmail = lazy(() => import("@/pages/VerifyEmail"));
 export const Profile = lazy(() => import("@/pages/Profile"));
 export const Suspended = lazy(() => import("@/pages/Suspended"));
 export const Forbidden = lazy(() => import("@/pages/Forbidden"));

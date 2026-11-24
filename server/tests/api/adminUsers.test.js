@@ -657,8 +657,8 @@ describe("suspend and reactivate (A17, A18, A19)", () => {
     expect(blocked.body.error.code).toBe("SUSPENDED");
     expect(blocked.body.error.details).toEqual({ reason: "abusive comments" });
     // Every other route is blocked as well.
-    const resend = await request(app).post("/api/me/resend-verification").set(bearer(token));
-    expect(resend.body.error.code).toBe("SUSPENDED");
+    const patch = await request(app).patch("/api/me").set(bearer(token)).send({ name: "Mod" });
+    expect(patch.body.error.code).toBe("SUSPENDED");
   });
 
   it("A19 reactivating: 200, reason cleared, AuditLog row, and the next call works", async () => {

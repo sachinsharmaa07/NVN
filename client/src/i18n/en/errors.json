@@ -1,6 +1,6 @@
 {
   "errors.auth.unauthenticated": "Your session has ended. Sign in again to continue.",
-  "errors.auth.emailNotVerified": "Verify your email to do this. Check your inbox for the link, or resend it.",
+  "errors.auth.emailNotVerified": "We couldn't confirm your email. Sign in again with Google or an email code.",
   "errors.auth.forbidden": "You don't have access to this. If you think you should, ask your city admin.",
   "errors.auth.suspended": "Your account is suspended. Contact {contact} to find out why and what to do next.",
   "errors.auth.mfaRequired": "This needs two-step verification. Sign in again to set it up.",
@@ -8,7 +8,6 @@
   "errors.auth.rateLimitedGeneric": "Too many attempts. Wait a moment, then try again.",
   "errors.auth.providerUnavailable": "We couldn't reach the sign-in service. Wait a minute, then try again.",
   "errors.auth.providerUnavailableAdmin": "Nothing was changed. The sign-in service didn't respond. Try again in a minute.",
-  "errors.auth.alreadyVerified": "Your email is already verified. Taking you back.",
   "errors.auth.tokenClaimsMissing": "Your sign-in didn't include your email address. Sign out and sign in again. If it keeps happening, contact {contact}.",
   "errors.common.notFound": "We couldn't find that. It may have been removed or moved.",
   "errors.common.validation": "Check the fields marked below and try again.",

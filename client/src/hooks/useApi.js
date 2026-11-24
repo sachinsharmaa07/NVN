@@ -1,8 +1,10 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { useLocation, useNavigate } from "react-router";
+import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useSignInPrompt } from "@/hooks/useSignInPrompt";
+import { t } from "@/i18n/t";
 import { ME_KEY } from "@/hooks/useMe";
 import { authedRequest } from "@/lib/authedRequest";
 import { claimMfaAttempt } from "@/lib/mfaGuard";
@@ -16,7 +18,8 @@ import { claimMfaAttempt } from "@/lib/mfaGuard";
  * It attaches the Bearer token, retries once on 401 (see authedRequest), and when the server's
  * answer means "this person is in the wrong state" it moves the UI to the right place, then
  * rethrows so the caller can still show its own error:
- *   EMAIL_NOT_VERIFIED -> /verify-email      SUSPENDED -> /suspended
+ *   EMAIL_NOT_VERIFIED -> toast + sign-in sheet (a fresh Google/email-OTP sign-in is verified)
+ *   SUSPENDED -> /suspended
  *   MFA_REQUIRED -> fresh sign-in with prompt=login (once per tab, see lib/mfaGuard.js)
  *   401 (after the retry) -> sign-in sheet
  *   FORBIDDEN -> re-read /api/me, so a changed role makes the guards show the 403 in place
@@ -37,7 +40,8 @@ export function useApi() {
       } catch (error) {
         if (error.code === "EMAIL_NOT_VERIFIED") {
           markUnverified?.();
-          navigate("/verify-email", { state: { returnTo } });
+          toast.error(t("errors.auth.emailNotVerified"));
+          openSignIn({ returnTo, variant: "gated" });
         } else if (error.code === "SUSPENDED") {
           markSuspended?.(error.details?.reason);
           navigate("/suspended", { replace: true });
