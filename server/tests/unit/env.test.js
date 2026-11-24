@@ -26,6 +26,8 @@ describe("parseEnv", () => {
         NODE_ENV: "production",
         CLIENT_URL: "https://nivaran.in",
         TRUST_PROXY: "1",
+        AUTH0_DOMAIN: "nivaran.eu.auth0.com",
+        AUTH0_AUDIENCE: "https://api.nivaran.in",
       }).problems,
     ).toEqual(["MONGODB_URI: required"]);
   });
@@ -67,11 +69,30 @@ describe("parseEnv", () => {
     expect(good.ok).toBe(true);
   });
 
-  it("requires CLIENT_URL and TRUST_PROXY in production", () => {
+  it("requires CLIENT_URL, TRUST_PROXY and the Auth0 settings in production", () => {
     const keys = parseEnv({ NODE_ENV: "production", MONGODB_URI: URI }).problems.map(
       (p) => p.split(":")[0],
     );
-    expect(keys).toEqual(["CLIENT_URL", "TRUST_PROXY"]);
+    expect(keys).toEqual(["CLIENT_URL", "TRUST_PROXY", "AUTH0_DOMAIN", "AUTH0_AUDIENCE"]);
+  });
+
+  it("rejects TRUST_PROXY=0 in production (one shared rate-limit bucket behind a proxy)", () => {
+    const result = parseEnv({
+      NODE_ENV: "production",
+      MONGODB_URI: URI,
+      CLIENT_URL: "https://nivaran.in",
+      TRUST_PROXY: "0",
+      AUTH0_DOMAIN: "nivaran.eu.auth0.com",
+      AUTH0_AUDIENCE: "https://api.nivaran.in",
+    });
+    expect(result.problems).toEqual([expect.stringMatching(/^TRUST_PROXY/)]);
+  });
+
+  it("accepts a bare Auth0 host and rejects one with https://", () => {
+    expect(parseEnv({ MONGODB_URI: URI, AUTH0_DOMAIN: "nivaran.eu.auth0.com" }).ok).toBe(true);
+    const bad = parseEnv({ MONGODB_URI: URI, AUTH0_DOMAIN: "https://nivaran.eu.auth0.com/" });
+    expect(bad.ok).toBe(false);
+    expect(bad.problems[0]).toMatch(/^AUTH0_DOMAIN/);
   });
 
   it("reduces CLIENT_URL to its origin so it matches the Origin header", () => {
