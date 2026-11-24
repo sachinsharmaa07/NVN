@@ -11,8 +11,8 @@ import { Department } from "../../src/models/Department.js";
 import { signToken } from "./fakeAuth0.js";
 
 /**
- * Call once at the top of an API test file. Connects, builds every index (the unique `auth0Id`
- * index is what the JIT race test depends on) and empties all collections before each test.
+ * Call once at the top of an API test file. Connects, builds every index (the unique `auth0Ids`
+ * and verified-email indexes are what the JIT race tests depend on) and empties all collections before each test.
  */
 export function useTestDb() {
   beforeAll(async () => {
@@ -66,7 +66,7 @@ export async function seedUser(role = "citizen", scope = {}, extra = {}) {
   counter += 1;
   const tag = `${role}-${counter}`;
   return User.create({
-    auth0Id: `auth0|${tag}-${randomUUID().slice(0, 8)}`,
+    auth0Ids: [`auth0|${tag}-${randomUUID().slice(0, 8)}`],
     email: `${tag}@example.com`,
     emailVerified: true,
     name: `Test ${tag}`,
@@ -85,7 +85,7 @@ export async function seedUser(role = "citizen", scope = {}, extra = {}) {
  */
 export function tokenFor(user, claims = {}) {
   return signToken({
-    sub: user.auth0Id,
+    sub: user.auth0Ids[0],
     email: user.email,
     name: user.name,
     email_verified: user.emailVerified,

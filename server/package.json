@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "bootstrap:super-admin": "node scripts/bootstrapSuperAdmin.js",
     "sync:mfa-flags": "node scripts/syncMfaFlags.js",
-    "migrate:users-v1": "node scripts/migrateUsersV1.js"
+    "migrate:users-v1": "node scripts/migrateUsersV1.js",
+    "migrate:users-v2": "node scripts/migrateUsersV2.js"
   },
   "dependencies": {
     "cors": "^2.8.6",

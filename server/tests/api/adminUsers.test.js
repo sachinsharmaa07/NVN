@@ -363,7 +363,7 @@ describe("role change: happy path and audit (A14, A15, A16, A35)", () => {
       role: "moderator",
       cityId: String(cityA._id),
     });
-    expect(JSON.stringify(res.body)).not.toContain(citizen.auth0Id);
+    expect(JSON.stringify(res.body)).not.toContain(citizen.auth0Ids[0]);
     const stored = await row(citizen);
     expect(stored).toMatchObject({ role: "moderator", cityId: cityA._id });
 
@@ -445,7 +445,7 @@ describe("role change: happy path and audit (A14, A15, A16, A35)", () => {
       reason: "runs the roads department",
     });
     expect(res.status).toBe(200);
-    expect(mfaCalls()).toEqual([{ auth0Id: modA.auth0Id, flag: true }]);
+    expect(mfaCalls()).toEqual([{ auth0Id: modA.auth0Ids[0], flag: true }]);
     expect(roleWhenFlagSet).toBe("moderator");
     expect(await roleOf(modA)).toBe("dept_head");
   });
@@ -470,7 +470,7 @@ describe("role change: happy path and audit (A14, A15, A16, A35)", () => {
     });
     const res = await patchRole(root, String(head._id), { role: "staff", reason: "stepping down" });
     expect(res.status).toBe(200);
-    expect(mfaCalls()).toEqual([{ auth0Id: head.auth0Id, flag: false }]);
+    expect(mfaCalls()).toEqual([{ auth0Id: head.auth0Ids[0], flag: false }]);
     expect(roleWhenCleared).toBe("staff");
   });
 

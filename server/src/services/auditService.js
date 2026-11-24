@@ -9,6 +9,7 @@ const ALLOWED_KEYS = {
   "user.suspend": ["status", "suspendedReason"],
   "user.reactivate": ["status", "suspendedReason"],
   "user.mfa_flag_sync_failed": ["errorCode"],
+  "user.identity_linked": ["provider"], // the provider only, never the full sub
 };
 
 /** Keeps only the allow-listed keys with a value. Returns undefined when nothing is left. */
