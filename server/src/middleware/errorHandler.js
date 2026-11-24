@@ -49,6 +49,10 @@ export function errorHandler(err, req, res, next) {
     const body = { code: known.code, message: known.message };
     if (known.details !== undefined) body.details = known.details;
     if (known.status >= 500) body.requestId = req.id;
+    // Tell well-behaved clients how long to wait (AuthProviderError sets retryAfterSeconds).
+    if (err?.retryAfterSeconds && !res.getHeader("Retry-After")) {
+      res.set("Retry-After", String(err.retryAfterSeconds));
+    }
     return res.status(known.status).json({ error: body });
   }
 

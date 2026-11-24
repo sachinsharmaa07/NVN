@@ -10,7 +10,15 @@ export const logger = pino({
   timestamp: pino.stdTimeFunctions.isoTime,
   // Never write credentials to logs, even when a whole request is logged.
   redact: {
-    paths: ["req.headers.authorization", "req.headers.cookie", 'res.headers["set-cookie"]'],
+    paths: [
+      "req.headers.authorization",
+      "req.headers.cookie",
+      'res.headers["set-cookie"]',
+      'req.headers["x-api-key"]',
+      "*.client_secret",
+      "*.access_token",
+      "*.password",
+    ],
     censor: "[REDACTED]",
   },
 });
