@@ -9,6 +9,7 @@ export const Landing = lazy(() => import("@/pages/Landing"));
 export const Report = lazy(() => import("@/pages/Report"));
 export const Issues = lazy(() => import("@/pages/Issues"));
 export const Community = lazy(() => import("@/pages/Community"));
+export const VerifyEmail = lazy(() => import("@/pages/VerifyEmail"));
 export const NotFound = lazy(() => import("@/pages/NotFound"));
 
 // Style guide for developers only. import.meta.env.DEV is false in a production build, so the
