@@ -10,7 +10,10 @@
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "bootstrap:super-admin": "node scripts/bootstrapSuperAdmin.js",
+    "sync:mfa-flags": "node scripts/syncMfaFlags.js",
+    "migrate:users-v1": "node scripts/migrateUsersV1.js"
   },
   "dependencies": {
     "cors": "^2.8.6",
@@ -25,6 +28,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "mongodb-memory-server": "^11.4.0",
     "supertest": "^7.3.2",
     "vitest": "^5.1.1"
   }
