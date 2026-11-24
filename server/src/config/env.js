@@ -29,6 +29,13 @@ const envSchema = z.object({
   // How many proxies sit in front of the API (0 locally, usually 1 on Render or behind Nginx).
   // Without it the rate limiter sees every user as the proxy's IP and limits them all together.
   TRUST_PROXY: optional(z.coerce.number().int().min(0).max(5)).default(0),
+  // Auth0 tenant host only, no https:// and no slash (e.g. nivaran.eu.auth0.com). Not needed until
+  // you create the tenant: without it the API answers 503 AUTH_NOT_CONFIGURED on protected routes.
+  AUTH0_DOMAIN: optional(
+    z.string().regex(/^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$/i, "host name only, without https://"),
+  ),
+  // The "API identifier" you set in Auth0 (e.g. https://api.nivaran.in). It is a name, not a URL we call.
+  AUTH0_AUDIENCE: optional(z.string().min(1)),
 });
 
 // The test database may be wiped by tests, so refuse anything that could be the real one.
@@ -62,7 +69,12 @@ export function parseEnv(raw) {
   // In production a forgotten setting must fail loudly instead of falling back to a local default.
   if (nodeEnv === "production") {
     if (!raw.CLIENT_URL) problems.push("CLIENT_URL: required in production");
-    if (!raw.TRUST_PROXY) problems.push("TRUST_PROXY: required in production (number of proxies)");
+    // "0" is a set value but wrong behind a proxy: every user would share the proxy's IP rate-limit bucket.
+    if (!(Number(raw.TRUST_PROXY) >= 1)) {
+      problems.push("TRUST_PROXY: required in production, 1 or more (exact number of proxies)");
+    }
+    if (!raw.AUTH0_DOMAIN) problems.push("AUTH0_DOMAIN: required in production");
+    if (!raw.AUTH0_AUDIENCE) problems.push("AUTH0_AUDIENCE: required in production");
   }
   problems.push(...testDbProblems(raw));
 
