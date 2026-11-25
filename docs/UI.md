@@ -20,6 +20,12 @@ official, never bureaucratic. It is not a startup dashboard: no gradients, no gl
 - **Spend boldness in one place: the pincode and the ticket.** Step 1 shows the pincode as six boxed digits, like the PIN boxes on an
   India Post envelope; the success screen shows the ticket ID as a stamped counterfoil (display font, large, a perforated top edge,
   copy button). Everything between is quiet: white cards, thin borders, one accent.
+- **Postmark (added 25 Nov 2026):** the counterfoil carries one round date stamp in `--postmark`, `oklch(0.53 0.153 32)`
+  (`#B4412E`, 5.3:1 on the page background). It is round and holds no words (the date sits beside it as text), so it
+  never reads as the `breached` badge. It appears nowhere else.
+- **Default theme is light** (decided 25 Nov 2026, M1 Step 1): residents use phones outdoors where dark screens wash
+  out, most mid-range phones are LCD so dark saves little battery, and light fits the paper-and-stamp idea. Dark and
+  `system` stay available in the theme menu.
 - Status colours are information, not decoration. The accent is never used to mean a status.
 - Don't: all-caps labels, eyebrow text above headings, one highlighted word in a headline, middle-dot meta strings,
   `→` on buttons, monospace for data, identical cards with the same shadow everywhere, stock illustrations.
@@ -29,6 +35,11 @@ official, never bureaucratic. It is not a startup dashboard: no gradients, no gl
 - Load both fonts in `client/src/main.jsx`: `@fontsource-variable/anek-devanagari/wght.css` and `@fontsource/mukta/{400,500,600}.css`.
   Fontsource splits files by `unicode-range`, so Devanagari files only download when Hindi text is on screen. No Google Fonts `<link>`.
 - `--font-display: "Anek Devanagari Variable", "Mukta", system-ui, sans-serif;` `--font-sans: "Mukta", system-ui, sans-serif;`
+- **Rule:** every font stack leads with a bundled (self-hosted) web font that covers Devanagari; system fonts are only
+  the last fallback.
+- **Hindi coverage (checked 25 Nov 2026):** both installed packages ship Devanagari subsets (`anek-devanagari-devanagari-wght-normal.woff2`;
+  Mukta has Devanagari files for each weight). Fallback order: Anek, then Mukta, then `system-ui`, which on Android is
+  Noto Sans Devanagari and on iOS is Kohinoor Devanagari, so Hindi never renders as empty boxes while fonts load.
 - Display font: h1-h3, ticket IDs, the pincode boxes, big counts on staff dashboards. Weight 600 (headings) or 700 (ticket ID). Everything else is Mukta.
 - Scale (1.25 ratio, 16px base): 12 / 14 / **16 body** / 20 / 25 / 31 / 39 px. Mobile h1 is 31px, desktop 39px. Never below 12px; body text never below 16px on mobile.
 - Line height: body 1.6, headings 1.2. For `lang="hi"` raise body to 1.75 and headings to 1.35 (Devanagari matras need room).
@@ -242,9 +253,10 @@ status badge colour changes, numbers/counters/SLA countdowns (they just update; 
 the user did not ask for, autoplaying carousels, parallax.
 
 **Scroll (added 24 Nov 2026):** native scrolling only: no smooth-scroll libraries (Lenis etc.) and no scroll-jacking.
-Sections may reveal once as they scroll into view (motion `whileInView`, `once: true`): opacity plus a rise of 8px at most,
-`base` duration, 30ms stagger, and the status timeline draws its connector in `slow`. Under reduced motion everything
-is already visible. Shared variants live in `client/src/lib/motion.js`; never write raw durations in components.
+**App pages (changed 25 Nov 2026):** no scroll reveals. The only animations not caused by a tap are the pincode area
+reveal on Home (the area name appears once the sixth digit is in) and the status timeline drawing its connector in
+`slow`. The public Landing page may still reveal sections once (`whileInView`, `once: true`, opacity plus 8px at most,
+`base`, 30ms stagger). Under reduced motion everything is already visible. Shared variants live in `client/src/lib/motion.js`; never write raw durations in components.
 
 ```css
 @media (prefers-reduced-motion: reduce) {
@@ -281,7 +293,7 @@ Generate with the shadcn CLI into `client/src/components/ui/`; feature component
 | Component | Rules |
 |---|---|
 | **Button** | `default` (peacock): the one main action per screen. `secondary`: other actions. `outline`: actions in cards and toolbars. `ghost`: icon buttons, nav. `destructive`: delete/reject, always behind a confirm. `link`: inline text actions only. Sizes `default` (h-11 on touch screens) and `icon` (size-11). Loading = spinner icon + same label ("Submitting…"), button disabled, width unchanged. Labels are verb-first: "Submit report", never "Submit" or "OK". |
-| **Card** | Groups one thing (an issue, a post, a step). Border, no shadow, `rounded-lg`. A card that is a link makes the whole card the target and has one focusable element; on hover it rises 2px and its border becomes `input` (still no shadow). Don't nest cards. |
+| **Card** | Groups one thing (an issue, a post, a step). Border, no shadow, `rounded-lg`. A card that is a link makes the whole card the target and has one focusable element; on hover only its border becomes `input` (no lift, no shadow). Don't nest cards. |
 | **Dialog vs Sheet vs Drawer** | **AlertDialog**: confirming destructive or irreversible actions (reject issue, delete post), any screen size. **Dialog**: short focused tasks on desktop (≥1024px), e.g. assign staff. **Drawer** (shadcn Drawer on Vaul, drag to dismiss): the same tasks on mobile as a bottom sheet, plus filters, the chat panel and issue quick view. **Sheet**: side panels on desktop only (issue quick view from the staff queue, filters). Use a `useMediaQuery('(min-width: 1024px)')` switch, not two features. Never stack two overlays. |
 | **Form + Zod** | shadcn `Form` with react-hook-form + `zodResolver`. Share the Zod schema with the server where possible. Every input has a visible `FormLabel` (no placeholder-only labels), `FormDescription` for format hints ("6 digits, e.g. 144401"), `FormMessage` for errors. Validate on blur, then on change once an error is shown. |
 | **Toast (sonner)** | Feedback after an action: "Report submitted", "Status updated". Max one line + optional action ("Undo", "Retry"). Success 4s; toasts with an action (Undo, Retry) 8s; errors stay until dismissed; all pause on hover and focus. Never the only place an error appears in a form; never for information the user must act on later. `<Toaster position="top-center" />` on mobile (clear of the bottom bar), `bottom-right` offset above the chat bubble on desktop. |
