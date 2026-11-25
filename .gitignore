@@ -19,6 +19,7 @@ dist/
 coverage/
 playwright-report/
 test-results/
+.playwright-mcp/
 
 # Logs
 *.log
@@ -26,6 +27,9 @@ logs/
 
 # OS files
 .DS_Store
+
+# Cleanup holding area (untracked files waiting for deletion)
+_to_delete/
 
 # Claude Code personal overrides
 .claude/settings.local.json
