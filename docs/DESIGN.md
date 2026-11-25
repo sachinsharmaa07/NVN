@@ -569,6 +569,13 @@ The box is only a fast first filter. **The pincode polygon is the real check.**
 | Indian context | English first, Hindi-ready (i18n keys from day one), IST times, Indian date format |
 | Trust | Show who handles the issue (department), SLA, before/after photos; never show other citizens' personal details |
 
+Two hard rules (25 Nov 2026), with no exceptions:
+- **Status is never colour alone.** Every issue status and SLA state shows text or an icon as well (badges show both).
+- **All text meets 4.5:1 contrast** against its background, in light and dark, including muted text and badge labels.
+
+Visual direction (approved 25 Nov 2026, M1 Step 1): "post office counter", light theme by default. Tokens, fonts and
+motion are in `docs/UI.md`; product decisions are in `docs/DECISIONS.md`.
+
 ## 8. Inspiration
 
 | Area | Look at | What to take from it |
