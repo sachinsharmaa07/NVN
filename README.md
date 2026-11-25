@@ -47,7 +47,7 @@ The app runs without Auth0 settings: there is no Sign in button and protected pa
 not set up. To turn sign-in on, follow [docs/AUTH0_SETUP.md](docs/AUTH0_SETUP.md).
 
 - Open the app: <http://localhost:5173>
-- Check the API: <http://localhost:5000/api/health> should return `"status"` and `"db": "up"`
+- Check the API: <http://localhost:5001/api/health> should return `"status"` and `"db": "up"`
 
 `.env` files hold secrets and are git-ignored. Only the `.env.example` templates are committed.
 
@@ -84,7 +84,7 @@ missing or invalid.
 
 | Variable | Example | Secret? | What it is |
 | --- | --- | --- | --- |
-| `VITE_API_URL` | `http://localhost:5000` | no | Base URL of the API (must match the server's `PORT`) |
+| `VITE_API_URL` | `http://localhost:5001` | no | Base URL of the API (must match the server's `PORT`) |
 | `VITE_AUTH0_DOMAIN` | `nivaran-dev.us.auth0.com` | no | Auth0 tenant host (same as the server's) |
 | `VITE_AUTH0_CLIENT_ID` | from the Auth0 application | no | Client ID of the Single Page Application |
 | `VITE_AUTH0_AUDIENCE` | `https://api.nivaran.in` | no | Must equal the server's `AUTH0_AUDIENCE` |
