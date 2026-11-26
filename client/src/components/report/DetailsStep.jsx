@@ -1,5 +1,6 @@
 import { useId, useRef, useState } from "react";
 import { CategoryCards } from "@/components/report/CategoryCards";
+import { CATEGORIES } from "@/components/report/categories";
 import { PhotoPicker } from "@/components/report/PhotoPicker";
 import { saveDraft } from "@/components/report/reportDraft";
 import { FieldError } from "@/components/system/FieldError";
@@ -118,7 +119,9 @@ export function DetailsStep({ draft, uploads, submit, onBack, onSubmit }) {
             {t(draft.precision === "exact" ? "report.review.pinExact" : "report.review.pinApprox")}
           </dd>
           <dt className="text-muted-foreground">{t("report.review.category")}</dt>
-          <dd>{fields.category ? t(`report.category.${fields.category}`) : "–"}</dd>
+          <dd>
+            {fields.category ? t(CATEGORIES.find((c) => c.value === fields.category).label) : "–"}
+          </dd>
           <dt className="text-muted-foreground">{t("report.review.photos")}</dt>
           <dd>{t("report.review.photoCount", { count: uploads.publicIds.length })}</dd>
         </dl>

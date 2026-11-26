@@ -33,7 +33,7 @@
   "report.category.pothole": "Pothole or broken road",
   "report.category.garbage": "Garbage",
   "report.category.streetlight": "Streetlight",
-  "report.category.water_leak": "Water leak",
+  "report.category.waterLeak": "Water leak",
   "report.category.drainage": "Drain or sewer",
   "report.category.other": "Something else",
   "report.details.categoryLabel": "What's the problem?",
