@@ -71,7 +71,7 @@ flowchart LR
     P0["Phase 0: scaffold, CI, health, error shape"]
     VF["Visual foundation: tokens, shell, landing, motion"]
     P1["Phase 1: Auth0 sign-in, roles in MongoDB,<br/>admin users, audit log, MFA flag"]
-    M1["M1: City, Department, Pincode, Waitlist models"]
+    M1["M1: City, Department, Pincode, Waitlist models,<br/>pincode and boundary import"]
   end
   subgraph Partial["PARTIAL"]
     CH["Chat bubble: opens a placeholder panel"]
@@ -101,11 +101,12 @@ flowchart LR
 | One-off scripts: bootstrap super admin, sync MFA flags, migrate users v1 and v2 | **BUILT** | `server/scripts/` |
 | Design tokens (light and dark), shell, landing page, profile, admin users, suspended, forbidden pages | **BUILT** | `client/src/styles/globals.css`, `layouts/`, `pages/` |
 | `City` (with `status`), `Department`, `Pincode`, `Waitlist` models, M1 index migration | **BUILT** | `server/src/models/`, `scripts/migrateM1Indexes.js` (M1 step 3) |
+| Pincode CSV import and pilot boundary import (dry run, `--apply`, idempotent) | **BUILT** | `scripts/importPincodes.js`, `scripts/importBoundaries.js`, `services/pincodeImportService.js`, `services/boundaryImportService.js`, `utils/geo.js` (M1 step 4). Tested on fixtures; the real `data/` files are not loaded yet |
 | Chat bubble | **PARTIAL** | `components/chat/ChatBubble.jsx` opens a "coming soon" sheet. No API. |
 | `/report`, `/issues`, `/community` | **PARTIAL** | Empty-state shells with the final navigation wiring. |
 | Resend or email notifications | **DESIGNED** | Mentioned for escalations; no code. |
 | Issue, Report, SlaPolicy, Post, Comment, ChatMessage, Counter models | **DESIGNED** | `docs/DESIGN.md` section 3 only. |
-| Leaflet map, Turf or in-house point-in-polygon | **DESIGNED** | ADR 0001 (in-house `utils/geo.js` replaces Turf). |
+| Leaflet map, in-house point-in-polygon | **DESIGNED** | ADR 0001. `utils/geo.js` exists (ring checks, centroid); the point-in-polygon check comes with `POST /api/issues`. |
 | Cloudinary signed uploads | **DESIGNED** | ADR 0001. |
 | Gemini chatbot and blog assist | **DESIGNED** | DESIGN.md sections 5 and 6. |
 | SLA job, escalation, priority score | **DESIGNED** | DESIGN.md section 7B. |

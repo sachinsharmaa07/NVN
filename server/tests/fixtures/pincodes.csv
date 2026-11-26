@@ -1,0 +1,21 @@
+circlename,regionname,divisionname,officename,pincode,officetype,delivery,district,statename,latitude,longitude
+Punjab Circle,Chandigarh Region,Kapurthala Division,Phagwara H.O,144401,H.O,Delivery,KAPURTHALA,PUNJAB,31.2240,75.7708
+Punjab Circle,Chandigarh Region,Kapurthala Division,Phagwara Town S.O,144401,S.O,Delivery,KAPURTHALA,PUNJAB,NA,NA
+Punjab Circle,Chandigarh Region,Kapurthala Division,"Bhagatpura, Phagwara B.O",144401,B.O,Delivery,KAPURTHALA,PUNJAB,NA,NA
+Punjab Circle,Chandigarh Region,Kapurthala Division,Phagwara Town S.O,144401,S.O,Delivery,KAPURTHALA,PUNJAB,NA,NA
+Punjab Circle,Chandigarh Region,Kapurthala Division,Chachoki B.O,144402,B.O,Delivery,KAPURTHALA,PUNJAB,NA,NA
+Punjab Circle,Chandigarh Region,Kapurthala Division,Phagwara Sharki S.O,144402,S.O,Delivery,KAPURTHALA,PUNJAB,NA,NA
+Punjab Circle,Chandigarh Region,Kapurthala Division,Hadiabad B.O,144403,B.O,Delivery,KAPURTHALA,PUNJAB,NA,NA
+Punjab Circle,Chandigarh Region,Kapurthala Division,Palahi B.O,144404,B.O,Delivery,KAPURTHALA,PUNJAB,NA,NA
+Punjab Circle,Chandigarh Region,Kapurthala Division,Rihana Jattan B.O,144405,B.O,Delivery,KAPURTHALA,PUNJAB,NA,NA
+Punjab Circle,Chandigarh Region,Kapurthala Division,Khatti B.O,144406,B.O,Delivery,KAPURTHALA,PUNJAB,NA,NA
+Punjab Circle,Chandigarh Region,Kapurthala Division,Bhabiana B.O,144407,B.O,Delivery,KAPURTHALA,PUNJAB,NA,NA
+Punjab Circle,Chandigarh Region,Kapurthala Division,Maheru B.O,144408,B.O,Delivery,KAPURTHALA,PUNJAB,NA,NA
+Punjab Circle,Chandigarh Region,Kapurthala Division,Wahid B.O,144410,B.O,Delivery,KAPURTHALA,PUNJAB,NA,NA
+Punjab Circle,Chandigarh Region,Kapurthala Division,Bir Puadh B.O,144411,B.O,Delivery,KAPURTHALA,PUNJAB,NA,NA
+Punjab Circle,Chandigarh Region,Jalandhar Division,Jalandhar City H.O,144001,H.O,Delivery,JALANDHAR,PUNJAB,NA,NA
+Punjab Circle,Chandigarh Region,Jalandhar Division,Jalandhar Cantt S.O,144005,S.O,Delivery,JALANDHAR,PUNJAB,NA,NA
+Delhi Circle,Delhi Region,New Delhi Central Division,Connaught Place S.O,110001,S.O,Delivery,NEW DELHI,DELHI,NA,NA
+Delhi Circle,Delhi Region,New Delhi Central Division,Parliament House S.O,110001,S.O,Non Delivery,NEW DELHI,DELHI,NA,NA
+Bad Circle,Bad Region,Bad Division,Leading Zero B.O,044401,B.O,Delivery,NOWHERE,NOWHERE,NA,NA
+Bad Circle,Bad Region,Bad Division,No District B.O,144499,B.O,Delivery,,PUNJAB,NA,NA

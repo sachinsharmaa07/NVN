@@ -74,6 +74,7 @@ set `PORT=5050` in `server/.env` and
 | `AUTH0_AUDIENCE` | `https://api.nivaran.in` | no | The Auth0 API identifier. Required in production |
 | `AUTH0_M2M_CLIENT_ID` | from the Auth0 M2M app | **yes** (treat the pair as one secret) | Machine-to-Machine app for the Management API. Needed for role changes that set the MFA flag, and the scripts. Without it those answer 503 `AUTH_NOT_CONFIGURED` |
 | `AUTH0_M2M_CLIENT_SECRET` | from the Auth0 M2M app | **yes** | Server only, never in `client/.env`, never logged. Set both M2M values or neither |
+| `HMAC_SECRET` | output of `openssl rand -hex 32` | **yes** | Key for hashing waitlist emails (decision O1). 64 hex characters. Required in production. Set once: changing it orphans every stored hash |
 | `SUPER_ADMIN_EMAIL` | `you@example.com` | no (personal data, keep out of git) | Read only by `npm run bootstrap:super-admin -w server`. That person must have signed in once with a verified email |
 | `AUTH_CLOCK_TOLERANCE_SECONDS` | `5` | no | Allowed clock difference when checking token expiry, 0 to 30. Keep hosts on NTP |
 
@@ -152,6 +153,14 @@ print secrets.
 | `npm run sync:mfa-flags -w server` | Sets Auth0's `mfa_required` flag from the database for every user (on for level 4 and above, off below). Use it after an Auth0 outage left flags out of step. Safe to rerun | `0` all synced, `1` unexpected or some users failed |
 | `npm run migrate:users-v1 -w server` | Moves the `users` collection to the Phase 1 shape (`verified` renamed to `emailVerified`, `status` set to `active`), swaps old indexes for new ones, and lists rows that break the scope rules without changing them. Run it after any deploy that changes indexes (production has autoIndex off). On a database without `auth0Ids`, run `migrate:users-v2` first | `0` done, `1` error |
 | `npm run migrate:users-v2 -w server` | Copies each user's `auth0Id` into `auth0Ids` and builds the new indexes (unique `auth0Ids`, unique email among verified rows). Dry run by default; add `-- --apply` to write. Stops without writing if two users share a verified email | `0` done, `1` error, `2` duplicate verified emails |
+| `npm run migrate:m1-indexes -w server` | Builds the M1 indexes (pincodes, waitlists, cities, departments) and sets `status: "onboarding"` on cities that have none. Dry run by default; add `-- --apply` to write. Never drops an index | `0` done, `1` error |
+| `npm run import:pincodes -w server` | Loads `data/pincodes.csv` into `pincodes` (streamed, upserts in batches of 500, offices become `localities`). Dry run prints counts; add `-- --apply` to write and `--city PHG` to create the Phagwara pilot city and mark 144401 to 144411 served. `--file <path>` for another CSV. A second `--apply` changes 0 rows | `0` done, `1` error |
+| `npm run import:boundaries -w server` | Sets `boundary`, `boundarySource` and `centroid` from `data/boundaries/phagwara.geojson` (each feature needs `properties.pincode`). Validates rings (closed, 4+ points, `[lon, lat]` inside India). Reports invalid features, polygons with no pincode row, and served pincodes with no polygon. Run `import:pincodes` first. Dry run by default; `-- --apply` writes | `0` done, `1` error |
+
+**Pincode data (not in git).** Download the "All India Pincode Directory" CSV from data.gov.in
+(<https://www.data.gov.in/catalog/all-india-pincode-directory>), save it as `data/pincodes.csv` (it is over 10 MB,
+so `.gitignore` excludes it), then run `import:pincodes` and `import:boundaries`. The Phagwara polygons in
+`data/boundaries/phagwara.geojson` are hand-drawn (decision M1-3) and can be committed.
 
 ## Running the tests
 
