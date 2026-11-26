@@ -147,11 +147,112 @@ Body (strict): `pincode`, `lat`, `lng`, `category` (M1-6), `title` 5 to 100, `de
 
 ### GET /api/issues/:ticketId
 
-Signed in, active, permission `issue:read_own`. The reporter's own issue, same shape as above. Someone else's
-ticket and a missing one are the same `404 NOT_FOUND`; a malformed id is `400`.
+Signed in, active, permission `issue:read_own`. The reporter's own issue. Someone else's ticket and a missing
+one are the same `404 NOT_FOUND`; a malformed id is `400`. M2 adds `slaState`, `onHold`, `holdReason`,
+`afterPhotos`, `version` (send it back on every write) and `timeline` (actor role only, never an id or email).
 
 ```bash
 curl -s http://localhost:5001/api/issues/NIV-2026-000001 -H "Authorization: Bearer $TOKEN"
+# 200 {"ticketId":"NIV-2026-000001","status":"assigned","category":"pothole","title":"Deep pothole",
+#      "pincode":"144601","queue":"department","expectedBy":"...","slaState":"on_track","onHold":false,
+#      "version":1,"createdAt":"...","precision":"approx","department":{"id":"...","name":"Roads"},
+#      "afterPhotos":[],"holdReason":null,
+#      "timeline":[{"status":"submitted","at":"...","role":"citizen","note":null},
+#                  {"status":"assigned","at":"...","role":"staff","note":"Crew booked"}]}
+```
+
+### GET /api/issues/mine?cursor=&limit=
+
+Signed in, `issue:read_own`. My issues, newest first, `limit` 1 to 50 (default 20), `cursor` from `nextCursor`.
+
+```bash
+curl -s "http://localhost:5001/api/issues/mine?limit=20" -H "Authorization: Bearer $TOKEN"
+# 200 {"items":[{"ticketId":"NIV-2026-000001","status":"submitted","category":"pothole","title":"Deep pothole",
+#      "pincode":"144601","queue":"department","expectedBy":"...","slaState":"on_track","onHold":false,
+#      "version":0,"createdAt":"..."}],"nextCursor":null}
+```
+
+### Issue writes (M2)
+
+Every write takes `version` (the issue's `version` you last read). Same answer shape as `GET /api/issues/:ticketId`
+with `version` + 1. Status, AuditLog row and the reporter's notification commit in one transaction.
+Lifecycle: `docs/ARCHITECTURE.md` 12.3.
+
+| Route | Who | Body (strict) |
+| --- | --- | --- |
+| `PATCH /api/issues/:ticketId/status` | `issue:update_status`, in scope | `status`, `note?` (3 to 500), `afterPhotoPublicIds?` (1 to 3), `version` |
+| `PATCH /api/issues/:ticketId/assign` | `issue:assign`, triage issue in their city | `departmentId` (same city), `version` |
+| `POST /api/issues/:ticketId/confirm` | the reporter | `version` (resolved to closed) |
+| `POST /api/issues/:ticketId/reopen` | the reporter | `note`, `version` (resolved to reopened, fresh `expectedBy`) |
+| `POST /api/issues/:ticketId/hold` | dept_head, in scope | `reason`, `version` (sets `slaPausedAt`) |
+| `POST /api/issues/:ticketId/resume` | dept_head, in scope | `version` (shifts `expectedBy` by the time held) |
+
+Scope: staff and dept_head their department, city_admin their city (triage included).
+
+```bash
+curl -s -X PATCH http://localhost:5001/api/issues/NIV-2026-000001/status -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"status":"resolved","afterPhotoPublicIds":["nivaran/development/reports/abc"],"version":2}'
+```
+
+| Status | Code | When |
+| --- | --- | --- |
+| 400 | `VALIDATION_ERROR` | Bad or extra field; `rejected`/`reopen` without a note; `resolved` without an after photo; after photos with another status |
+| 400 | `INVALID_TRANSITION` | No such edge (e.g. submitted to resolved), on hold, triage issue to `assigned` via status, hold when held or closed |
+| 400 | `INVALID_PHOTO` | After photo not ours, missing, too big or wrong format |
+| 403 | `FORBIDDEN` / auth codes | Role lacks the permission, or the edge exists but not for this role (staff rejecting, hold by non dept_head) |
+| 404 | `NOT_FOUND` | Missing, out of scope, not the reporter, or a department of another city (same body) |
+| 409 | `CONFLICT` | `version` is not the current one (someone else changed it) |
+
+## Staff
+
+### GET /api/staff/issues?status=&sla=&category=&queue=&cursor=&limit=
+
+Signed in, verified, `issue:read_scope` (MFA for dept_head and above). staff and dept_head see their department,
+city_admin their city with triage (`queue=triage` for only that), state_officer their state, super_admin all.
+Without `status`, only open issues (`submitted, assigned, in_progress, reopened`). `sla` one of
+`on_track, at_risk, breached`. Sorted by `expectedBy`, then `createdAt`; cursor-paginated, max 50.
+
+```bash
+curl -s "http://localhost:5001/api/staff/issues?sla=at_risk" -H "Authorization: Bearer $TOKEN"
+# 200 {"items":[{...summary, "description":"...","departmentId":"...","location":{"lat":31.38,"lng":75.38},
+#      "photos":[{"publicId":"...","width":1600,"height":1200}],"afterPhotos":[],"holdReason":null}],
+#      "nextCursor":null}
+```
+
+## Notifications
+
+### GET /api/notifications?cursor=&limit=
+
+Signed in. My notifications, newest first, max 50 per page, kept 90 days. No free text: render from `type`
+(`status_changed, on_hold, resumed, sla_breached, sla_escalated`), `ticketId` and `status`.
+
+```bash
+curl -s http://localhost:5001/api/notifications -H "Authorization: Bearer $TOKEN"
+# 200 {"items":[{"id":"...","type":"status_changed","ticketId":"NIV-2026-000001","status":"assigned",
+#      "read":false,"createdAt":"..."}],"nextCursor":null,"unread":1}
+```
+
+### POST /api/notifications/read
+
+Body (strict) `{ "ids": [...] }` (1 to 50) or `{}` for all of mine. Ids that aren't mine are ignored.
+
+```bash
+curl -s -X POST http://localhost:5001/api/notifications/read -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" -d '{}'
+# 200 {"updated":1}
+```
+
+## Stats
+
+### GET /api/stats
+
+Public, `Cache-Control: public, max-age=300`, recomputed at most every 5 minutes. No personal data.
+
+```bash
+curl -s http://localhost:5001/api/stats
+# 200 {"totalReports":6,"resolved":3,"medianResolutionHours":20,
+#      "openByCategory":{"pothole":1,"garbage":0,"streetlight":0,"water_leak":0,"drainage":0,"other":1}}
 ```
 
 ## Geo pickers

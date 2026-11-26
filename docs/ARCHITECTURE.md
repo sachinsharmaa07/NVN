@@ -72,6 +72,7 @@ flowchart LR
     VF["Visual foundation: tokens, shell, landing, motion"]
     P1["Phase 1: Auth0 sign-in, roles in MongoDB,<br/>admin users, audit log, MFA flag"]
     M1["M1: City, Department, Pincode, Waitlist, CategoryMapping,<br/>national pincode import, boundary import,<br/>department seed, check-point API"]
+    M2["M2 backend: state machine, staff queue, SLA job,<br/>notifications, stats"]
   end
   subgraph Partial["PARTIAL"]
     CH["Chat bubble: opens a placeholder panel"]
@@ -80,12 +81,11 @@ flowchart LR
   subgraph Designed["DESIGNED only"]
     P2["M1: pincode lookup API, waitlist API"]
     P3["Phase 3: report wizard, map, grouping, ticket IDs"]
-    P4["Phase 4: SLA, priority, state machine, staff queue"]
     P5["Phase 5: chatbot with Gemini"]
     P6["Phase 6: community, moderation"]
     P8["Phase 8: hardening, Playwright e2e"]
   end
-  P0 --> VF --> P1 --> M1 --> P2 --> P3 --> P4 --> P5 --> P6 --> P8
+  P0 --> VF --> P1 --> M1 --> P2 --> P3 --> M2 --> P5 --> P6 --> P8
 ```
 
 | Area | Status | Evidence in the repo |
@@ -110,11 +110,14 @@ flowchart LR
 | `SlaPolicy` national defaults and `expectedBy`; `Counter` and ticket IDs | **BUILT** | `models/SlaPolicy.js`, `models/Counter.js`, `utils/expectedBy.js`, `services/slaService.js`, `services/ticketService.js`, `scripts/seedSlaPolicies.js` |
 | Cloudinary signed uploads (`POST /api/uploads/sign`, `node:crypto`) | **BUILT** | `routes/uploadRoutes.js`, `services/uploadService.js` |
 | Report wizard step 1 (pincode lookup, waitlist, session draft) | **BUILT** | `pages/Report.jsx`, `components/report/`, `hooks/useLookupPincode.js` |
-| Resend or email notifications | **DESIGNED** | Mentioned for escalations; no code. |
+| Email notifications | **DESIGNED** | In-app is built (M2); email later (decision 6). |
 | Issue, Report, Post, Comment, ChatMessage models | **DESIGNED** | `docs/DESIGN.md` section 3 only. |
 | Leaflet map, in-house point-in-polygon | **BUILT** | ADR 0001. Server: MongoDB `$geoIntersects` or the radius circle (`pincodeService.locatePoint`). Client: `lib/geo.js` (ray casting, same haversine), Leaflet lazy-loaded in `PinMap.jsx`. |
 | Gemini chatbot and blog assist | **DESIGNED** | DESIGN.md sections 5 and 6. |
-| SLA job, escalation, priority score | **DESIGNED** | DESIGN.md section 7B. |
+| Issue state machine, tracking (`/mine`, timeline), staff queue, status/assign/confirm/reopen/hold writes | **BUILT** (M2) | `utils/issueStateMachine.js`, `services/issueWorkflowService.js`, `issueHoldService.js`, `issueQueryService.js`, `issueView.js`, `docs/API.md` |
+| SLA job (at risk, breach, escalation, auto-close) | **BUILT** (M2) | `jobs/slaJob.js`, `services/slaJobService.js`, ARCHITECTURE 12.4 |
+| In-app notifications, public stats | **BUILT** (M2) | `models/Notification.js`, `services/notificationService.js`, `services/statsService.js` |
+| Priority score | **DESIGNED** | DESIGN.md section 7B. |
 
 ---
 
