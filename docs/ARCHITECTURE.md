@@ -112,7 +112,7 @@ flowchart LR
 | Report wizard step 1 (pincode lookup, waitlist, session draft) | **BUILT** | `pages/Report.jsx`, `components/report/`, `hooks/useLookupPincode.js` |
 | Resend or email notifications | **DESIGNED** | Mentioned for escalations; no code. |
 | Issue, Report, Post, Comment, ChatMessage models | **DESIGNED** | `docs/DESIGN.md` section 3 only. |
-| Leaflet map, in-house point-in-polygon | **DESIGNED** | ADR 0001. `utils/geo.js` exists (ring checks, centroid); the point-in-polygon check comes with `POST /api/issues`. |
+| Leaflet map, in-house point-in-polygon | **BUILT** | ADR 0001. Server: MongoDB `$geoIntersects` or the radius circle (`pincodeService.locatePoint`). Client: `lib/geo.js` (ray casting, same haversine), Leaflet lazy-loaded in `PinMap.jsx`. |
 | Gemini chatbot and blog assist | **DESIGNED** | DESIGN.md sections 5 and 6. |
 | SLA job, escalation, priority score | **DESIGNED** | DESIGN.md section 7B. |
 
@@ -1284,7 +1284,7 @@ sequenceDiagram
   Note over SPA: AppLayout redirects every route to /suspended
 ```
 
-### 11.3 Report an issue: map pin to counterfoil (DESIGNED, M1 steps 8 to 11)
+### 11.3 Report an issue: map pin to counterfoil (BUILT, M1 steps 8 to 11)
 
 Step 1 (pincode lookup) is in 4.5. Duplicate grouping is not in M1.
 
@@ -1630,7 +1630,7 @@ account is redirected to `/suspended` from every route, public ones included.
 | Example ticket | `TimelinePreview` | A `StatusTimeline` with the connector drawing in |
 | Trust | `TrustSection`, `LandingFooter` | Why you can trust it |
 
-### 15.7 Report wizard (step 1 BUILT, steps 2 and 3 DESIGNED; spec in UI.md section 7)
+### 15.7 Report wizard (BUILT; spec in UI.md section 7)
 
 Route `/report?step=1..3` (Back works, a `sessionStorage` draft survives refresh). Step bar in words: "Step 2 of 3:
 Place the pin". Footer: Back (outline) left, Next (default) right. Chat bubble hidden on step 2.
@@ -1639,11 +1639,15 @@ Place the pin". Footer: Back (outline) left, Next (default) right. Chat bubble h
    screen reader hears one field). Recent pincodes as chips. A lookup result is announced via `aria-live`. Never
    auto-advances (WCAG 3.2.2). Unserved: inline waitlist form.
 2. **Pin on map:** Leaflet fitted to the polygon, outside dimmed (`foreground` at 40 %), outline a 2 px `primary`
-   line, drag outside snaps back with an announced message, "Use my location", arrow-key nudge and a Locality select
-   as non-map alternatives. Programmatic `fitBounds` uses `animate: false`.
+   line, drag outside snaps back with an announced message, "Use my location", arrow-key nudge as the non-map
+   alternative. Programmatic `fitBounds` uses `animate: false`. "Approximate area" label when there is no polygon.
+   Next confirms with `POST /api/pincodes/:pin/check-point`. Not built: the Locality select (localities have no
+   coordinates yet) and "the locality the pin is in".
 3. **Photo and details:** category radio cards with icons, camera or gallery with client-side compress, description
-   (min 20 chars, live count), review, "Submit report". Success: the **counterfoil** (display font, stamped, perforated
-   top edge, Copy ticket ID, "Expected by 26 Nov, 5:00 PM", "Track this issue").
+   (min 20 chars, live count), up to 3 photos (canvas to 1600 px, signed upload per photo with progress and Retry,
+   kept in memory only), review, "Submit report" with one `Idempotency-Key` per draft (disabled while sending; 422
+   `OUTSIDE_PINCODE` returns to step 2). Success: the **counterfoil** (display font, postmark, perforated top edge,
+   Copy ticket ID, "Expected by 26 Nov, 5:00 PM", "Track this issue" to `/issues` until M2).
 
 ---
 

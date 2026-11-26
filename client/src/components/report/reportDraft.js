@@ -17,3 +17,12 @@ export function saveDraft(patch) {
     // Private mode or full storage: the wizard still works, the draft just won't survive a refresh.
   }
 }
+
+/** After a successful submit: the next report starts clean, with a new Idempotency-Key. */
+export function clearDraft() {
+  try {
+    sessionStorage.removeItem(KEY);
+  } catch {
+    // Storage blocked: nothing was saved either.
+  }
+}
