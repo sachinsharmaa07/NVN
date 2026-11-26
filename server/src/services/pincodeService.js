@@ -24,14 +24,20 @@ export async function locatePoint(pincode, { lat, lng }) {
   return { inside, precision: "approx" };
 }
 
-/** POST /api/pincodes/:pin/check-point. 404 for an unknown pin, 422 for one we do not serve yet. */
-export async function checkPoint(pin, point) {
-  const row = await Pincode.findOne({ pin }, "isServed boundary centroid radiusM").lean();
+/** A served pincode row with what locatePoint and routing need. 404 unknown, 422 not served yet. */
+export async function servedPincode(pin) {
+  const row = await Pincode.findOne({ pin }, "isServed boundary centroid radiusM cityId").lean();
   if (!row) throw new AppError("PINCODE_NOT_FOUND", 404, "We don't know this pincode.");
-  if (!row.isServed) {
+  // A served pincode always has a city (decision O2); without one nothing could route the issue.
+  if (!row.isServed || !row.cityId) {
     throw new AppError("PINCODE_NOT_SERVED", 422, "Nivaran doesn't cover this pincode yet.");
   }
-  return locatePoint(row, point);
+  return row;
+}
+
+/** POST /api/pincodes/:pin/check-point. */
+export async function checkPoint(pin, point) {
+  return locatePoint(await servedPincode(pin), point);
 }
 
 /**

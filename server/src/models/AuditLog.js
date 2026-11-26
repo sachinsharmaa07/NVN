@@ -12,7 +12,9 @@ export const AUDIT_ACTIONS = [
   "user.bootstrap_super_admin",
   "user.mfa_flag_sync_failed",
   "user.identity_linked",
+  "issue.created",
 ];
+export const AUDIT_TARGETS = ["user", "issue"];
 
 const MAX_SNAPSHOT_BYTES = 4096;
 const smallEnough = (v) => v == null || JSON.stringify(v).length <= MAX_SNAPSHOT_BYTES;
@@ -24,7 +26,13 @@ const auditLogSchema = new mongoose.Schema(
     actorLabel: { type: String, maxlength: 64, immutable: true }, // required iff system
     actorRole: { type: String, enum: ROLES, immutable: true }, // the actor's role at that time
     action: { type: String, enum: AUDIT_ACTIONS, required: true, immutable: true },
-    targetType: { type: String, enum: ["user"], required: true, default: "user", immutable: true },
+    targetType: {
+      type: String,
+      enum: AUDIT_TARGETS,
+      required: true,
+      default: "user",
+      immutable: true,
+    },
     // No `ref`: the log outlives its targets.
     targetId: { type: ObjectId, required: true, immutable: true },
     cityId: { type: ObjectId, immutable: true }, // snapshot of the target's city; cannot be back-filled
