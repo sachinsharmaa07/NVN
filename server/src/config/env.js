@@ -42,6 +42,11 @@ const envSchema = z.object({
   // never in client/.env. Scopes: update:users, update:users_app_metadata. The secret is never logged.
   AUTH0_M2M_CLIENT_ID: optional(z.string().min(1)),
   AUTH0_M2M_CLIENT_SECRET: optional(z.string().min(1)),
+  // Key for HMAC-SHA-256 of waitlist emails (decision O1). 32 random bytes as hex: openssl rand -hex 32.
+  // Changing it makes every stored emailHash unmatchable, so set it once.
+  HMAC_SECRET: optional(
+    z.string().regex(/^[0-9a-f]{64}$/i, "64 hex characters (openssl rand -hex 32)"),
+  ),
   // Email of the first super admin; only scripts/bootstrapSuperAdmin.js reads it.
   SUPER_ADMIN_EMAIL: optional(
     z.preprocess((v) => (typeof v === "string" ? v.trim().toLowerCase() : v), z.email()),
@@ -88,6 +93,7 @@ export function parseEnv(raw) {
     if (!raw.AUTH0_M2M_CLIENT_ID) problems.push("AUTH0_M2M_CLIENT_ID: required in production");
     if (!raw.AUTH0_M2M_CLIENT_SECRET)
       problems.push("AUTH0_M2M_CLIENT_SECRET: required in production");
+    if (!raw.HMAC_SECRET) problems.push("HMAC_SECRET: required in production");
   } else if (Boolean(raw.AUTH0_M2M_CLIENT_ID) !== Boolean(raw.AUTH0_M2M_CLIENT_SECRET)) {
     // Half a credential pair is always a mistake; say so at start-up, not on the first admin write.
     problems.push("AUTH0_M2M_CLIENT_ID and AUTH0_M2M_CLIENT_SECRET: set both or neither");

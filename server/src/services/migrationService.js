@@ -1,8 +1,11 @@
 // One-off data migrations. v1: Phase 1 (`verified` -> `emailVerified`, status default, new indexes).
-// v2: auth0Id -> auth0Ids. Both idempotent; called only by scripts/migrateUsersV1.js and V2.js.
+// v2: auth0Id -> auth0Ids. M1: pincode, waitlist, city and department indexes. All idempotent;
+// called only by the matching scripts/migrate*.js.
 import { AuditLog } from "../models/AuditLog.js";
 import { City } from "../models/City.js";
 import { Department } from "../models/Department.js";
+import { Pincode } from "../models/Pincode.js";
+import { Waitlist } from "../models/Waitlist.js";
 import { User } from "../models/User.js";
 import { SCOPE_RULES } from "../utils/permissions.js";
 
@@ -113,3 +116,31 @@ export async function migrateUsersV2({ apply = false } = {}) {
   report.applied = true;
   return report;
 }
+
+/**
+ * M1: builds the declared indexes of Pincode, Waitlist, City and Department (production runs with
+ * autoIndex off) and gives cities without a `status` the default "onboarding". Dry run unless
+ * `apply`: reports index names that are missing and how many cities would change. Never drops.
+ */
+export async function migrateM1Indexes({ apply = false } = {}) {
+  const report = { applied: false, missingIndexes: {}, citiesWithoutStatus: 0 };
+  for (const model of [Pincode, Waitlist, City, Department]) {
+    // diffIndexes lists what createIndexes would build; a missing collection has none yet.
+    const { toCreate } = await model.diffIndexes();
+    if (toCreate.length) report.missingIndexes[model.modelName] = toCreate.map(indexName);
+  }
+  const noStatus = { status: { $exists: false } };
+  report.citiesWithoutStatus = await City.collection.countDocuments(noStatus);
+  if (!apply) return report;
+
+  for (const model of [Pincode, Waitlist, City, Department]) await model.createIndexes();
+  await City.collection.updateMany(noStatus, { $set: { status: "onboarding" } });
+  report.applied = true;
+  return report;
+}
+
+// diffIndexes returns key objects ({ pin: 1 }); print them the way MongoDB names them (pin_1).
+const indexName = (keys) =>
+  Object.entries(keys)
+    .map(([field, dir]) => `${field}_${dir}`)
+    .join("_");

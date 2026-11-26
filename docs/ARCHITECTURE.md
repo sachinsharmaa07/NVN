@@ -71,21 +71,21 @@ flowchart LR
     P0["Phase 0: scaffold, CI, health, error shape"]
     VF["Visual foundation: tokens, shell, landing, motion"]
     P1["Phase 1: Auth0 sign-in, roles in MongoDB,<br/>admin users, audit log, MFA flag"]
+    M1["M1: City, Department, Pincode, Waitlist models"]
   end
   subgraph Partial["PARTIAL"]
     CH["Chat bubble: opens a placeholder panel"]
     RP["Report, Issues, Community pages: empty-state shells"]
-    GE["City and Department: placeholder models"]
   end
   subgraph Designed["DESIGNED only"]
-    P2["Phase 2: Pincode model, import, pincode API"]
+    P2["M1: pincode API, waitlist API"]
     P3["Phase 3: report wizard, map, grouping, ticket IDs"]
     P4["Phase 4: SLA, priority, state machine, staff queue"]
     P5["Phase 5: chatbot with Gemini"]
     P6["Phase 6: community, moderation"]
     P8["Phase 8: hardening, Playwright e2e"]
   end
-  P0 --> VF --> P1 --> P2 --> P3 --> P4 --> P5 --> P6 --> P8
+  P0 --> VF --> P1 --> M1 --> P2 --> P3 --> P4 --> P5 --> P6 --> P8
 ```
 
 | Area | Status | Evidence in the repo |
@@ -100,11 +100,11 @@ flowchart LR
 | Identity linking (Google and email code to one account) | **BUILT** | `services/identityLinkService.js` |
 | One-off scripts: bootstrap super admin, sync MFA flags, migrate users v1 and v2 | **BUILT** | `server/scripts/` |
 | Design tokens (light and dark), shell, landing page, profile, admin users, suspended, forbidden pages | **BUILT** | `client/src/styles/globals.css`, `layouts/`, `pages/` |
-| `City`, `Department` models | **PARTIAL** | Marked "Placeholder: Phase 2 owns the full model" in their files. Used for scope checks and the admin pickers. |
+| `City` (with `status`), `Department`, `Pincode`, `Waitlist` models, M1 index migration | **BUILT** | `server/src/models/`, `scripts/migrateM1Indexes.js` (M1 step 3) |
 | Chat bubble | **PARTIAL** | `components/chat/ChatBubble.jsx` opens a "coming soon" sheet. No API. |
 | `/report`, `/issues`, `/community` | **PARTIAL** | Empty-state shells with the final navigation wiring. |
 | Resend or email notifications | **DESIGNED** | Mentioned for escalations; no code. |
-| Pincode, Issue, Report, SlaPolicy, Post, Comment, ChatMessage, Counter models | **DESIGNED** | `docs/DESIGN.md` section 3 only. |
+| Issue, Report, SlaPolicy, Post, Comment, ChatMessage, Counter models | **DESIGNED** | `docs/DESIGN.md` section 3 only. |
 | Leaflet map, Turf or in-house point-in-polygon | **DESIGNED** | ADR 0001 (in-house `utils/geo.js` replaces Turf). |
 | Cloudinary signed uploads | **DESIGNED** | ADR 0001. |
 | Gemini chatbot and blog assist | **DESIGNED** | DESIGN.md sections 5 and 6. |
@@ -760,7 +760,7 @@ Global Mongoose settings (`config/db.js`): `strictQuery: true` (only schema fiel
 our own operators are wrapped in `mongoose.trusted()`), and `autoIndex` **off in production** (a build can lock a
 collection mid-traffic).
 
-### 9.1 Entity-relationship diagram: BUILT today
+### 9.1 Entity-relationship diagram: BUILT today (through M1 step 3)
 
 ```mermaid
 erDiagram
@@ -770,6 +770,8 @@ erDiagram
   USER ||--o{ AUDIT_LOG : "acts as actorId"
   USER ||--o{ AUDIT_LOG : "is target of targetId"
   USER |o--o| USER : "suspendedBy"
+  CITY |o--o{ PINCODE : "serves (cityId)"
+  PINCODE ||--o{ WAITLIST : "waited on (pin)"
 
   USER {
     ObjectId _id PK
@@ -815,6 +817,28 @@ erDiagram
     string name
     string code UK "A-Z0-9, 2-10"
     string stateCode "enum of Indian state codes"
+    string status "active or onboarding"
+    date createdAt
+    date updatedAt
+  }
+  PINCODE {
+    ObjectId _id PK
+    string pin UK "6 digits, first 1-9"
+    string district
+    string state
+    ObjectId cityId FK "null until served"
+    string_array localities "unique office names"
+    Point centroid "lon, lat"
+    Polygon boundary "Polygon or MultiPolygon, optional"
+    string boundarySource "aikosh, manual, none"
+    boolean isServed "true needs cityId"
+    date createdAt
+    date updatedAt
+  }
+  WAITLIST {
+    ObjectId _id PK
+    string pin "6 digits"
+    string emailHash "HMAC-SHA-256 hex, no email stored"
     date createdAt
     date updatedAt
   }
@@ -845,6 +869,12 @@ erDiagram
 | `auditlogs` | `{ actorId: 1, at: -1 }` | What an admin did |
 | `cities` | `code` unique; `{ stateCode: 1, name: 1 }` | Lookup; a state officer's city list |
 | `departments` | `{ cityId: 1, code: 1 }` unique | One code per city |
+| `pincodes` | `pin` unique | Lookup by pincode; idempotent import upserts |
+| `pincodes` | `{ boundary: "2dsphere" }` (skips rows without a boundary) | Point-in-boundary checks |
+| `pincodes` | `{ cityId: 1, isServed: 1 }` | A city's served pincodes |
+| `waitlists` | `{ pin: 1, emailHash: 1 }` unique | One sign-up per person per pincode |
+
+Production builds these with `npm run migrate:m1-indexes -w server -- --apply` (autoIndex is off there).
 
 ### 9.3 Integrity rules the database cannot enforce alone
 
@@ -852,7 +882,9 @@ erDiagram
 | --- | --- |
 | Scope fields required or forbidden per role | `User` pre-validate hook, fed by `SCOPE_RULES` |
 | Suspension fields present **iff** status is `suspended` | `User` pre-validate hook |
-| No foreign keys, so deleting a City or Department that is still referenced throws | `City` and `Department` `pre('delete*')` hooks |
+| No foreign keys, so deleting a City or Department that is still referenced (users, departments, pincodes) throws | `City` and `Department` `pre('delete*')` hooks |
+| `boundarySource` is `none` exactly when there is no boundary; a served pincode has a `cityId` | `Pincode` pre-validate hook |
+| Boundary rings closed, 4+ points, `[lon, lat]` inside India | `utils/geo.js` `geometryProblems`, used by the model and the import |
 | `role`, `status`, scope can change only through load, mutate, `save()` | `User` write-guard hooks (`scopeWrite: true` is the explicit escape) |
 | AuditLog never changes | `AuditLog` hooks that throw on every update and delete form |
 | `""` is not a valid avatar or pincode | explicit `validate` functions (Mongoose `match` silently accepts the empty string) |

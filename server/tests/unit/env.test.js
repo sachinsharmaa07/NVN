@@ -3,6 +3,7 @@ import { parseEnv } from "../../src/config/env.js";
 
 const URI = "mongodb://127.0.0.1:27017/nivaran_dev";
 const M2M = { AUTH0_M2M_CLIENT_ID: "client-id", AUTH0_M2M_CLIENT_SECRET: "client-secret" };
+const HMAC = { HMAC_SECRET: "ab".repeat(32) };
 
 describe("parseEnv", () => {
   it("applies defaults when only MONGODB_URI is given", () => {
@@ -31,6 +32,7 @@ describe("parseEnv", () => {
         AUTH0_DOMAIN: "nivaran.eu.auth0.com",
         AUTH0_AUDIENCE: "https://api.nivaran.in",
         ...M2M,
+        ...HMAC,
       }).problems,
     ).toEqual(["MONGODB_URI: required"]);
   });
@@ -83,6 +85,14 @@ describe("parseEnv", () => {
       "AUTH0_AUDIENCE",
       "AUTH0_M2M_CLIENT_ID",
       "AUTH0_M2M_CLIENT_SECRET",
+      "HMAC_SECRET",
+    ]);
+  });
+
+  it("accepts HMAC_SECRET only as 64 hex characters", () => {
+    expect(parseEnv({ MONGODB_URI: URI, ...HMAC }).ok).toBe(true);
+    expect(parseEnv({ MONGODB_URI: URI, HMAC_SECRET: "short" }).problems).toEqual([
+      expect.stringMatching(/^HMAC_SECRET/),
     ]);
   });
 
@@ -95,6 +105,7 @@ describe("parseEnv", () => {
       AUTH0_DOMAIN: "nivaran.eu.auth0.com",
       AUTH0_AUDIENCE: "https://api.nivaran.in",
       ...M2M,
+      ...HMAC,
     });
     expect(result.problems).toEqual([expect.stringMatching(/^TRUST_PROXY/)]);
   });
