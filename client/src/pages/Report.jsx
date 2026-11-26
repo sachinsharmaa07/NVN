@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { Counterfoil } from "@/components/report/Counterfoil";
 import { DetailsStep } from "@/components/report/DetailsStep";
@@ -38,6 +38,8 @@ export function Report() {
   // Set when a submit comes back 422 OUTSIDE_PINCODE, shown once the map step opens again.
   const [mapNotice, setMapNotice] = useState("");
   const [issue, setIssue] = useState(null);
+  // Set synchronously on the first click: a double click lands before React re-renders Submit as disabled.
+  const inFlight = useRef(false);
 
   const send = useMutation({
     mutationFn: (fields) => {
@@ -113,7 +115,11 @@ export function Report() {
               uploads={uploads}
               submit={{ pending: send.isPending, error: sendError }}
               onBack={() => goTo(2)}
-              onSubmit={(fields) => send.mutate(fields)}
+              onSubmit={(fields) => {
+                if (inFlight.current) return;
+                inFlight.current = true;
+                send.mutate(fields, { onSettled: () => (inFlight.current = false) });
+              }}
             />
           )}
         </>

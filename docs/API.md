@@ -59,8 +59,8 @@ curl -s -X POST http://localhost:5001/api/pincodes/999999/check-point \
 | 422 | `PINCODE_NOT_SERVED` | Pincode known but not served (no coordinates, e.g. imported from the CSV only) |
 | 429 | `RATE_LIMITED` | More than 60 checks a minute from one IP |
 
-`POST /api/issues` (M1 step 8, not built yet) must use the same check (`locatePoint` in
-`server/src/services/pincodeService.js`) and return the same `precision`.
+`POST /api/issues` uses the same check (`locatePoint` in `server/src/services/pincodeService.js`) and stores the
+same `precision`.
 
 ## Waitlist
 
