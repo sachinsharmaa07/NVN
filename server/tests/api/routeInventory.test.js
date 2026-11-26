@@ -34,6 +34,7 @@ const { waitlistRoutes } = await import("../../src/routes/waitlistRoutes.js");
 const { uploadRoutes } = await import("../../src/routes/uploadRoutes.js");
 const { issueRoutes } = await import("../../src/routes/issueRoutes.js");
 const { staffRoutes } = await import("../../src/routes/staffRoutes.js");
+const { notificationRoutes } = await import("../../src/routes/notificationRoutes.js");
 const { authenticate } = await import("../../src/middleware/auth.js");
 const { loadUser, requireActive, requireVerifiedEmail } =
   await import("../../src/middleware/access.js");
@@ -52,6 +53,7 @@ const MOUNTS = [
   { prefix: "/uploads", router: uploadRoutes },
   { prefix: "/issues", router: issueRoutes },
   { prefix: "/staff", router: staffRoutes },
+  { prefix: "/notifications", router: notificationRoutes },
 ];
 
 /** Every { method, path, handlers } of a router, flattened. */
