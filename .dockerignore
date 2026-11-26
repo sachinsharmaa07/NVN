@@ -1,0 +1,17 @@
+# Build context is the repo root. Secrets and local output never enter an image.
+**/node_modules
+**/.env*
+**/dist
+**/dist-e2e
+data
+graphify-out
+**/coverage
+**/playwright-report
+**/test-results
+.git
+.github
+.claude
+docs
+_to_delete
+**/*.log
+**/.DS_Store
