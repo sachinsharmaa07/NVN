@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { CATEGORIES } from "../utils/categories.js";
 import { PINCODE_RE } from "../utils/india.js";
-import { ISSUE_STATUSES, MAX_PHOTOS, SLA_STATES, TICKET_RE } from "../models/Issue.js";
+import { ISSUE_STATUSES, MAX_PHOTOS, NOTE_MAX, SLA_STATES, TICKET_RE } from "../models/Issue.js";
 import { QUEUES } from "../models/CategoryMapping.js";
 import { checkPointBody } from "./pincodes.js";
 
@@ -39,3 +39,22 @@ export const staffQueueQuery = z
     queue: z.enum(QUEUES).optional(),
   })
   .strict();
+
+// M2 writes. `version` is the issue's version the client last read (optimistic concurrency, 409 on mismatch).
+const version = z.number().int().min(0);
+const note = z.string().trim().min(3).max(NOTE_MAX);
+
+export const statusBody = z
+  .object({
+    status: z.enum(ISSUE_STATUSES),
+    note: note.optional(),
+    afterPhotoPublicIds: z.array(z.string().max(200)).min(1).max(MAX_PHOTOS).optional(),
+    version,
+  })
+  .strict();
+export const assignBody = z
+  .object({ departmentId: z.string().regex(/^[0-9a-f]{24}$/i), version })
+  .strict();
+export const versionBody = z.object({ version }).strict(); // confirm, resume
+export const reopenBody = z.object({ note, version }).strict();
+export const holdBody = z.object({ reason: note, version }).strict();
