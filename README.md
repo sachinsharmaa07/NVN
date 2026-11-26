@@ -242,6 +242,10 @@ npm run docker:smoke   # up, wait for healthy, curl / and /api/health through ng
 | Symptom | Cause | Fix |
 | --- | --- | --- |
 | Server start fails with `querySrv ECONNREFUSED _mongodb._tcp...` | The network (often a phone hotspot) hands out a link-local IPv6 DNS server (`fe80::...%en0`) that Node's resolver cannot use for the SRV lookup | Set `DNS_SERVERS=1.1.1.1,8.8.8.8` in `server/.env` and restart. Dev only; leave it empty elsewhere |
+| App says "Sign-in isn't set up yet" | `VITE_AUTH0_*` blank in `client/.env` (put in `server/.env` by mistake) | Put them in `client/.env` and restart Vite (it reads env files only at startup) |
+| "Client ... is not authorized to access resource server" | Nivaran Web lacks User-delegated Access on the API | Auth0 > APIs > Nivaran > Application Access > edit Nivaran Web |
+| Vite starts on 5174 | An old Vite process holds 5173, breaking Auth0 callbacks and CORS | `lsof -nP -iTCP:5173 -sTCP:LISTEN`, then `kill <PID>` |
+| No users in Atlas after login | `GET /api/me` never succeeded | `curl -i http://localhost:5001/api/me` should be 401 `UNAUTHENTICATED`; then check the Network tab |
 
 ## Folder tree
 

@@ -1,4 +1,4 @@
-// Notifications (M2 step 8). notify() joins the caller's transaction; the reads are the user's own only.
+// Notifications. notify() joins the caller's transaction; the reads are the user's own only.
 import { Notification } from "../models/Notification.js";
 import { decodeCursor, encodeCursor } from "../utils/cursor.js";
 import { clock } from "../utils/clock.js";

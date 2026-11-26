@@ -1,6 +1,6 @@
 # Nivaran v2: decisions
 
-Source: `docs/HANDOFF.md` section 9. These win over `docs/ARCHITECTURE.md` where they differ. Change a row here
+These win over `docs/ARCHITECTURE.md` where they differ. Change a row here
 first, then the code. Dates are when the decision was recorded.
 
 | Id | Topic | Decision | Date | Status |

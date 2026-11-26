@@ -1,4 +1,4 @@
-// Issue lists: the reporter's own (M2 step 2) and the staff queue (step 3). Scope is in the query.
+// Issue lists: the reporter's own and the staff queue. Scope is in the query.
 import { Issue } from "../models/Issue.js";
 import { City } from "../models/City.js";
 import { decodeCursor, decodeQueueCursor, encodeQueueCursor, pageOf } from "../utils/cursor.js";

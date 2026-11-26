@@ -1,7 +1,6 @@
 # Nivaran v2: Lean Replan
 
-Written 2026-11-25. This replaces sections 10, 11 and 15 of `NIVARAN_PROJECT_HANDOFF.md`. The rest of that file
-(design, auth, environment, lessons) is still valid.
+Written 2026-11-25. Status: M0, M1 and M2 are done; Docker (part of M4) is built. Next: M3 or the rest of M4.
 
 ## 1. Why replan
 
@@ -119,7 +118,7 @@ M3 is optional. If time runs short, M4 can follow M2 directly.
 - All source code and tests in `client/` and `server/`.
 - `.claude/settings.json` and `.claude/commands/step.md`.
 - A slim `CLAUDE.md`, `README.md`, `docs/AUTH0_SETUP.md`, `docs/DECISIONS.md`, `docs/API.md` (when it exists).
-- `docs/PLAN.md` (this file) and `docs/HANDOFF.md` (the handoff).
+- `docs/PLAN.md` (this file).
 - One prompt file per milestone: `docs/prompts/m1-core-loop.md` first. The others are written only when their turn comes.
 - Migration scripts that were already applied (`migrateUsersV2.js`) stay while they are idempotent and tested.
 

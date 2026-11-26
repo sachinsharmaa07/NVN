@@ -1,4 +1,4 @@
-// SLA job timer (M2 step 7). The work is services/slaJobService.js (runSlaTick, exported for direct calls).
+// SLA job timer. The work is services/slaJobService.js (runSlaTick, exported for direct calls).
 // One server instance runs it (ADR 0001). Off in tests and when SLA_JOB_INTERVAL_MS is 0.
 import { config } from "../config/env.js";
 import { logger } from "../config/logger.js";

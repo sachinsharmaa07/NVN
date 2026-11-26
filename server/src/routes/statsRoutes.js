@@ -1,4 +1,4 @@
-// Public platform numbers for the landing page (M2 step 9). No sign-in, no personal data.
+// Public platform numbers for the landing page. No sign-in, no personal data.
 import { Router } from "express";
 import { validate } from "../middleware/validate.js";
 import { stats } from "../controllers/statsController.js";

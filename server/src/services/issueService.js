@@ -1,4 +1,4 @@
-// POST /api/issues and GET /api/issues/:ticketId (M1 step 8; M2 adds the timeline via issueView). Checks run before the transaction (they only
+// POST /api/issues and GET /api/issues/:ticketId (the timeline comes from issueView). Checks run before the transaction (they only
 // read, or call Cloudinary); the transaction holds exactly the writes that must commit together.
 import mongoose from "mongoose";
 import { Issue } from "../models/Issue.js";

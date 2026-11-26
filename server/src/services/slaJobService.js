@@ -1,4 +1,4 @@
-// SLA job tick (M2 step 7, ARCHITECTURE 12.4; the timer is jobs/slaJob.js): mark at_risk and breached, notify the dept_head on a
+// SLA job tick (ARCHITECTURE 12.4; the timer is jobs/slaJob.js): mark at_risk and breached, notify the dept_head on a
 // breach, the city_admin 24 h later, auto-close resolved issues after 7 days. Idempotent: every write is
 // guarded by the field it sets, so a rerun or an overlapping tick sends nothing twice.
 // One server instance runs it (ADR 0001); a second would only repeat no-op queries.

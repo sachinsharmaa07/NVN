@@ -1,4 +1,4 @@
-// On hold (M2 step 6): the slaPausedAt flag, not a status. dept_head of the issue's department only.
+// On hold: the slaPausedAt flag, not a status. dept_head of the issue's department only.
 import { clock } from "../utils/clock.js";
 import { OPEN_STATUSES } from "../utils/issueStateMachine.js";
 import { forbidden } from "./adminUserSupport.js";
