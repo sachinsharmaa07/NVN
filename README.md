@@ -119,7 +119,7 @@ env vars above and run the bootstrap script to create the first super admin.
 Routes are protected by a chain of small middleware: `authenticate` (`middleware/auth.js`), then
 `loadUser`, `requireActive`, `requireVerifiedEmail` and `requirePermission(...)` (`middleware/access.js`).
 The scope check (same city, department or state; out of scope is a 404) runs in the service. The
-role and scope rules are pure functions in `server/src/utils/` (`permissions.js`, `access.js`). On
+role and scope rules are pure functions in `server/src/utils/permissions.js`, used by `middleware/access.js`. On
 the client, wrap a page in `<RequireAuth>` (props `verified`, `permission`, `minLevel`); the server
 enforces the same rules.
 
