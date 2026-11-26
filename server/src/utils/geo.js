@@ -69,3 +69,35 @@ export function centroidOf(geometry) {
   const round = (n) => Math.round(n * 1e6) / 1e6;
   return { type: "Point", coordinates: [round(largest.x), round(largest.y)] };
 }
+
+const EARTH_RADIUS_M = 6_371_008.8;
+const rad = (deg) => (deg * Math.PI) / 180;
+
+/** Great-circle (haversine) distance in metres between two [lon, lat] positions. */
+export function distanceM([lon1, lat1], [lon2, lat2]) {
+  const a =
+    Math.sin(rad(lat2 - lat1) / 2) ** 2 +
+    Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(rad(lon2 - lon1) / 2) ** 2;
+  return 2 * EARTH_RADIUS_M * Math.asin(Math.min(1, Math.sqrt(a)));
+}
+
+export const RADIUS_MIN_M = 3000;
+export const RADIUS_MAX_M = 25000;
+const RADIUS_MARGIN_M = 1500;
+
+/**
+ * Decision M1-7: centre = mean of the places, radius = farthest place + 1.5 km, clamped to 3 to 25 km.
+ * Positions are [lon, lat]. Returns { centroid: GeoJSON Point, radiusM: whole metres }.
+ * shortcut: a plain mean of lon/lat; fine inside one pincode, wrong across the antimeridian (not in India).
+ */
+export function circleFor(positions) {
+  const round = (n) => Math.round(n * 1e6) / 1e6;
+  const mean = (i) => round(positions.reduce((sum, p) => sum + p[i], 0) / positions.length);
+  const centre = [mean(0), mean(1)];
+  const farthest = Math.max(...positions.map((p) => distanceM(centre, p)));
+  const radiusM = Math.min(
+    RADIUS_MAX_M,
+    Math.max(RADIUS_MIN_M, Math.round(farthest + RADIUS_MARGIN_M)),
+  );
+  return { centroid: { type: "Point", coordinates: centre }, radiusM };
+}
