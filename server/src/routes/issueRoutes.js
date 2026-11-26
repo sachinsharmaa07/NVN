@@ -9,9 +9,28 @@ import {
   requireVerifiedEmail,
 } from "../middleware/access.js";
 import { userRateLimit } from "../middleware/userRateLimit.js";
-import { create, getOne } from "../controllers/issueController.js";
+import {
+  assign,
+  confirm,
+  create,
+  getOne,
+  hold,
+  mine,
+  reopen,
+  resume,
+  status,
+} from "../controllers/issueController.js";
 import { none } from "../validators/me.js";
-import { createIssueBody, ticketParams } from "../validators/issues.js";
+import {
+  assignBody,
+  createIssueBody,
+  holdBody,
+  mineQuery,
+  reopenBody,
+  statusBody,
+  ticketParams,
+  versionBody,
+} from "../validators/issues.js";
 
 export const issueRoutes = Router();
 
@@ -35,6 +54,18 @@ issueRoutes.post(
   create,
 );
 
+// Before "/:ticketId", so "mine" is never read as a ticket id.
+issueRoutes.get(
+  "/mine",
+  noStore,
+  authenticate,
+  loadUser,
+  requireActive,
+  requirePermission("issue:read_own"),
+  validate({ query: mineQuery }),
+  mine,
+);
+
 issueRoutes.get(
   "/:ticketId",
   noStore,
@@ -45,3 +76,26 @@ issueRoutes.get(
   validate({ params: ticketParams, query: none }),
   getOne,
 );
+
+// M2 writes. Scope (department, city, or reporter) is checked inside the service's query.
+const write = (method, path, permission, body, handler) =>
+  issueRoutes[method](
+    path,
+    noStore,
+    authenticate,
+    loadUser,
+    requireActive,
+    requireVerifiedEmail,
+    requirePermission(permission),
+    validate({ params: ticketParams, body, query: none }),
+    handler,
+  );
+
+write("patch", "/:ticketId/status", "issue:update_status", statusBody, status);
+write("patch", "/:ticketId/assign", "issue:assign", assignBody, assign);
+// The reporter's own issue: any role that can read its own issues, matched on reporterId in the service.
+write("post", "/:ticketId/confirm", "issue:read_own", versionBody, confirm);
+write("post", "/:ticketId/reopen", "issue:read_own", reopenBody, reopen);
+// dept_head only (the service refuses other roles).
+write("post", "/:ticketId/hold", "issue:update_status", holdBody, hold);
+write("post", "/:ticketId/resume", "issue:update_status", versionBody, resume);

@@ -14,14 +14,14 @@ const STATUS_KEY = {
 };
 
 /** Up to 3 photos: camera or gallery (no `capture`, so phones offer both), each with progress and Retry. */
-export function PhotoPicker({ uploads }) {
+export function PhotoPicker({ uploads, label = t("report.photos.label") }) {
   const inputId = useId();
   const hintId = `${inputId}-hint`;
   const { photos, add, retry, remove, full } = uploads;
 
   return (
     <fieldset className="flex flex-col gap-3">
-      <legend className="mb-1 text-base font-medium">{t("report.photos.label")}</legend>
+      <legend className="mb-1 text-base font-medium">{label}</legend>
       <p id={hintId} className="text-sm text-muted-foreground">
         {t("report.photos.hint")}
       </p>

@@ -20,6 +20,13 @@ vi.mock("../../src/middleware/access.js", async (orig) => {
       guard.permission = permission;
       return guard;
     },
+    // An either-of guard is tagged with its first permission; the others must exist too.
+    requireAnyPermission: (...permissions) => {
+      permissions.forEach((p) => actual.requirePermission(p)); // throws on an unknown name
+      const guard = actual.requireAnyPermission(...permissions);
+      guard.permission = permissions[0];
+      return guard;
+    },
   };
 });
 
@@ -33,6 +40,9 @@ const { pincodeRoutes } = await import("../../src/routes/pincodeRoutes.js");
 const { waitlistRoutes } = await import("../../src/routes/waitlistRoutes.js");
 const { uploadRoutes } = await import("../../src/routes/uploadRoutes.js");
 const { issueRoutes } = await import("../../src/routes/issueRoutes.js");
+const { staffRoutes } = await import("../../src/routes/staffRoutes.js");
+const { notificationRoutes } = await import("../../src/routes/notificationRoutes.js");
+const { statsRoutes } = await import("../../src/routes/statsRoutes.js");
 const { authenticate } = await import("../../src/middleware/auth.js");
 const { loadUser, requireActive, requireVerifiedEmail } =
   await import("../../src/middleware/access.js");
@@ -50,6 +60,9 @@ const MOUNTS = [
   { prefix: "/waitlist", router: waitlistRoutes, isPublic: true },
   { prefix: "/uploads", router: uploadRoutes },
   { prefix: "/issues", router: issueRoutes },
+  { prefix: "/staff", router: staffRoutes },
+  { prefix: "/notifications", router: notificationRoutes },
+  { prefix: "/stats", router: statsRoutes, isPublic: true },
 ];
 
 /** Every { method, path, handlers } of a router, flattened. */

@@ -85,3 +85,15 @@ export function requirePermission(permission) {
     next();
   };
 }
+
+/**
+ * requireAnyPermission("user:promote", "issue:assign"): passes through the first permission the DB role
+ * holds, with that permission's own verified-email and MFA checks; holding none is the first one's 403.
+ */
+export function requireAnyPermission(...permissions) {
+  const guards = permissions.map((p) => [p, requirePermission(p)]);
+  return (req, res, next) => {
+    const held = guards.find(([p]) => can(req.user?.role, p)) ?? guards[0];
+    return held[1](req, res, next);
+  };
+}

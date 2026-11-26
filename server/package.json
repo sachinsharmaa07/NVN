@@ -16,6 +16,7 @@
     "migrate:users-v1": "node scripts/migrateUsersV1.js",
     "migrate:users-v2": "node scripts/migrateUsersV2.js",
     "migrate:m1-indexes": "node scripts/migrateM1Indexes.js",
+    "migrate:m2-indexes": "node scripts/migrateM2Indexes.js",
     "import:pincodes": "node scripts/importPincodes.js",
     "import:boundaries": "node scripts/importBoundaries.js",
     "seed:departments": "node scripts/seedDepartments.js",

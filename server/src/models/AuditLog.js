@@ -13,6 +13,10 @@ export const AUDIT_ACTIONS = [
   "user.mfa_flag_sync_failed",
   "user.identity_linked",
   "issue.created",
+  "issue.status_change",
+  "issue.assign",
+  "issue.hold",
+  "issue.resume",
 ];
 export const AUDIT_TARGETS = ["user", "issue"];
 

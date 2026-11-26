@@ -13,6 +13,7 @@ import { Waitlist } from "../../src/models/Waitlist.js";
 import { CategoryMapping } from "../../src/models/CategoryMapping.js";
 import { SlaPolicy } from "../../src/models/SlaPolicy.js";
 import { Issue } from "../../src/models/Issue.js";
+import { Notification } from "../../src/models/Notification.js";
 import { signToken } from "./fakeAuth0.js";
 
 /**
@@ -34,9 +35,18 @@ export function useTestDb() {
       throw new Error(`Refusing to run against database "${mongoose.connection.name}"`);
     }
     await Promise.all(
-      [User, AuditLog, City, Department, Pincode, Waitlist, CategoryMapping, SlaPolicy, Issue].map(
-        (m) => m.init(),
-      ),
+      [
+        User,
+        AuditLog,
+        City,
+        Department,
+        Pincode,
+        Waitlist,
+        CategoryMapping,
+        SlaPolicy,
+        Issue,
+        Notification,
+      ].map((m) => m.init()),
     );
   });
   beforeEach(wipeDb);

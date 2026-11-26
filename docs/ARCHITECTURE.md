@@ -72,20 +72,20 @@ flowchart LR
     VF["Visual foundation: tokens, shell, landing, motion"]
     P1["Phase 1: Auth0 sign-in, roles in MongoDB,<br/>admin users, audit log, MFA flag"]
     M1["M1: City, Department, Pincode, Waitlist, CategoryMapping,<br/>national pincode import, boundary import,<br/>department seed, check-point API"]
+    M2["M2: state machine, staff queue, SLA job,<br/>notifications, stats, My issues, ticket page,<br/>staff console, bell"]
   end
   subgraph Partial["PARTIAL"]
     CH["Chat bubble: opens a placeholder panel"]
-    RP["Report, Issues, Community pages: empty-state shells"]
+    RP["Community page: empty-state shell"]
   end
   subgraph Designed["DESIGNED only"]
     P2["M1: pincode lookup API, waitlist API"]
     P3["Phase 3: report wizard, map, grouping, ticket IDs"]
-    P4["Phase 4: SLA, priority, state machine, staff queue"]
     P5["Phase 5: chatbot with Gemini"]
     P6["Phase 6: community, moderation"]
     P8["Phase 8: hardening, Playwright e2e"]
   end
-  P0 --> VF --> P1 --> M1 --> P2 --> P3 --> P4 --> P5 --> P6 --> P8
+  P0 --> VF --> P1 --> M1 --> P2 --> P3 --> M2 --> P5 --> P6 --> P8
 ```
 
 | Area | Status | Evidence in the repo |
@@ -105,16 +105,20 @@ flowchart LR
 | `POST /api/pincodes/:pin/check-point` (polygon "exact", else radius circle "approx") | **BUILT** | `routes/pincodeRoutes.js`, `services/pincodeService.js` (`locatePoint`, reused by `POST /api/issues` later), `docs/API.md` |
 | Default departments and category map per city (`CategoryMapping`, seed script) | **BUILT** | `models/CategoryMapping.js`, `utils/categories.js`, `scripts/seedDepartments.js`, `services/departmentSeedService.js`. On the real data: 637 cities, 3,185 departments, 3,822 mappings in 0.2 s locally |
 | Chat bubble | **PARTIAL** | `components/chat/ChatBubble.jsx` opens a "coming soon" sheet. No API. |
-| `/report`, `/issues`, `/community` | **PARTIAL** | Empty-state shells with the final navigation wiring. |
+| `/community` | **PARTIAL** | Empty-state shell with the final navigation wiring. |
+| My issues, ticket page (confirm, reopen), staff queue and drawer, notification bell, landing stats | **BUILT** (M2) | `pages/Issues.jsx`, `pages/IssueDetail.jsx`, `pages/staff/StaffQueue.jsx`, `components/issues/`, `components/staff/`, `components/nav/NotificationBell.jsx`, `hooks/useIssues.js`, `useStaffIssues.js`, `useNotifications.js`, `e2e/track.spec.js`, section 18.5 |
 | `GET /api/pincodes/:pin`, `POST /api/waitlist` (section 4.5) | **BUILT** | `routes/pincodeRoutes.js`, `routes/waitlistRoutes.js`, `services/pincodeService.js`, `services/waitlistService.js` |
 | `SlaPolicy` national defaults and `expectedBy`; `Counter` and ticket IDs | **BUILT** | `models/SlaPolicy.js`, `models/Counter.js`, `utils/expectedBy.js`, `services/slaService.js`, `services/ticketService.js`, `scripts/seedSlaPolicies.js` |
 | Cloudinary signed uploads (`POST /api/uploads/sign`, `node:crypto`) | **BUILT** | `routes/uploadRoutes.js`, `services/uploadService.js` |
 | Report wizard step 1 (pincode lookup, waitlist, session draft) | **BUILT** | `pages/Report.jsx`, `components/report/`, `hooks/useLookupPincode.js` |
-| Resend or email notifications | **DESIGNED** | Mentioned for escalations; no code. |
+| Email notifications | **DESIGNED** | In-app is built (M2); email later (decision 6). |
 | Issue, Report, Post, Comment, ChatMessage models | **DESIGNED** | `docs/DESIGN.md` section 3 only. |
 | Leaflet map, in-house point-in-polygon | **BUILT** | ADR 0001. Server: MongoDB `$geoIntersects` or the radius circle (`pincodeService.locatePoint`). Client: `lib/geo.js` (ray casting, same haversine), Leaflet lazy-loaded in `PinMap.jsx`. |
 | Gemini chatbot and blog assist | **DESIGNED** | DESIGN.md sections 5 and 6. |
-| SLA job, escalation, priority score | **DESIGNED** | DESIGN.md section 7B. |
+| Issue state machine, tracking (`/mine`, timeline), staff queue, status/assign/confirm/reopen/hold writes | **BUILT** (M2) | `utils/issueStateMachine.js`, `services/issueWorkflowService.js`, `issueHoldService.js`, `issueQueryService.js`, `issueView.js`, `docs/API.md` |
+| SLA job (at risk, breach, escalation, auto-close) | **BUILT** (M2) | `jobs/slaJob.js`, `services/slaJobService.js`, ARCHITECTURE 12.4 |
+| In-app notifications, public stats | **BUILT** (M2) | `models/Notification.js`, `services/notificationService.js`, `services/statsService.js` |
+| Priority score | **DESIGNED** | DESIGN.md section 7B. |
 
 ---
 
@@ -1331,6 +1335,39 @@ sequenceDiagram
   end
 ```
 
+### 11.5 Staff updates status, resident notified (BUILT, M2)
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor S as Staff
+  participant API
+  participant DB as MongoDB
+  participant CL as Cloudinary
+  actor R as Resident
+
+  S->>API: PATCH /api/issues/:ticketId/status {status, note?, afterPhotoPublicIds?, version}
+  API->>API: authenticate, loadUser, requireActive, verified, issue:update_status (MFA for dept_head+)
+  API->>DB: findOne {ticketId, departmentId or cityId of the actor}
+  alt missing or out of scope
+    API-->>S: 404 NOT_FOUND (same body)
+  end
+  API->>API: issueStateMachine: edge? role? note? photos?
+  alt bad edge
+    API-->>S: 400 INVALID_TRANSITION
+  end
+  opt status resolved
+    API->>CL: verifyPhotos(afterPhotoPublicIds)
+  end
+  API->>DB: transaction: findOneAndUpdate {_id, __v: version} ($set, $push history, $inc __v), AuditLog issue.status_change, Notification for the reporter
+  alt version changed meanwhile
+    API-->>S: 409 CONFLICT
+  end
+  API-->>S: 200 {issue with version + 1}
+  R->>API: GET /api/notifications
+  API-->>R: {items: [{type status_changed, ticketId, status}], nextCursor}
+```
+
 ### 11.4 Chatbot (DESIGNED)
 
 ```mermaid
@@ -1383,39 +1420,61 @@ stateDiagram-v2
   signedOut --> loading: login()
 ```
 
-### 12.3 Issue lifecycle (DESIGNED, enums fixed in CLAUDE.md)
+### 12.3 Issue lifecycle (BUILT, M2: `server/src/utils/issueStateMachine.js`)
 
 ```mermaid
 stateDiagram-v2
-  [*] --> submitted
-  submitted --> assigned: dept head assigns
-  assigned --> in_progress: staff starts
-  in_progress --> resolved: staff resolves with after-photo
-  resolved --> closed: citizen confirms or auto-closed after 7 days
-  resolved --> reopened: citizen reopens
-  reopened --> assigned
-  submitted --> rejected: rejected with reason
+  [*] --> submitted: resident submits (POST /api/issues)
+  submitted --> assigned: staff, dept_head, city_admin (triage: PATCH .../assign)
+  submitted --> rejected: dept_head, city_admin, note required
+  assigned --> in_progress: staff, dept_head, city_admin
+  in_progress --> resolved: staff, dept_head, city_admin, at least 1 after photo
+  resolved --> closed: reporter confirms, or SLA job after 7 days
+  resolved --> reopened: reporter, note required, fresh expectedBy
+  reopened --> assigned: staff, dept_head, city_admin
   closed --> [*]
   rejected --> [*]
 ```
 
-Allowed transitions will live in one pure `stateMachine` util with a test for every transition (Phase 4).
+One pure table decides every edge and who may take it: a missing edge is `400 INVALID_TRANSITION`, a real edge
+with the wrong role is `403 FORBIDDEN`. Every change is one conditional update on `{ _id, __v: version }` in a
+transaction with its `issue.status_change` AuditLog row and the reporter's Notification; a stale `version` is
+`409 CONFLICT`. On hold is the `slaPausedAt` flag (dept_head only), not a status.
 
-### 12.4 SLA state (DESIGNED, pure maths already built in the client)
+### 12.4 SLA state (BUILT, M2: `server/src/jobs/slaJob.js`)
 
 ```mermaid
 stateDiagram-v2
-  [*] --> on_track
-  on_track --> at_risk: 75 percent of allowed time used
-  at_risk --> breached: past the due date
-  on_track --> paused: dept head approves hold (slaPausedAt)
-  at_risk --> paused
-  paused --> on_track: clock resumes
-  breached --> [*]
+  [*] --> on_track: submit or reopen (expectedBy, atRiskAt = 75 percent)
+  on_track --> at_risk: job, now >= atRiskAt
+  on_track --> breached: job, now >= expectedBy
+  at_risk --> breached: job, now >= expectedBy
+  note right of on_track
+    slaPausedAt set: the job skips the issue.
+    Resume shifts expectedBy and atRiskAt by the paused time.
+  end note
 ```
 
-`client/src/components/system/slaState.js` already implements `getSlaState({startAt, dueAt, now})` and
-`formatDuration`. "Paused" is a flag, not a server SLA state.
+Only open statuses (`submitted, assigned, in_progress, reopened`) move. "Paused" is a flag, not a state.
+
+#### SLA job flow (one tick, every `SLA_JOB_INTERVAL_MS`, default 5 min)
+
+```mermaid
+flowchart TB
+  T["tick(now)"] --> R["at risk: updateMany open, not paused,<br/>slaState on_track, atRiskAt <= now"]
+  R --> B["breached: updateMany open, not paused,<br/>slaState != breached, expectedBy <= now"]
+  B --> N1{"breached, breachNotifiedDeptHeadAt null?"}
+  N1 -- "claim (set field) + Notification<br/>to dept_heads, one transaction" --> N2
+  N1 -- "triage issue: notify city_admins,<br/>set both fields" --> N2
+  N2{"breachNotifiedDeptHeadAt <= now - 24 h,<br/>breachNotifiedCityAdminAt null?"}
+  N2 -- "claim + Notification to city_admins" --> AC
+  AC{"resolved, resolvedAt <= now - 7 days?"}
+  AC -- "per issue transaction: closed,<br/>history by system, AuditLog, Notification" --> D["log counts"]
+```
+
+Idempotent: every write is guarded by the field it sets, so a rerun or an overlapping tick sends nothing twice.
+One server instance only (ADR 0001); a second instance would still not double-notify, only do wasted work.
+Disabled in tests; `runSlaTick(now)` is exported for direct calls.
 
 ### 12.5 Community moderation (DESIGNED)
 
@@ -1562,7 +1621,9 @@ flowchart LR
   AL --> L2["/report RequireAuth verified<br/>PARTIAL placeholder"]
   AL --> L3["/profile"]
   AL --> L4["/admin/users"]
-  AL --> L5["/issues PARTIAL"]
+  AL --> L5["/issues My issues"]
+  AL --> L5b["/issues/:ticketId ticket"]
+  AL --> L5c["/staff Queue<br/>RequireAuth issue:read_scope"]
   AL --> L6["/community PARTIAL"]
   AL --> L7["/forbidden"]
   AL --> L8["/dev/styleguide dev builds only"]
@@ -1610,7 +1671,7 @@ client/src/
 | `lib/authedRequest.js` | Adds the Bearer token, retries once on 401 with a fresh token. |
 | `hooks/useApi.js` | Wraps the above and routes wrong-state answers to the right screen (section 6.9). |
 | `lib/queryClient.js` | `staleTime` 30 s, one retry for network, timeout and 5xx (not 503), no mutation retries, refetch on window focus. |
-| Query keys | `ME_KEY` for `/api/me`; admin list keys in `useAdminUsers`. After a mutation the list is invalidated. |
+| Query keys | `ME_KEY` for `/api/me`; admin list keys in `useAdminUsers`; M2 keys in section 18.5. After a mutation the list is invalidated. |
 | Planned (UI.md) | Optimistic updates with rollback for "me too", comments and status changes. Never optimistic for report submission or anything that moves an SLA clock. |
 
 ### 15.5 Shell and navigation
@@ -1626,7 +1687,7 @@ account is redirected to `/suspended` from every route, public ones included.
 | --- | --- | --- |
 | Hero | `Hero`, `PincodeInput` | What Nivaran does plus the six-box pincode field (validated client-side, then `/report?pincode=...`). The only `<h1>`. |
 | How it works | `HowItWorks` | Three steps, scroll-revealed |
-| Numbers | `StatsRow` with `StatCard` | NumberFlow counts up once on first view, `en-IN` grouping. Sample numbers. |
+| Numbers | `StatsRow` with `StatCard` | `GET /api/stats` (no token): reported, fixed, open now, typical hours to fix. NumberFlow counts up once on first view, `en-IN` grouping. Hidden while loading or if the call fails. |
 | Example ticket | `TimelinePreview` | A `StatusTimeline` with the connector drawing in |
 | Trust | `TrustSection`, `LandingFooter` | Why you can trust it |
 
@@ -1647,7 +1708,7 @@ Place the pin". Footer: Back (outline) left, Next (default) right. Chat bubble h
    (min 20 chars, live count), up to 3 photos (canvas to 1600 px, signed upload per photo with progress and Retry,
    kept in memory only), review, "Submit report" with one `Idempotency-Key` per draft (disabled while sending; 422
    `OUTSIDE_PINCODE` returns to step 2). Success: the **counterfoil** (display font, postmark, perforated top edge,
-   Copy ticket ID, "Expected by 26 Nov, 5:00 PM", "Track this issue" to `/issues` until M2).
+   Copy ticket ID, "Expected by 26 Nov, 5:00 PM", "Track this issue" to `/issues/:ticketId`).
 
 ---
 
@@ -1825,11 +1886,53 @@ flowchart TD
    with an audit row, and prints the masked email.
 3. Sign out and in again and enrol MFA when Auth0 asks. Admin > Users now opens.
 
-### 18.5 Staff and moderator flows (DESIGNED)
+### 18.5 Track and resolve screens (M2 Batch E, BUILT)
 
-Staff see **Queue** in place of **Report** in the bottom bar and sidebar. They open a paginated, priority-sorted
-queue, change status (never optimistic for resolve), upload an after-photo to resolve, and the citizen confirms or
-reopens. Moderators hide, restore or delete content with a reason, each action written to `AuditLog`.
+Resident (`issue:read_own`):
+
+```mermaid
+flowchart TD
+  CF["Counterfoil: Track this issue"] --> TD
+  N["Bell popover: tap a notification"] --> TD
+  MI["/issues My issues<br/>GET /api/issues/mine (cursor, Load more)<br/>StatusBadge + SlaBadge per row"] --> TD["/issues/:ticketId<br/>counterfoil header, expected-by (IST),<br/>photos before and after, StatusTimeline"]
+  MI -- "empty" --> RP["Report an issue"]
+  TD -- "status resolved" --> Q{"Is it fixed?"}
+  Q -- "Confirm" --> C["POST .../confirm {version}<br/>200: closed"]
+  Q -- "Reopen" --> R["Reason 10+ chars<br/>POST .../reopen {note, version}<br/>200: reopened"]
+  C -- "409" --> X["Someone updated this issue. Reload to see the latest.<br/>refetch the ticket"]
+  R -- "409" --> X
+```
+
+Staff (`issue:read_scope`; staff, dept_head, city_admin and above). Queue replaces Report in the bottom bar and
+sidebar for these roles. A citizen opening `/staff` gets the 403 in place.
+
+```mermaid
+flowchart TD
+  SQ["/staff Queue<br/>GET /api/staff/issues?status&sla&category<br/>sorted by expectedBy (server); table >= 1024px, cards below"] --> DR["Issue drawer (Sheet on desktop, Drawer on phones)<br/>details, photos, SLA, actions"]
+  DR --> ST["Change status panel<br/>only next statuses from the state machine for my role<br/>resolved: after photo via signed upload; rejected: note"]
+  DR --> AS["Assign panel (issue:assign, triage issues)<br/>department of my city"]
+  DR --> HO["Hold (reason) / Resume (dept_head)"]
+  ST & AS & HO -- "200" --> OK["toast, queue refetched,<br/>drawer shows the fresh row or closes if it left the queue"]
+  ST & AS & HO -- "409" --> X["Someone updated this issue. Reload to see the latest.<br/>queue refetched, drawer shows the new version"]
+```
+
+The actions are panels inside the drawer, not a second dialog on top of it (UI.md 6: never stack two overlays). There
+is no staff GET for one issue, so the drawer holds only the `ticketId` and reads the row from the cached queue:
+a refetch updates the version it sends next.
+
+Query keys and invalidation (TanStack Query). Nothing about status is optimistic: the UI changes only after the
+server answers.
+
+| Key | Source | Mutation | On success | On 409 |
+| --- | --- | --- | --- | --- |
+| `["issues", "mine"]` (infinite) | `GET /api/issues/mine` | | | |
+| `["issues", "detail", ticketId]` | `GET /api/issues/:ticketId` | confirm, reopen | `setQueryData(detail)` from the answer; invalidate `["issues", "mine"]` | invalidate the detail |
+| `["staff", "issues", filters]` (infinite) | `GET /api/staff/issues` | status, assign, hold, resume | invalidate `["staff", "issues"]` | invalidate `["staff", "issues"]` |
+| `["notifications"]` | `GET /api/notifications` (first page, `unread`), every 60 s while the tab is visible | mark all read | invalidate `["notifications"]` | |
+| `["stats"]` | `GET /api/stats` (public, no token) | | | |
+| `["geo", "departments", cityId]` | `GET /api/departments` (existing `useDepartments`) | | | |
+
+Moderators (hide, restore or delete content with a reason, each written to `AuditLog`) stay DESIGNED for Phase 6.
 
 ---
 

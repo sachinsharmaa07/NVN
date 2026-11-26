@@ -5,6 +5,7 @@ import { config } from "./config/env.js";
 import { logger } from "./config/logger.js";
 import { connectDb, disconnectDb } from "./config/db.js";
 import { createApp } from "./app.js";
+import { startSlaJob } from "./jobs/slaJob.js";
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;
 
@@ -26,6 +27,7 @@ try {
 }
 
 const server = createServer(createApp());
+const stopSlaJob = startSlaJob();
 server.listen(config.PORT, () => {
   logger.info(
     { event: "server.started", port: config.PORT },
@@ -47,6 +49,7 @@ async function shutdown(signal) {
     process.exit(1);
   }, SHUTDOWN_TIMEOUT_MS).unref();
 
+  stopSlaJob?.();
   try {
     // Stop taking new connections and wait for in-flight requests, then close the DB.
     await new Promise((resolve, reject) => server.close((err) => (err ? reject(err) : resolve())));

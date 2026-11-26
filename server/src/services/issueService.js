@@ -1,40 +1,21 @@
-// POST /api/issues and GET /api/issues/:ticketId (M1 step 8). Checks run before the transaction (they only
+// POST /api/issues and GET /api/issues/:ticketId (M1 step 8; M2 adds the timeline via issueView). Checks run before the transaction (they only
 // read, or call Cloudinary); the transaction holds exactly the writes that must commit together.
 import mongoose from "mongoose";
 import { Issue } from "../models/Issue.js";
 import { CategoryMapping } from "../models/CategoryMapping.js";
-import { Department } from "../models/Department.js";
 import { SlaPolicy } from "../models/SlaPolicy.js";
 import { AppError } from "../utils/AppError.js";
 import { DEFAULT_SLA_HOURS } from "../utils/categories.js";
 import { clock } from "../utils/clock.js";
-import { expectedBy } from "../utils/expectedBy.js";
+import { atRiskAt, expectedBy } from "../utils/expectedBy.js";
 import { record } from "./auditService.js";
 import { inTransaction } from "./adminUserSupport.js";
 import { locatePoint, servedPincode } from "./pincodeService.js";
 import { verifyPhotos } from "./photoCheckService.js";
 import { nextTicketId } from "./ticketService.js";
+import { detail as view } from "./issueView.js";
 
 const notFound = () => new AppError("NOT_FOUND", 404, "We couldn't find that.");
-
-/** What the reporter sees: the counterfoil now, the tracking page later. Fields picked one by one. */
-async function view(issue) {
-  const dept = issue.departmentId
-    ? await Department.findById(issue.departmentId, "name").lean()
-    : null;
-  return {
-    ticketId: issue.ticketId,
-    status: issue.status,
-    category: issue.category,
-    title: issue.title,
-    pincode: issue.pincode,
-    precision: issue.precision,
-    queue: issue.queue,
-    department: dept ? { id: String(dept._id), name: dept.name } : null,
-    expectedBy: issue.expectedBy,
-    createdAt: issue.createdAt,
-  };
-}
 
 /** Decision 2 and M1-6: the city's mapping; no mapping (or "other") goes to the city triage queue. */
 async function route(cityId, category, session) {
@@ -46,7 +27,7 @@ async function route(cityId, category, session) {
 }
 
 /** Decision 3: the city's policy wins over the national default (cityId null); the seed is the fallback. */
-async function resolveHours(cityId, category, session) {
+export async function resolveHours(cityId, category, session) {
   const rows = await SlaPolicy.find(
     { category, cityId: mongoose.trusted({ $in: [cityId, null] }) },
     "cityId resolveHours",
@@ -83,6 +64,7 @@ export async function createIssue(actor, input, key, ctx = {}) {
       const now = clock.now();
       const { departmentId, queue } = await route(pincode.cityId, input.category, session);
       const hours = await resolveHours(pincode.cityId, input.category, session);
+      const due = expectedBy(now, hours);
       const [issue] = await Issue.create(
         [
           {
@@ -99,8 +81,9 @@ export async function createIssue(actor, input, key, ctx = {}) {
             description: input.description,
             photos,
             status: "submitted",
-            statusHistory: [{ status: "submitted", at: now, by: actor.id }],
-            expectedBy: expectedBy(now, hours),
+            statusHistory: [{ status: "submitted", at: now, by: actor.id, role: actor.role }],
+            expectedBy: due,
+            atRiskAt: atRiskAt(now, due),
             idempotencyKey: key,
           },
         ],

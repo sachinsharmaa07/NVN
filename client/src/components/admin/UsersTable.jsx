@@ -14,7 +14,7 @@ import {
 import { t } from "@/i18n/t";
 import { formatDate } from "@/lib/format";
 
-// The desktop list (1024px and up): a real table with a sticky header. The caption is read by
+// The desktop list (1024px and up): a real table. The caption is read by
 // screen readers only. The name cell is a row header so each row is announced by its person.
 export function UsersTable({ users, actorId, onAction }) {
   return (
