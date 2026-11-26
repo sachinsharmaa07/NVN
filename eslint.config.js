@@ -36,6 +36,7 @@ export default defineConfig([
   globalIgnores([
     "**/node_modules/",
     "**/dist/",
+    "**/dist-e2e/",
     "**/coverage/",
     "**/playwright-report/",
     "**/test-results/",
@@ -135,7 +136,11 @@ export default defineConfig([
 
   // Client tests run in Node with jsdom, so both sets of globals exist. Vitest APIs are imported.
   {
-    files: ["client/**/*.test.{js,jsx}", "client/src/test/**/*.{js,jsx}"],
+    files: [
+      "client/**/*.test.{js,jsx}",
+      "client/src/test/**/*.{js,jsx}",
+      "client/e2e/**/*.js", // Playwright specs run in Node and drive a browser
+    ],
     languageOptions: { globals: { ...globals.browser, ...globals.node } },
   },
 

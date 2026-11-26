@@ -3,6 +3,7 @@
 // Only the Auth0 Management API client is replaced.
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import request from "supertest";
+import { City } from "../../src/models/City.js";
 import mongoose from "mongoose";
 import { useFakeAuth0 } from "../helpers/authSeam.js";
 import { useTestDb, seedWorld, seedUser, tokenFor, rawUpdate, bearer } from "../helpers/testDb.js";
@@ -1096,6 +1097,50 @@ describe("geo pickers", () => {
       .get("/api/departments?cityId=nope")
       .set(bearer(tokenFor(c.adminA)));
     expect(bad.status).toBe(400);
+  });
+
+  it("cities: ?q= is an anchored, escaped, case-insensitive prefix; ?stateCode= filters", async () => {
+    const c = await cast();
+    const get = (qs) =>
+      request(app)
+        .get(`/api/cities${qs}`)
+        .set(bearer(tokenFor(c.root)));
+    expect((await get("?q=lud")).body.items.map((x) => x.name)).toEqual(["Ludhiana"]);
+    expect((await get("?q=hiana")).body.items).toEqual([]); // not a prefix
+    expect((await get("?q=.*")).body.items).toEqual([]); // regex characters are literal
+    expect((await get("?stateCode=MH")).body.items.map((x) => x.name)).toEqual(["Pune"]);
+    expect((await get("?stateCode=XX")).status).toBe(400);
+    // A city admin's search never leaves their city.
+    const mine = await request(app)
+      .get("/api/cities?q=pu")
+      .set(bearer(tokenFor(c.adminA)));
+    expect(mine.body.items).toEqual([]);
+  });
+
+  it("cities: cursor pages walk every city once, in name order, max 50 per page", async () => {
+    const c = await cast();
+    await City.create(
+      Array.from({ length: 60 }, (_, i) => ({
+        name: `Town ${String(i).padStart(2, "0")}`,
+        code: `T${i}`,
+        stateCode: "UP",
+      })),
+    );
+    const get = (qs) =>
+      request(app)
+        .get(`/api/cities${qs}`)
+        .set(bearer(tokenFor(c.root)));
+    expect((await get("?limit=51")).status).toBe(400);
+    const seen = [];
+    let cursor = "";
+    do {
+      const res = await get(`?limit=25${cursor ? `&cursor=${cursor}` : ""}`);
+      seen.push(...res.body.items.map((x) => x.name));
+      cursor = res.body.nextCursor;
+    } while (cursor);
+    expect(seen).toHaveLength(63);
+    expect(seen).toEqual([...seen].sort());
+    expect((await get("?cursor=garbage")).status).toBe(400);
   });
 });
 

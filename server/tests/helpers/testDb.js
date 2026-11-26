@@ -8,6 +8,11 @@ import { User } from "../../src/models/User.js";
 import { AuditLog } from "../../src/models/AuditLog.js";
 import { City } from "../../src/models/City.js";
 import { Department } from "../../src/models/Department.js";
+import { Pincode } from "../../src/models/Pincode.js";
+import { Waitlist } from "../../src/models/Waitlist.js";
+import { CategoryMapping } from "../../src/models/CategoryMapping.js";
+import { SlaPolicy } from "../../src/models/SlaPolicy.js";
+import { Issue } from "../../src/models/Issue.js";
 import { signToken } from "./fakeAuth0.js";
 
 /**
@@ -28,7 +33,11 @@ export function useTestDb() {
     if (!mongoose.connection.name.endsWith("_test")) {
       throw new Error(`Refusing to run against database "${mongoose.connection.name}"`);
     }
-    await Promise.all([User, AuditLog, City, Department].map((m) => m.init()));
+    await Promise.all(
+      [User, AuditLog, City, Department, Pincode, Waitlist, CategoryMapping, SlaPolicy, Issue].map(
+        (m) => m.init(),
+      ),
+    );
   });
   beforeEach(wipeDb);
   afterAll(() => disconnectDb());

@@ -1,4 +1,4 @@
-# Lint, format check, unit tests and a client build on every push and pull request.
+# Lint, format check, unit tests and a client build on every push and pull request, then the e2e suite.
 name: CI
 
 # Pushes to main and every pull request. Feature branches are checked through their PR, which also
@@ -46,3 +46,34 @@ jobs:
           MONGODB_URI_TEST: ${{ secrets.MONGODB_URI_TEST }}
 
       - run: npm run build
+
+  # Browser tests of the report flow (ADR 0003). Fully mocked network: no secrets, no database.
+  e2e:
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      # Chromium plus the Linux libraries it needs; the only browser the suite uses.
+      - run: npx playwright install --with-deps chromium
+        working-directory: client
+
+      # CI=true (set by GitHub) makes Playwright start its own Vite, run 2 workers and forbid test.only.
+      - run: npm run test:e2e
+
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-report
+          path: client/playwright-report/
+          retention-days: 7

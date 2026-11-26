@@ -1,14 +1,22 @@
 // One-off data migrations. v1: Phase 1 (`verified` -> `emailVerified`, status default, new indexes).
-// v2: auth0Id -> auth0Ids. Both idempotent; called only by scripts/migrateUsersV1.js and V2.js.
+// v2: auth0Id -> auth0Ids. M1: pincode, waitlist, city and department indexes. All idempotent;
+// called only by the matching scripts/migrate*.js.
 import { AuditLog } from "../models/AuditLog.js";
 import { City } from "../models/City.js";
 import { Department } from "../models/Department.js";
+import { CategoryMapping } from "../models/CategoryMapping.js";
+import { Pincode } from "../models/Pincode.js";
+import { Waitlist } from "../models/Waitlist.js";
+import { Issue } from "../models/Issue.js";
+import { SlaPolicy } from "../models/SlaPolicy.js";
 import { User } from "../models/User.js";
 import { SCOPE_RULES } from "../utils/permissions.js";
 
 const SCOPE_FIELDS = ["cityId", "departmentId", "stateCode"];
 // Indexes the old schema built that the new one replaces (names as MongoDB generated them).
 const OLD_INDEXES = ["cityId_1_role_1", "departmentId_1_role_1_createdAt_-1__id_-1"];
+// City index replaced by { stateCode, name, _id } for keyset paging (5b785cb); nothing queries it now.
+const OLD_M1_CITY_INDEXES = ["stateCode_1_name_1"];
 
 /** Pure: why a stored user row breaks SCOPE_RULES (or has an unknown role). [] when it is fine. */
 export function scopeViolations(row) {
@@ -22,12 +30,21 @@ export function scopeViolations(row) {
   });
 }
 
-async function dropIndexIfPresent(name) {
+async function dropIndexIfPresent(collection, name) {
   try {
-    await User.collection.dropIndex(name);
+    await collection.dropIndex(name);
     return true;
   } catch (err) {
     if (err?.codeName === "IndexNotFound" || err?.codeName === "NamespaceNotFound") return false;
+    throw err;
+  }
+}
+
+async function hasIndex(collection, name) {
+  try {
+    return (await collection.indexes()).some((i) => i.name === name);
+  } catch (err) {
+    if (err?.codeName === "NamespaceNotFound") return false;
     throw err;
   }
 }
@@ -73,7 +90,7 @@ export async function migrateUsersV1() {
   }
 
   for (const name of OLD_INDEXES)
-    if (await dropIndexIfPresent(name)) report.droppedIndexes.push(name);
+    if (await dropIndexIfPresent(User.collection, name)) report.droppedIndexes.push(name);
   // createIndexes (not syncIndexes) so nothing we did not name is ever dropped. Production runs with
   // autoIndex off, so this is where its indexes get built.
   for (const model of [User, AuditLog, City, Department]) await model.createIndexes();
@@ -108,8 +125,43 @@ export async function migrateUsersV2({ apply = false } = {}) {
 
   await User.collection.updateMany(pending, [{ $set: { auth0Ids: ["$auth0Id"] } }]);
   // The old unique index would see every new row (no auth0Id) as a duplicate null.
-  if (await dropIndexIfPresent("auth0Id_1")) report.droppedIndexes.push("auth0Id_1");
+  if (await dropIndexIfPresent(User.collection, "auth0Id_1"))
+    report.droppedIndexes.push("auth0Id_1");
   await User.createIndexes();
   report.applied = true;
   return report;
 }
+
+/**
+ * M1: builds the declared indexes of Pincode, Waitlist, City, Department, CategoryMapping, SlaPolicy and Issue (production runs with
+ * autoIndex off) and gives cities without a `status` the default "onboarding". Dry run unless
+ * `apply`: reports index names that are missing, stale city indexes, and how many cities would change.
+ * Drops only the stale indexes named in OLD_M1_CITY_INDEXES, after their replacements are built.
+ */
+export async function migrateM1Indexes({ apply = false } = {}) {
+  const report = { applied: false, missingIndexes: {}, citiesWithoutStatus: 0, staleIndexes: [] };
+  for (const model of M1_MODELS) {
+    // diffIndexes lists what createIndexes would build; a missing collection has none yet.
+    const { toCreate } = await model.diffIndexes();
+    if (toCreate.length) report.missingIndexes[model.modelName] = toCreate.map(indexName);
+  }
+  const noStatus = { status: { $exists: false } };
+  report.citiesWithoutStatus = await City.collection.countDocuments(noStatus);
+  for (const name of OLD_M1_CITY_INDEXES)
+    if (await hasIndex(City.collection, name)) report.staleIndexes.push(name);
+  if (!apply) return report;
+
+  for (const model of M1_MODELS) await model.createIndexes();
+  await City.collection.updateMany(noStatus, { $set: { status: "onboarding" } });
+  for (const name of report.staleIndexes) await dropIndexIfPresent(City.collection, name);
+  report.applied = true;
+  return report;
+}
+
+const M1_MODELS = [Pincode, Waitlist, City, Department, CategoryMapping, SlaPolicy, Issue];
+
+// diffIndexes returns key objects ({ pin: 1 }); print them the way MongoDB names them (pin_1).
+const indexName = (keys) =>
+  Object.entries(keys)
+    .map(([field, dir]) => `${field}_${dir}`)
+    .join("_");

@@ -29,6 +29,10 @@ const { healthRoutes } = await import("../../src/routes/healthRoutes.js");
 const { meRoutes } = await import("../../src/routes/meRoutes.js");
 const { adminUserRoutes } = await import("../../src/routes/adminUserRoutes.js");
 const { geoRoutes } = await import("../../src/routes/geoRoutes.js");
+const { pincodeRoutes } = await import("../../src/routes/pincodeRoutes.js");
+const { waitlistRoutes } = await import("../../src/routes/waitlistRoutes.js");
+const { uploadRoutes } = await import("../../src/routes/uploadRoutes.js");
+const { issueRoutes } = await import("../../src/routes/issueRoutes.js");
 const { authenticate } = await import("../../src/middleware/auth.js");
 const { loadUser, requireActive, requireVerifiedEmail } =
   await import("../../src/middleware/access.js");
@@ -42,6 +46,10 @@ const MOUNTS = [
   { prefix: "/me", router: meRoutes },
   { prefix: "/admin/users", router: adminUserRoutes },
   { prefix: "", router: geoRoutes },
+  { prefix: "/pincodes", router: pincodeRoutes, isPublic: true },
+  { prefix: "/waitlist", router: waitlistRoutes, isPublic: true },
+  { prefix: "/uploads", router: uploadRoutes },
+  { prefix: "/issues", router: issueRoutes },
 ];
 
 /** Every { method, path, handlers } of a router, flattened. */
@@ -93,10 +101,19 @@ describe("route inventory", () => {
     );
   });
 
-  it("the public list is health only, and it is read-only", () => {
+  // Public POSTs that only read (a body carries the input, nothing is written). Each one is named here on purpose.
+  const PUBLIC_READ_POSTS = ["POST /api/pincodes/:pin/check-point"];
+  // Public writes, each IP rate-limited and idempotent. Named here on purpose.
+  const PUBLIC_WRITES = ["POST /api/waitlist"];
+
+  it("public routes are read-only (GET or a named read-only POST) or a named public write", () => {
     const publicRoutes = all.filter((r) => r.isPublic);
     expect(publicRoutes.length).toBeGreaterThan(0);
-    expect(publicRoutes.every((r) => r.method === "GET")).toBe(true);
+    for (const r of publicRoutes) {
+      const name = `${r.method} ${r.path}`;
+      const allowed = [...PUBLIC_READ_POSTS, ...PUBLIC_WRITES].includes(name);
+      expect(r.method === "GET" || allowed, name).toBe(true);
+    }
   });
 
   it.each(protectedRoutes.map((r) => [`${r.method} ${r.path}`, r]))(

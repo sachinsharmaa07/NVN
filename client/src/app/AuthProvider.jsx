@@ -8,6 +8,7 @@ import { SUPPORT_CONTACT, authConfig } from "@/lib/authConfig";
 import { claimMfaAttempt, clearMfaAttempt, mfaAttempted } from "@/lib/mfaGuard";
 import { levelOf } from "@/lib/roles";
 import { safePath } from "@/lib/safePath";
+import { E2EAuthProvider } from "./E2EAuthProvider";
 import { router } from "./router";
 
 /*
@@ -17,6 +18,8 @@ import { router } from "./router";
  * browser has none, Auth0 falls back to a hidden iframe using its own session cookie.
  */
 export function AuthProvider({ children }) {
+  // Playwright only (ADR 0003). A literal comparison, so a normal build drops this branch entirely.
+  if (import.meta.env.VITE_E2E === "1") return <E2EAuthProvider>{children}</E2EAuthProvider>;
   if (!authConfig) {
     return (
       <AuthContext.Provider value={{ status: "unconfigured", user: null }}>

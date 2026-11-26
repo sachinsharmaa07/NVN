@@ -10,8 +10,7 @@ import {
 } from "../middleware/access.js";
 import { adminReadLimit } from "../middleware/userRateLimit.js";
 import { listCities, listDepartments } from "../controllers/geoController.js";
-import { departmentsQuery } from "../validators/geo.js";
-import { none } from "../validators/me.js";
+import { citiesQuery, departmentsQuery } from "../validators/geo.js";
 
 export const geoRoutes = Router();
 
@@ -27,7 +26,7 @@ geoRoutes.get(
   ...who,
   requirePermission("user:promote"),
   adminReadLimit,
-  validate({ query: none }),
+  validate({ query: citiesQuery }),
   listCities,
 );
 

@@ -74,8 +74,10 @@ set `PORT=5050` in `server/.env` and
 | `AUTH0_AUDIENCE` | `https://api.nivaran.in` | no | The Auth0 API identifier. Required in production |
 | `AUTH0_M2M_CLIENT_ID` | from the Auth0 M2M app | **yes** (treat the pair as one secret) | Machine-to-Machine app for the Management API. Needed for role changes that set the MFA flag, and the scripts. Without it those answer 503 `AUTH_NOT_CONFIGURED` |
 | `AUTH0_M2M_CLIENT_SECRET` | from the Auth0 M2M app | **yes** | Server only, never in `client/.env`, never logged. Set both M2M values or neither |
+| `HMAC_SECRET` | output of `openssl rand -hex 32` | **yes** | Key for hashing waitlist emails (decision O1). 64 hex characters. Required in production. Set once: changing it orphans every stored hash |
 | `SUPER_ADMIN_EMAIL` | `you@example.com` | no (personal data, keep out of git) | Read only by `npm run bootstrap:super-admin -w server`. That person must have signed in once with a verified email |
 | `AUTH_CLOCK_TOLERANCE_SECONDS` | `5` | no | Allowed clock difference when checking token expiry, 0 to 30. Keep hosts on NTP |
+| `DNS_SERVERS` | `1.1.1.1,8.8.8.8` | no | Dev only, usually empty. DNS servers for the `mongodb+srv` lookup (see Troubleshooting) |
 
 The server checks these with Zod when it starts and exits with a list of the wrong keys if any are
 missing or invalid.
@@ -132,7 +134,7 @@ Run these from the repository root.
 | `npm run dev`          | Starts the server and the client together, with coloured prefixes   |
 | `npm run build`        | Builds the client for production into `client/dist/`               |
 | `npm test`             | Runs the unit and API tests of both workspaces (Vitest)             |
-| `npm run test:e2e`     | Runs Playwright end-to-end tests (added in a later phase)           |
+| `npm run test:e2e`     | Runs the Playwright end-to-end tests (see "Running the tests")      |
 | `npm run lint`         | Lints the whole repo with ESLint                                    |
 | `npm run format`       | Formats the code with Prettier                                      |
 | `npm run format:check` | Checks formatting without changing files (used in CI)               |
@@ -152,6 +154,16 @@ print secrets.
 | `npm run sync:mfa-flags -w server` | Sets Auth0's `mfa_required` flag from the database for every user (on for level 4 and above, off below). Use it after an Auth0 outage left flags out of step. Safe to rerun | `0` all synced, `1` unexpected or some users failed |
 | `npm run migrate:users-v1 -w server` | Moves the `users` collection to the Phase 1 shape (`verified` renamed to `emailVerified`, `status` set to `active`), swaps old indexes for new ones, and lists rows that break the scope rules without changing them. Run it after any deploy that changes indexes (production has autoIndex off). On a database without `auth0Ids`, run `migrate:users-v2` first | `0` done, `1` error |
 | `npm run migrate:users-v2 -w server` | Copies each user's `auth0Id` into `auth0Ids` and builds the new indexes (unique `auth0Ids`, unique email among verified rows). Dry run by default; add `-- --apply` to write. Stops without writing if two users share a verified email | `0` done, `1` error, `2` duplicate verified emails |
+| `npm run migrate:m1-indexes -w server` | Builds the M1 indexes (pincodes, waitlists, cities, departments, category mappings) and sets `status: "onboarding"` on cities that have none. Dry run by default; add `-- --apply` to write. Never drops an index | `0` done, `1` error |
+| `npm run import:pincodes -w server` | Loads `data/pincodes.tsv` (GeoNames) into `pincodes` and creates one city per (state, district), code like `PB-KAPURTHALA`, status `active`. Per pincode: unique place names as `localities`, mean position as `centroid`, `radiusM` = farthest place + 1.5 km (3 to 25 km), `isServed: true`. Streams the file, writes in batches of 500, about 1 s for 19k pincodes on a local database. Dry run prints counts; add `-- --apply` to write. `--city PB-KAPURTHALA` imports one district city only. `--format csv` reads the data.gov.in CSV (`data/pincodes.csv`) instead; it has no coordinates, so it never marks pincodes served. `--file <path>` for another file. A second `--apply` changes 0 rows | `0` done, `1` error |
+| `npm run import:boundaries -w server` | Optional. Sets `boundary`, `boundarySource` and `centroid` from a GeoJSON FeatureCollection (default `data/boundaries/phagwara.geojson`; each feature needs `properties.pincode`). A pincode with a polygon gets exact pin checks; the rest use the radius circle. Validates rings (closed, 4+ points, `[lon, lat]` inside India). Reports invalid features, polygons with no pincode row, and served pincodes with no polygon. Run `import:pincodes` first. Dry run by default; `-- --apply` writes | `0` done, `1` error |
+| `npm run seed:departments -w server` | Gives every city the default departments (Roads, Sanitation, Electrical, Water, Drainage) and the category map (pothole to Roads, garbage to Sanitation, streetlight to Electrical, water_leak to Water, drainage to Drainage, other to triage). Inserts only what is missing, so it never overwrites a renamed department or an admin's mapping; a rerun creates 0. Run `import:pincodes` first. Dry run by default; `-- --apply` writes; `--city PB-KAPURTHALA` for one city | `0` done, `1` error |
+
+**Pincode data (not in git).** Download `IN.zip` from GeoNames (<https://download.geonames.org/export/zip/>),
+unzip it and save `IN.txt` as `data/pincodes.tsv` (about 12 MB, tab-separated, no header; `.gitignore` excludes it).
+GeoNames data is CC BY 4.0: credit "GeoNames" wherever pincode data is shown. Then run, in order:
+`import:pincodes -- --apply`, optionally `import:boundaries -- --apply`, then `seed:departments -- --apply`.
+Hand-drawn polygons in `data/boundaries/*.geojson` (`boundarySource: "manual"`) can be committed.
 
 ## Running the tests
 
@@ -174,6 +186,28 @@ must be a **replica set** (a plain `mongod` fails). Two ways to get one:
 If neither works, the DB tests **fail** with the reason rather than skip, so a green run means the
 auth cases really ran. In CI the value comes from the `MONGODB_URI_TEST` repository secret; give it
 its own Atlas database user with access to `nivaran_test` only.
+
+### End-to-end tests (Playwright)
+
+```sh
+(cd client && npx playwright install chromium)   # once: downloads the browser (about 100 MB)
+npm run test:e2e                                 # builds (--mode e2e), previews on 5199, runs both projects
+(cd client && npx playwright test --ui)          # watch the steps in a browser window
+(cd client && npx playwright show-report)        # the HTML report of the last run
+```
+
+The suite drives the report flow on a 360 px phone and a 1280 px laptop. It needs no Auth0 account,
+database, Cloudinary keys or internet: `VITE_E2E=1` swaps sign-in for a fake verified citizen, and
+`client/e2e/fixtures.js` answers every API, upload and map-tile request (ADR 0003). It runs against the
+production bundle (`vite build --mode e2e` into `dist-e2e/`, served by `vite preview`). Any other build
+with `VITE_E2E` set stops with an error, so the fake sign-in can never ship. In CI the `e2e`
+job runs after `check` and uploads `playwright-report` when it fails.
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| Server start fails with `querySrv ECONNREFUSED _mongodb._tcp...` | The network (often a phone hotspot) hands out a link-local IPv6 DNS server (`fe80::...%en0`) that Node's resolver cannot use for the SRV lookup | Set `DNS_SERVERS=1.1.1.1,8.8.8.8` in `server/.env` and restart. Dev only; leave it empty elsewhere |
 
 ## Folder tree
 

@@ -10,7 +10,10 @@ one `package-lock.json`. **Ports:** server 5001 (macOS AirPlay holds 5000), clie
 
 ## Where things live
 - Plan: `docs/PLAN.md`. Decisions: `docs/DECISIONS.md` (change a row there first, then the code). Handoff: `docs/HANDOFF.md`.
-- Layout, server details, enums, tests, dependency list, skills, graphify: **`docs/CONVENTIONS.md`**.
+- Layout, server details, enums, tests, dependency list, graphify: **`docs/CONVENTIONS.md`**.
+- Skills (use only these): frontend-design:frontend-design (UI), backend-design:think-before-coding (server code),
+  engineering:system-design (HLD: components, data flow, APIs), engineering:architecture (LLD decisions and ADRs).
+  Do not load other skills or agents unless I ask.
 - `docs/DESIGN.md` (this file wins on conflict), `docs/adr/` (0001 stack, 0002 layering), `docs/phase-1-auth.md`,
   `docs/AUTH0_SETUP.md`. **Follow `docs/UI.md` for all UI**; no colours or fonts here.
 - `docs/ARCHITECTURE.md` is 97 KB. Never read it whole: run `grep -n '^## '` on it and read only the section you need.
@@ -55,3 +58,5 @@ what CI runs) | `npm test`, `lint`, `build`, `format`, `test:e2e` | `-w server`:
 - Plan mode before any change touching more than one file. Explain non-obvious code line by line.
 - Keep files under ~200 lines; split by responsibility.
 - Every bug fix comes with a test that failed before the fix. Done = tests pass and lint is clean in both apps.
+- Living docs: after each feature, update `docs/API.md`, `docs/DECISIONS.md`, and the BUILT/DESIGNED tags plus
+  the diagrams for that area in `docs/ARCHITECTURE.md`.

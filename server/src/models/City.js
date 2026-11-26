@@ -1,28 +1,38 @@
-// Placeholder: Phase 2 owns the full City model. Phase 1 needs it for scope checks and the geo pickers.
+// A city Nivaran serves or is onboarding. Scope checks, admin pickers and pincodes point at it.
 import mongoose from "mongoose";
 import { INDIA_STATE_CODES } from "../utils/india.js";
+import { CategoryMapping } from "./CategoryMapping.js";
 import { Department } from "./Department.js";
+import { Pincode } from "./Pincode.js";
 import { User } from "./User.js";
+
+export const CITY_STATUSES = Object.freeze(["active", "onboarding"]);
 
 const citySchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true, maxlength: 100 },
-    code: { type: String, required: true, unique: true, match: /^[A-Z0-9]{2,10}$/ },
+    // Hand-made (LDH) or a district city from the import (PB-KAPURTHALA, decision O2).
+    code: { type: String, required: true, unique: true, match: /^[A-Z0-9][A-Z0-9-]{1,39}$/ },
     stateCode: { type: String, required: true, enum: INDIA_STATE_CODES },
+    // onboarding: set up by admins, not yet taking reports; active: live for residents.
+    status: { type: String, enum: CITY_STATUSES, default: "onboarding" },
   },
   { timestamps: true },
 );
 
-// State officers list their state's cities, name-sorted. `code` is unique-indexed by its option.
-citySchema.index({ stateCode: 1, name: 1 });
+// GET /api/cities keyset pages in (name, _id) order, all cities or one state's. `code` is unique by its option.
+citySchema.index({ name: 1, _id: 1 });
+citySchema.index({ stateCode: 1, name: 1, _id: 1 });
 
 // MongoDB has no foreign keys, so deletion is blocked here while anything still points at the city.
 const refuseIfReferenced = async (ids) => {
   const where = { $in: ids };
   const used =
     (await User.exists({ cityId: mongoose.trusted(where) })) ||
-    (await Department.exists({ cityId: mongoose.trusted(where) }));
-  if (used) throw new Error("City is still referenced by users or departments");
+    (await Department.exists({ cityId: mongoose.trusted(where) })) ||
+    (await Pincode.exists({ cityId: mongoose.trusted(where) })) ||
+    (await CategoryMapping.exists({ cityId: mongoose.trusted(where) }));
+  if (used) throw new Error("City is still referenced by users, departments, pincodes or mappings");
 };
 citySchema.pre(
   ["deleteOne", "deleteMany", "findOneAndDelete"],

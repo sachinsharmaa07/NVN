@@ -1,3 +1,5 @@
+import { t } from "@/i18n/t";
+
 // Indian PIN codes are six digits and never start with 0 (the first digit is the postal zone, 1-9).
 const PINCODE_PATTERN = /^[1-9][0-9]{5}$/;
 
@@ -15,3 +17,11 @@ export function cleanPincode(value) {
 
 // The same rule as a string, for the input's `pattern` attribute.
 export const PINCODE_HTML_PATTERN = "[1-9][0-9]{5}";
+
+/** The error message for a typed pincode, or "" when it is fine. */
+export function pincodeError(value) {
+  if (value.length === 0) return t("landing.pincode.errorEmpty");
+  if (value.length < 6) return t("landing.pincode.errorShort", { count: value.length });
+  if (!isValidPincode(value)) return t("landing.pincode.errorLeadingZero");
+  return "";
+}

@@ -38,6 +38,7 @@
   "admin.role.current": "Current role: {role}",
   "admin.role.new": "New role",
   "admin.role.city": "City",
+  "admin.role.citySearch": "Search cities by name",
   "admin.role.department": "Department",
   "admin.role.state": "State",
   "admin.role.pick": "Choose",
