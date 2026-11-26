@@ -7,6 +7,7 @@ import { Department } from "../models/Department.js";
 import { CategoryMapping } from "../models/CategoryMapping.js";
 import { Pincode } from "../models/Pincode.js";
 import { Waitlist } from "../models/Waitlist.js";
+import { Issue } from "../models/Issue.js";
 import { SlaPolicy } from "../models/SlaPolicy.js";
 import { User } from "../models/User.js";
 import { SCOPE_RULES } from "../utils/permissions.js";
@@ -132,14 +133,14 @@ export async function migrateUsersV2({ apply = false } = {}) {
 }
 
 /**
- * M1: builds the declared indexes of Pincode, Waitlist, City, Department, CategoryMapping and SlaPolicy (production runs with
+ * M1: builds the declared indexes of Pincode, Waitlist, City, Department, CategoryMapping, SlaPolicy and Issue (production runs with
  * autoIndex off) and gives cities without a `status` the default "onboarding". Dry run unless
  * `apply`: reports index names that are missing, stale city indexes, and how many cities would change.
  * Drops only the stale indexes named in OLD_M1_CITY_INDEXES, after their replacements are built.
  */
 export async function migrateM1Indexes({ apply = false } = {}) {
   const report = { applied: false, missingIndexes: {}, citiesWithoutStatus: 0, staleIndexes: [] };
-  for (const model of [Pincode, Waitlist, City, Department, CategoryMapping, SlaPolicy]) {
+  for (const model of M1_MODELS) {
     // diffIndexes lists what createIndexes would build; a missing collection has none yet.
     const { toCreate } = await model.diffIndexes();
     if (toCreate.length) report.missingIndexes[model.modelName] = toCreate.map(indexName);
@@ -150,13 +151,14 @@ export async function migrateM1Indexes({ apply = false } = {}) {
     if (await hasIndex(City.collection, name)) report.staleIndexes.push(name);
   if (!apply) return report;
 
-  for (const model of [Pincode, Waitlist, City, Department, CategoryMapping, SlaPolicy])
-    await model.createIndexes();
+  for (const model of M1_MODELS) await model.createIndexes();
   await City.collection.updateMany(noStatus, { $set: { status: "onboarding" } });
   for (const name of report.staleIndexes) await dropIndexIfPresent(City.collection, name);
   report.applied = true;
   return report;
 }
+
+const M1_MODELS = [Pincode, Waitlist, City, Department, CategoryMapping, SlaPolicy, Issue];
 
 // diffIndexes returns key objects ({ pin: 1 }); print them the way MongoDB names them (pin_1).
 const indexName = (keys) =>
