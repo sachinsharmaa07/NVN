@@ -190,15 +190,17 @@ its own Atlas database user with access to `nivaran_test` only.
 
 ```sh
 (cd client && npx playwright install chromium)   # once: downloads the browser (about 100 MB)
-npm run test:e2e                                 # starts its own Vite on port 5199, runs both projects
+npm run test:e2e                                 # builds (--mode e2e), previews on 5199, runs both projects
 (cd client && npx playwright test --ui)          # watch the steps in a browser window
 (cd client && npx playwright show-report)        # the HTML report of the last run
 ```
 
 The suite drives the report flow on a 360 px phone and a 1280 px laptop. It needs no Auth0 account,
 database, Cloudinary keys or internet: `VITE_E2E=1` swaps sign-in for a fake verified citizen, and
-`client/e2e/fixtures.js` answers every API, upload and map-tile request (ADR 0003). A production
-build with `VITE_E2E` set stops with an error, so the fake sign-in can never ship. In CI the `e2e`
+`client/e2e/fixtures.js` answers every API, upload and map-tile request (ADR 0003). It runs against the
+production bundle (`vite build --mode e2e` into `dist-e2e/`, served by `vite preview`). Any other build
+with `VITE_E2E` set stops with an error, so the fake sign-in can never ship. Locally a preview already
+running on port 5199 is reused, so stop it after changing the app. In CI the `e2e`
 job runs after `check` and uploads `playwright-report` when it fails.
 
 ## Folder tree

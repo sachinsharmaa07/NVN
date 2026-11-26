@@ -36,6 +36,7 @@ export default defineConfig([
   globalIgnores([
     "**/node_modules/",
     "**/dist/",
+    "**/dist-e2e/",
     "**/coverage/",
     "**/playwright-report/",
     "**/test-results/",

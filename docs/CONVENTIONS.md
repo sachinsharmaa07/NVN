@@ -30,7 +30,8 @@ Moved out of `CLAUDE.md` on 25 Nov 2026 so that file stays short. Same rules, sa
   set: `MONGODB_URI_TEST` (name ends `_test`, wiped) or in-memory mongodb-memory-server.
 - Client: Vitest + Testing Library in `client/src/**/*.test.jsx` (jsdom; stub Leaflet's `PinMap`).
 - E2E (ADR 0003): Playwright in `client/e2e/*.spec.js`, Chromium, projects `mobile` (360×740) and `desktop`
-  (1280×800). Vite runs with `VITE_E2E=1` (fake signed-in citizen; `vite build` refuses the flag). Every request
+  (1280×800). Runs against `vite build --mode e2e` + `vite preview` with `VITE_E2E=1` (fake signed-in citizen; output
+  `dist-e2e/`; any other build refuses the flag). Every request
   is answered by `e2e/fixtures.js` with the shapes in `docs/API.md`; anything off `localhost` fails the test.
   Change an API shape: update `docs/API.md`, the server tests and the fixtures together. Select by role, label
   or text, never by CSS class (Leaflet's `.leaflet-marker-icon` is the one exception). No `waitForTimeout`.
