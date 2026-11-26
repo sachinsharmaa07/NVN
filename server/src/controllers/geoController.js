@@ -4,7 +4,7 @@ import {
 } from "../services/adminUserService.js";
 
 export async function listCities(req, res) {
-  res.json(await cities(req.user));
+  res.json(await cities(req.user, req.valid.query));
 }
 
 export async function listDepartments(req, res) {

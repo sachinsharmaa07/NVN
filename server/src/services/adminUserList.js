@@ -9,7 +9,7 @@ import { forbidden, serializeAdminUser, trusted } from "./adminUserSupport.js";
 const log = logger.child({ component: "adminUserList" });
 const LIST_FIELDS =
   "email name avatarUrl role cityId departmentId stateCode status suspendedReason emailVerified lastLoginAt createdAt";
-const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+export const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /** Rows the actor may see in the list. trusted() keeps our own $in from being neutralised. */
 async function listScope(actor) {

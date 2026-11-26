@@ -8,6 +8,7 @@ import { ResponsiveDialog } from "@/components/system/ResponsiveDialog";
 import { Button } from "@/components/ui/button";
 import { useChangeRole } from "@/hooks/useChangeRole";
 import { useCities } from "@/hooks/useCities";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useDepartments } from "@/hooks/useDepartments";
 import { t } from "@/i18n/t";
 import { serverFieldErrors } from "@/lib/fieldErrors";
@@ -35,7 +36,8 @@ export function RoleChangeDialog({ user, actor, open, onOpenChange, onGone, retu
   const [fieldErrors, setFieldErrors] = useState({});
 
   const needs = roleNeeds(form.role);
-  const cities = useCities({ enabled: needs.city });
+  const [cityQuery, setCityQuery] = useState("");
+  const cities = useCities({ enabled: needs.city, q: useDebouncedValue(cityQuery) });
   const departments = useDepartments(needs.department ? form.cityId : "");
   const reasonLength = form.reason.trim().length;
   const valid =
@@ -131,6 +133,8 @@ export function RoleChangeDialog({ user, actor, open, onOpenChange, onGone, retu
             needs={needs}
             needsMfa={needsMfa}
             cities={cities}
+            cityQuery={cityQuery}
+            onCityQuery={setCityQuery}
             departments={departments}
             cityFixed={cityFixed}
             fieldErrors={fieldErrors}

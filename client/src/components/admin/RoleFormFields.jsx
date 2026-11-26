@@ -23,6 +23,8 @@ export function RoleFormFields({
   needs,
   needsMfa,
   cities,
+  cityQuery,
+  onCityQuery,
   departments,
   cityFixed,
   fieldErrors,
@@ -65,6 +67,8 @@ export function RoleFormFields({
         scope={form}
         onChange={set}
         cities={cities.data}
+        cityQuery={cityQuery}
+        onCityQuery={onCityQuery}
         departments={departments.data}
         cityFixed={cityFixed}
       />
