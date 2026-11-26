@@ -1,6 +1,7 @@
 // A city Nivaran serves or is onboarding. Scope checks, admin pickers and pincodes point at it.
 import mongoose from "mongoose";
 import { INDIA_STATE_CODES } from "../utils/india.js";
+import { CategoryMapping } from "./CategoryMapping.js";
 import { Department } from "./Department.js";
 import { Pincode } from "./Pincode.js";
 import { User } from "./User.js";
@@ -28,8 +29,9 @@ const refuseIfReferenced = async (ids) => {
   const used =
     (await User.exists({ cityId: mongoose.trusted(where) })) ||
     (await Department.exists({ cityId: mongoose.trusted(where) })) ||
-    (await Pincode.exists({ cityId: mongoose.trusted(where) }));
-  if (used) throw new Error("City is still referenced by users, departments or pincodes");
+    (await Pincode.exists({ cityId: mongoose.trusted(where) })) ||
+    (await CategoryMapping.exists({ cityId: mongoose.trusted(where) }));
+  if (used) throw new Error("City is still referenced by users, departments, pincodes or mappings");
 };
 citySchema.pre(
   ["deleteOne", "deleteMany", "findOneAndDelete"],
