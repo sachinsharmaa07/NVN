@@ -1,5 +1,7 @@
-// Placeholder: Phase 2 owns the full Department model. It has no stateCode (it would drift from City).
+// A city's department. No stateCode (it would drift from City) and no categories: the category to
+// department map is its own collection (M1 step 6).
 import mongoose from "mongoose";
+import { CategoryMapping } from "./CategoryMapping.js";
 import { User } from "./User.js";
 
 const departmentSchema = new mongoose.Schema(
@@ -15,8 +17,12 @@ departmentSchema.index({ cityId: 1, code: 1 }, { unique: true });
 
 // MongoDB has no foreign keys, so deletion is blocked here while users still point at the department.
 const refuseIfReferenced = async (ids) => {
-  if (await User.exists({ departmentId: mongoose.trusted({ $in: ids }) })) {
-    throw new Error("Department is still referenced by users");
+  const where = mongoose.trusted({ $in: ids });
+  if (
+    (await User.exists({ departmentId: where })) ||
+    (await CategoryMapping.exists({ departmentId: where }))
+  ) {
+    throw new Error("Department is still referenced by users or category mappings");
   }
 };
 departmentSchema.pre(

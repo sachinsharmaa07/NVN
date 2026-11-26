@@ -128,12 +128,13 @@ describe("AppLayout", () => {
     expect(screen.getByRole("button", { name: t("shell.sidebar.expand") })).toBeInTheDocument();
   });
 
-  it("shows the help chat button, except on the report page", () => {
-    const { unmount } = renderShell("/");
-    expect(screen.getByRole("button", { name: t("shell.chat.open") })).toBeInTheDocument();
-    unmount();
-
-    renderShell("/report");
+  it("shows the help chat button, except on the report map step (it would cover the map)", () => {
+    for (const path of ["/", "/report", "/report?step=3"]) {
+      const { unmount } = renderShell(path);
+      expect(screen.getByRole("button", { name: t("shell.chat.open") }), path).toBeInTheDocument();
+      unmount();
+    }
+    renderShell("/report?step=2");
     expect(screen.queryByRole("button", { name: t("shell.chat.open") })).not.toBeInTheDocument();
   });
 });

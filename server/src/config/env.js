@@ -42,11 +42,35 @@ const envSchema = z.object({
   // never in client/.env. Scopes: update:users, update:users_app_metadata. The secret is never logged.
   AUTH0_M2M_CLIENT_ID: optional(z.string().min(1)),
   AUTH0_M2M_CLIENT_SECRET: optional(z.string().min(1)),
+  // Key for HMAC-SHA-256 of waitlist emails (decision O1). 32 random bytes as hex: openssl rand -hex 32.
+  // Changing it makes every stored emailHash unmatchable, so set it once.
+  HMAC_SECRET: optional(
+    z.string().regex(/^[0-9a-f]{64}$/i, "64 hex characters (openssl rand -hex 32)"),
+  ),
+  // Cloudinary (decision 4), signed uploads with node:crypto, no SDK. The secret is server only, never logged.
+  CLOUDINARY_CLOUD_NAME: optional(z.string().regex(/^[a-z0-9_-]+$/i, "cloud name only")),
+  CLOUDINARY_API_KEY: optional(z.string().regex(/^[0-9]+$/, "digits only")),
+  CLOUDINARY_API_SECRET: optional(z.string().min(10)),
+  // Dev only: DNS servers for the mongodb+srv lookup, comma-separated IPs (e.g. 1.1.1.1,8.8.8.8).
+  // Node cannot use the link-local IPv6 DNS (fe80::...%en0) phone hotspots hand out: querySrv ECONNREFUSED.
+  DNS_SERVERS: optional(
+    z
+      .string()
+      .transform((v) =>
+        v
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+      )
+      .pipe(z.array(z.union([z.ipv4(), z.ipv6()])).min(1)),
+  ),
   // Email of the first super admin; only scripts/bootstrapSuperAdmin.js reads it.
   SUPER_ADMIN_EMAIL: optional(
     z.preprocess((v) => (typeof v === "string" ? v.trim().toLowerCase() : v), z.email()),
   ),
 });
+
+const CLOUDINARY_KEYS = ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"];
 
 // The test database may be wiped by tests, so refuse anything that could be the real one.
 function testDbProblems(raw) {
@@ -88,6 +112,11 @@ export function parseEnv(raw) {
     if (!raw.AUTH0_M2M_CLIENT_ID) problems.push("AUTH0_M2M_CLIENT_ID: required in production");
     if (!raw.AUTH0_M2M_CLIENT_SECRET)
       problems.push("AUTH0_M2M_CLIENT_SECRET: required in production");
+    if (!raw.HMAC_SECRET) problems.push("HMAC_SECRET: required in production");
+    for (const key of CLOUDINARY_KEYS)
+      if (!raw[key]) problems.push(`${key}: required in production`);
+  } else if (CLOUDINARY_KEYS.some((k) => raw[k]) && !CLOUDINARY_KEYS.every((k) => raw[k])) {
+    problems.push(`${CLOUDINARY_KEYS.join(", ")}: set all three or none`);
   } else if (Boolean(raw.AUTH0_M2M_CLIENT_ID) !== Boolean(raw.AUTH0_M2M_CLIENT_SECRET)) {
     // Half a credential pair is always a mistake; say so at start-up, not on the first admin write.
     problems.push("AUTH0_M2M_CLIENT_ID and AUTH0_M2M_CLIENT_SECRET: set both or neither");

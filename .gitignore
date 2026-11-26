@@ -13,6 +13,7 @@ node_modules/
 
 # Build output and tool caches
 dist/
+dist-e2e/
 .vite/
 
 # Test output
@@ -36,3 +37,8 @@ _to_delete/
 
 # Graphify knowledge graph (regenerate with: graphify extract . --code-only)
 graphify-out/
+
+# Pincode data: large downloads, see README "Pincode data"
+data/pincodes.csv
+data/pincodes.tsv
+data/boundaries/india.geojson

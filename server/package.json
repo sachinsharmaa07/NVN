@@ -14,7 +14,12 @@
     "bootstrap:super-admin": "node scripts/bootstrapSuperAdmin.js",
     "sync:mfa-flags": "node scripts/syncMfaFlags.js",
     "migrate:users-v1": "node scripts/migrateUsersV1.js",
-    "migrate:users-v2": "node scripts/migrateUsersV2.js"
+    "migrate:users-v2": "node scripts/migrateUsersV2.js",
+    "migrate:m1-indexes": "node scripts/migrateM1Indexes.js",
+    "import:pincodes": "node scripts/importPincodes.js",
+    "import:boundaries": "node scripts/importBoundaries.js",
+    "seed:departments": "node scripts/seedDepartments.js",
+    "seed:sla": "node scripts/seedSlaPolicies.js"
   },
   "dependencies": {
     "cors": "^2.8.6",

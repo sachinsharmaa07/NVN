@@ -71,21 +71,21 @@ flowchart LR
     P0["Phase 0: scaffold, CI, health, error shape"]
     VF["Visual foundation: tokens, shell, landing, motion"]
     P1["Phase 1: Auth0 sign-in, roles in MongoDB,<br/>admin users, audit log, MFA flag"]
+    M1["M1: City, Department, Pincode, Waitlist, CategoryMapping,<br/>national pincode import, boundary import,<br/>department seed, check-point API"]
   end
   subgraph Partial["PARTIAL"]
     CH["Chat bubble: opens a placeholder panel"]
     RP["Report, Issues, Community pages: empty-state shells"]
-    GE["City and Department: placeholder models"]
   end
   subgraph Designed["DESIGNED only"]
-    P2["Phase 2: Pincode model, import, pincode API"]
+    P2["M1: pincode lookup API, waitlist API"]
     P3["Phase 3: report wizard, map, grouping, ticket IDs"]
     P4["Phase 4: SLA, priority, state machine, staff queue"]
     P5["Phase 5: chatbot with Gemini"]
     P6["Phase 6: community, moderation"]
     P8["Phase 8: hardening, Playwright e2e"]
   end
-  P0 --> VF --> P1 --> P2 --> P3 --> P4 --> P5 --> P6 --> P8
+  P0 --> VF --> P1 --> M1 --> P2 --> P3 --> P4 --> P5 --> P6 --> P8
 ```
 
 | Area | Status | Evidence in the repo |
@@ -100,13 +100,19 @@ flowchart LR
 | Identity linking (Google and email code to one account) | **BUILT** | `services/identityLinkService.js` |
 | One-off scripts: bootstrap super admin, sync MFA flags, migrate users v1 and v2 | **BUILT** | `server/scripts/` |
 | Design tokens (light and dark), shell, landing page, profile, admin users, suspended, forbidden pages | **BUILT** | `client/src/styles/globals.css`, `layouts/`, `pages/` |
-| `City`, `Department` models | **PARTIAL** | Marked "Placeholder: Phase 2 owns the full model" in their files. Used for scope checks and the admin pickers. |
+| `City` (with `status`), `Department`, `Pincode`, `Waitlist` models, M1 index migration | **BUILT** | `server/src/models/`, `scripts/migrateM1Indexes.js` (M1 step 3) |
+| National pincode import (GeoNames, one city per district, centroid and `radiusM`) and optional boundary import (dry run, `--apply`, idempotent) | **BUILT** | `scripts/importPincodes.js`, `scripts/importBoundaries.js`, `services/pincodeDirectory.js`, `services/pincodeImportService.js`, `services/boundaryImportService.js`, `utils/geo.js`, `utils/india.js`. Timed on the real file: 19,238 pincodes and 637 cities in about 1 s on a local database. Not yet run against Atlas |
+| `POST /api/pincodes/:pin/check-point` (polygon "exact", else radius circle "approx") | **BUILT** | `routes/pincodeRoutes.js`, `services/pincodeService.js` (`locatePoint`, reused by `POST /api/issues` later), `docs/API.md` |
+| Default departments and category map per city (`CategoryMapping`, seed script) | **BUILT** | `models/CategoryMapping.js`, `utils/categories.js`, `scripts/seedDepartments.js`, `services/departmentSeedService.js`. On the real data: 637 cities, 3,185 departments, 3,822 mappings in 0.2 s locally |
 | Chat bubble | **PARTIAL** | `components/chat/ChatBubble.jsx` opens a "coming soon" sheet. No API. |
 | `/report`, `/issues`, `/community` | **PARTIAL** | Empty-state shells with the final navigation wiring. |
+| `GET /api/pincodes/:pin`, `POST /api/waitlist` (section 4.5) | **BUILT** | `routes/pincodeRoutes.js`, `routes/waitlistRoutes.js`, `services/pincodeService.js`, `services/waitlistService.js` |
+| `SlaPolicy` national defaults and `expectedBy`; `Counter` and ticket IDs | **BUILT** | `models/SlaPolicy.js`, `models/Counter.js`, `utils/expectedBy.js`, `services/slaService.js`, `services/ticketService.js`, `scripts/seedSlaPolicies.js` |
+| Cloudinary signed uploads (`POST /api/uploads/sign`, `node:crypto`) | **BUILT** | `routes/uploadRoutes.js`, `services/uploadService.js` |
+| Report wizard step 1 (pincode lookup, waitlist, session draft) | **BUILT** | `pages/Report.jsx`, `components/report/`, `hooks/useLookupPincode.js` |
 | Resend or email notifications | **DESIGNED** | Mentioned for escalations; no code. |
-| Pincode, Issue, Report, SlaPolicy, Post, Comment, ChatMessage, Counter models | **DESIGNED** | `docs/DESIGN.md` section 3 only. |
-| Leaflet map, Turf or in-house point-in-polygon | **DESIGNED** | ADR 0001 (in-house `utils/geo.js` replaces Turf). |
-| Cloudinary signed uploads | **DESIGNED** | ADR 0001. |
+| Issue, Report, Post, Comment, ChatMessage models | **DESIGNED** | `docs/DESIGN.md` section 3 only. |
+| Leaflet map, in-house point-in-polygon | **BUILT** | ADR 0001. Server: MongoDB `$geoIntersects` or the radius circle (`pincodeService.locatePoint`). Client: `lib/geo.js` (ray casting, same haversine), Leaflet lazy-loaded in `PinMap.jsx`. |
 | Gemini chatbot and blog assist | **DESIGNED** | DESIGN.md sections 5 and 6. |
 | SLA job, escalation, priority score | **DESIGNED** | DESIGN.md section 7B. |
 
@@ -259,6 +265,83 @@ flowchart LR
 | Scaling stance | One API instance for now | In-memory rate limit and (later) in-process SLA timer are only correct with one instance. Upgrade path is written down. | ADR 0001 |
 | Real time | Not used. TanStack Query refetching instead. | Socket.IO deferred, needs a multi-instance adapter. | ADR 0001 |
 | Out of scope sign-ins | Out-of-scope or missing id returns **404**, never 403 | Existence of other cities' users must not leak. | CLAUDE.md |
+
+### 4.4 M1 core loop HLD (pincode and report), national coverage
+
+Status: models, directory import, boundary import, department seed and `POST /api/pincodes/:pin/check-point` are
+**BUILT**, and so are pincode lookup, the waitlist API, SLA defaults, the ticket counter, upload signing and wizard
+step 1 (section 4.5); issues and wizard steps 2 and 3 are **DESIGNED**.
+
+```mermaid
+flowchart LR
+  subgraph Offline["One-off scripts (dry run, --apply, rerun = 0 changes)"]
+    TSV["data/pincodes.tsv<br/>(GeoNames IN, ~155k places)"] --> IP["importPincodes.js --format geonames<br/>group by pin: places, mean centre, radiusM<br/>bulkWrite x500"]
+    IP --> CT[("cities<br/>one per state + district")]
+    GJ["data/boundaries/*.geojson<br/>(optional, manual)"] --> IB["importBoundaries.js"]
+    CT --> SD["seedDepartments.js<br/>5 departments + category map per city"]
+  end
+  IP --> PC[("pincodes<br/>centroid, radiusM, boundary?")]
+  IB --> PC
+  SD --> DP[("departments,<br/>categorymappings")]
+  subgraph Runtime["API"]
+    CP["POST /api/pincodes/:pin/check-point<br/>polygon: exact, else circle: approx"] --> PC
+    IS["POST /api/issues (step 8)<br/>same check, route by category map"] --> PC
+    IS --> DP
+  end
+  W["Report wizard"] --> CP
+  W --> IS
+```
+
+Data flow: (1) the GeoNames directory gives every pincode its places, a mean centre and a radius, and creates one
+city per district; (2) the seed gives each city default departments and the category map; (3) a pin is checked
+against the polygon where one exists, else against the radius circle, and the answer says which (`precision`);
+(4) the issue goes to the department mapped for its category in the pincode's district city (`other` to triage).
+
+Load: about 19k pincodes, about 750 district cities, about 3,750 departments, about 4,500 mapping rows. Everything fits
+in one MongoDB replica set with plain indexes; the import is a laptop script under two minutes.
+
+Trade-offs: a radius circle is crude (it can overlap neighbouring pincodes and miss odd shapes), but it covers all of
+India today with no polygon data; `precision: "approx"` tells the client so, and a polygon replaces it pincode by
+pincode. District cities are an administrative guess at "who fixes this"; real municipal bodies can replace them
+later without changing pincodes' shape. Revisit: AIKosh polygons for dense cities first, and city-admin editing of
+the category map.
+
+### 4.5 Report step 1: pincode lookup and waitlist (BUILT)
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor R as Resident
+  participant W as /report?step=1
+  participant API
+  participant DB as MongoDB
+  R->>W: types 6 digits (or arrives with ?pincode=)
+  W->>W: regex ^[1-9][0-9]{5}$, draft saved to sessionStorage
+  W->>API: GET /api/pincodes/:pin (30/min/IP)
+  API->>DB: pincodes.findOne({ pin }) + city name
+  alt served
+    API-->>W: 200 pin, district, state, cityName, localities, centroid, radiusM, boundary, precision, served: true
+    W-->>R: aria-live "Kapurthala, Punjab" + localities. Resident taps Next (never auto-advance)
+  else known but unserved, or 404 PINCODE_NOT_FOUND
+    API-->>W: 200 served: false, or 404
+    W-->>R: inline waitlist form
+    R->>W: email
+    W->>API: POST /api/waitlist { pin, email } (5/hour/IP)
+    API->>DB: insert { pin, emailHash = HMAC(email) } (E11000 = already there)
+    API-->>W: 200 { joined: true } (same answer on repeat)
+  end
+```
+
+LLD, one chain per endpoint (ADR 0002):
+
+| Endpoint | Route | Controller | Service | Model |
+| --- | --- | --- | --- | --- |
+| `GET /api/pincodes/:pin` | `pincodeRoutes` (ipRateLimit 30/min, `Cache-Control: public, max-age=86400`) | `pincodeController.lookup` | `pincodeService.lookupPincode` | `Pincode`, `City` |
+| `POST /api/waitlist` | `waitlistRoutes` (ipRateLimit 5/hour) | `waitlistController.join` | `waitlistService.joinWaitlist` | `Waitlist` |
+| `POST /api/uploads/sign` | `uploadRoutes` (full chain, `issue:create`, 20/10 min/user) | `uploadController.sign` | `uploadService.signUpload` (`node:crypto`) | none |
+| `GET /api/cities` | `geoRoutes` (`user:promote`, `?stateCode`, `?q`, `?cursor`, `?limit`) | `geoController.listCities` | `adminUserService.listCities` | `City` |
+| (internal) ticket ID | none | none | `ticketService.nextTicketId` (atomic `$inc`) | `Counter` |
+| (internal) expected-by | none | none | `utils/expectedBy.js` (pure) | `SlaPolicy` (seeded by `scripts/seedSlaPolicies.js`) |
 
 ---
 
@@ -621,7 +704,11 @@ All errors share the shape `{ "error": { "code": "UPPER_SNAKE", "message": "..."
 | `GET /api/admin/users` | authenticate, loadUser, requireActive, requireVerifiedEmail, `user:read_scope` | 60/min/user | `limit` (1-50, default 20), `cursor`, `q` (3-64), `role`, `status` | `{ items, nextCursor }` |
 | `PATCH /api/admin/users/:id/role` | same, `user:promote` | 10/min/user | `{ role, reason (5-500), cityId?, departmentId?, stateCode? }` strict | `{ user }` |
 | `PATCH /api/admin/users/:id/status` | same, `user:suspend` | 10/min/user | `{ status, reason }` strict | `{ user }` |
-| `GET /api/cities` | same, `user:promote` | 60/min/user | none | `{ items }` (max 500). A city admin sees only their own. |
+| `GET /api/cities` | same, `user:promote` | 60/min/user | `stateCode`, `q` (prefix), `cursor`, `limit` (1-50) | `{ items, nextCursor }`. A city admin sees only their own. |
+| `GET /api/pincodes/:pin` | none (public) | 30/min/IP | `:pin` | pincode, city name, localities, shape, `precision`, `served` |
+| `POST /api/pincodes/:pin/check-point` | none (public) | 60/min/IP | `{ lat, lng }` | `{ inside, precision }` |
+| `POST /api/waitlist` | none (public) | 5/hour/IP | `{ pin, email }` | `{ joined: true }` (same on repeat) |
+| `POST /api/uploads/sign` | full chain, `issue:create` | 20/10 min/user | none | Cloudinary signed params |
 | `GET /api/departments?cityId=` | same, `user:promote` | 60/min/user | `cityId` | `{ items }`. A city admin may only ask for their own city. |
 
 Admin and personal-data routes send `Cache-Control: no-store`.
@@ -724,7 +811,7 @@ Global Mongoose settings (`config/db.js`): `strictQuery: true` (only schema fiel
 our own operators are wrapped in `mongoose.trusted()`), and `autoIndex` **off in production** (a build can lock a
 collection mid-traffic).
 
-### 9.1 Entity-relationship diagram: BUILT today
+### 9.1 Entity-relationship diagram: BUILT today (through M1 step 3)
 
 ```mermaid
 erDiagram
@@ -734,6 +821,10 @@ erDiagram
   USER ||--o{ AUDIT_LOG : "acts as actorId"
   USER ||--o{ AUDIT_LOG : "is target of targetId"
   USER |o--o| USER : "suspendedBy"
+  CITY |o--o{ PINCODE : "serves (cityId)"
+  PINCODE ||--o{ WAITLIST : "waited on (pin)"
+  CITY ||--o{ CATEGORY_MAPPING : "routes categories"
+  DEPARTMENT |o--o{ CATEGORY_MAPPING : "handles (null = triage)"
 
   USER {
     ObjectId _id PK
@@ -777,8 +868,40 @@ erDiagram
   CITY {
     ObjectId _id PK
     string name
-    string code UK "A-Z0-9, 2-10"
+    string code UK "LDH or PB-KAPURTHALA (district city)"
     string stateCode "enum of Indian state codes"
+    string status "active or onboarding"
+    date createdAt
+    date updatedAt
+  }
+  PINCODE {
+    ObjectId _id PK
+    string pin UK "6 digits, first 1-9"
+    string district
+    string state
+    ObjectId cityId FK "district city"
+    string_array localities "unique office names"
+    Point centroid "lon, lat"
+    Polygon boundary "Polygon or MultiPolygon, optional"
+    int radiusM "3000 to 25000, circle when no boundary"
+    string boundarySource "aikosh, manual, none"
+    boolean isServed "true needs cityId and a shape"
+    date createdAt
+    date updatedAt
+  }
+  CATEGORY_MAPPING {
+    ObjectId _id PK
+    ObjectId cityId FK
+    string category "pothole ... other"
+    ObjectId departmentId FK "null iff queue triage"
+    string queue "department or triage; other = triage"
+    date createdAt
+    date updatedAt
+  }
+  WAITLIST {
+    ObjectId _id PK
+    string pin "6 digits"
+    string emailHash "HMAC-SHA-256 hex, no email stored"
     date createdAt
     date updatedAt
   }
@@ -809,6 +932,13 @@ erDiagram
 | `auditlogs` | `{ actorId: 1, at: -1 }` | What an admin did |
 | `cities` | `code` unique; `{ stateCode: 1, name: 1 }` | Lookup; a state officer's city list |
 | `departments` | `{ cityId: 1, code: 1 }` unique | One code per city |
+| `pincodes` | `pin` unique | Lookup by pincode; idempotent import upserts |
+| `pincodes` | `{ boundary: "2dsphere" }` (skips rows without a boundary) | Point-in-boundary checks |
+| `pincodes` | `{ cityId: 1, isServed: 1 }` | A city's served pincodes |
+| `waitlists` | `{ pin: 1, emailHash: 1 }` unique | One sign-up per person per pincode |
+| `categorymappings` | `{ cityId: 1, category: 1 }` unique | One answer per city and category; routing lookup |
+
+Production builds these with `npm run migrate:m1-indexes -w server -- --apply` (autoIndex is off there).
 
 ### 9.3 Integrity rules the database cannot enforce alone
 
@@ -816,7 +946,10 @@ erDiagram
 | --- | --- |
 | Scope fields required or forbidden per role | `User` pre-validate hook, fed by `SCOPE_RULES` |
 | Suspension fields present **iff** status is `suspended` | `User` pre-validate hook |
-| No foreign keys, so deleting a City or Department that is still referenced throws | `City` and `Department` `pre('delete*')` hooks |
+| No foreign keys, so deleting a City or Department that is still referenced (users, departments, pincodes, category mappings) throws | `City` and `Department` `pre('delete*')` hooks |
+| `queue` is `triage` exactly when `departmentId` is null; `other` is always triage | `CategoryMapping` pre-validate hook |
+| `boundarySource` is `none` exactly when there is no boundary; a served pincode has a `cityId` and a boundary or a centroid with `radiusM` | `Pincode` pre-validate hook |
+| Boundary rings closed, 4+ points, `[lon, lat]` inside India | `utils/geo.js` `geometryProblems`, used by the model and the import |
 | `role`, `status`, scope can change only through load, mutate, `save()` | `User` write-guard hooks (`scopeWrite: true` is the explicit escape) |
 | AuditLog never changes | `AuditLog` hooks that throw on every update and delete form |
 | `""` is not a valid avatar or pincode | explicit `validate` functions (Mongoose `match` silently accepts the empty string) |
@@ -1151,33 +1284,51 @@ sequenceDiagram
   Note over SPA: AppLayout redirects every route to /suspended
 ```
 
-### 11.3 Report an issue (DESIGNED)
+### 11.3 Report an issue: map pin to counterfoil (BUILT, M1 steps 8 to 11)
+
+Step 1 (pincode lookup) is in 4.5. Duplicate grouping is not in M1.
 
 ```mermaid
 sequenceDiagram
   autonumber
-  actor U as Citizen
+  actor U as Resident
   participant C as React app
   participant API
   participant DB as MongoDB
   participant CL as Cloudinary
 
-  U->>C: types pincode 144401
-  C->>C: regex ^[1-9][0-9]{5}$
-  C->>API: GET /api/pincodes/144401
-  API->>DB: find pincode
-  alt missing
-    API->>API: fallback api.postalpincode.in, cache, rate-limited
+  Note over C: step 2, map (Leaflet lazy-loaded)
+  U->>C: drops or drags the pin
+  C->>C: inside polygon, or within radiusM of centroid?
+  alt outside
+    C-->>U: snap back, aria-live "outside {pincode}"
   end
-  API-->>C: localities, boundary, cityId, isServed
-  U->>C: drops the pin
-  C->>C: in-house point-in-polygon, else show outside message
-  C->>API: POST signed-upload params
-  C->>CL: upload photo directly
-  C->>API: POST /api/issues with Idempotency-Key
-  API->>DB: $geoIntersects re-check (422 OUTSIDE_PINCODE if not inside)
-  API->>DB: transaction: $near duplicate search, attach or create, counter $inc
-  API-->>C: 201 ticketId NIV-2026-000123, expected by
+  C->>API: POST /api/pincodes/:pin/check-point {lat, lng}
+  API->>DB: locatePoint ($geoIntersects or radius)
+  API-->>C: {inside, precision exact|approx}
+  Note over C: step 3, photos and details
+  loop each photo (max 3)
+    C->>C: canvas resize to 1600 px (drops EXIF)
+    C->>API: POST /api/uploads/sign
+    API-->>C: folder, timestamp, transformation, signature
+    C->>CL: multipart upload (progress, retry)
+    CL-->>C: public_id
+  end
+  U->>C: Submit (one Idempotency-Key per draft)
+  C->>API: POST /api/issues {pincode, lat, lng, category, title, description, photos}
+  API->>DB: same reporter + key? return the first issue (200)
+  API->>DB: pincode served? locatePoint (422 OUTSIDE_PINCODE)
+  API->>CL: Admin API GET each public_id (bytes, format, folder)
+  alt bad photo
+    API->>CL: DELETE asset
+    API-->>C: 400 INVALID_PHOTO
+  end
+  API->>DB: transaction: Counter $inc, CategoryMapping, SlaPolicy, insert Issue, AuditLog issue.created
+  API-->>C: 201 {ticketId, department or triage, expectedBy}
+  C-->>U: counterfoil: ticket ID, department, expected by (IST), Copy
+  alt 422 OUTSIDE_PINCODE
+    C-->>U: back to step 2 with the message
+  end
 ```
 
 ### 11.4 Chatbot (DESIGNED)
@@ -1479,7 +1630,7 @@ account is redirected to `/suspended` from every route, public ones included.
 | Example ticket | `TimelinePreview` | A `StatusTimeline` with the connector drawing in |
 | Trust | `TrustSection`, `LandingFooter` | Why you can trust it |
 
-### 15.7 Report wizard (DESIGNED, spec in UI.md section 7)
+### 15.7 Report wizard (BUILT; spec in UI.md section 7)
 
 Route `/report?step=1..3` (Back works, a `sessionStorage` draft survives refresh). Step bar in words: "Step 2 of 3:
 Place the pin". Footer: Back (outline) left, Next (default) right. Chat bubble hidden on step 2.
@@ -1488,11 +1639,15 @@ Place the pin". Footer: Back (outline) left, Next (default) right. Chat bubble h
    screen reader hears one field). Recent pincodes as chips. A lookup result is announced via `aria-live`. Never
    auto-advances (WCAG 3.2.2). Unserved: inline waitlist form.
 2. **Pin on map:** Leaflet fitted to the polygon, outside dimmed (`foreground` at 40 %), outline a 2 px `primary`
-   line, drag outside snaps back with an announced message, "Use my location", arrow-key nudge and a Locality select
-   as non-map alternatives. Programmatic `fitBounds` uses `animate: false`.
+   line, drag outside snaps back with an announced message, "Use my location", arrow-key nudge as the non-map
+   alternative. Programmatic `fitBounds` uses `animate: false`. "Approximate area" label when there is no polygon.
+   Next confirms with `POST /api/pincodes/:pin/check-point`. Not built: the Locality select (localities have no
+   coordinates yet) and "the locality the pin is in".
 3. **Photo and details:** category radio cards with icons, camera or gallery with client-side compress, description
-   (min 20 chars, live count), review, "Submit report". Success: the **counterfoil** (display font, stamped, perforated
-   top edge, Copy ticket ID, "Expected by 26 Nov, 5:00 PM", "Track this issue").
+   (min 20 chars, live count), up to 3 photos (canvas to 1600 px, signed upload per photo with progress and Retry,
+   kept in memory only), review, "Submit report" with one `Idempotency-Key` per draft (disabled while sending; 422
+   `OUTSIDE_PINCODE` returns to step 2). Success: the **counterfoil** (display font, postmark, perforated top edge,
+   Copy ticket ID, "Expected by 26 Nov, 5:00 PM", "Track this issue" to `/issues` until M2).
 
 ---
 

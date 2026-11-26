@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dictionary as en, t } from "./t";
+import { dictionaries, dictionary as en, t } from "./t";
 
 describe("t()", () => {
   it("returns the English string for a known key", () => {
@@ -17,6 +17,14 @@ describe("t()", () => {
 
   it("returns the key itself when it is missing, so gaps are visible", () => {
     expect(t("does.not.exist")).toBe("does.not.exist");
+  });
+
+  it("uses the requested language and falls back to English for a missing key", () => {
+    dictionaries.hi["app.name"] = "निवारण";
+    expect(t("app.name", undefined, "hi")).toBe("निवारण");
+    delete dictionaries.hi["app.name"];
+    expect(t("app.name", undefined, "hi")).toBe("Nivaran");
+    expect(t("app.name", undefined, "xx")).toBe("Nivaran");
   });
 
   it("has no key defined in two files (a later file would silently win)", () => {

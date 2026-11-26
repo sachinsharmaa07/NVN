@@ -5,16 +5,19 @@ import common from "./en.json";
 // import.meta.glob is a Vite feature: it bundles every matching file at build time.
 const areaFiles = import.meta.glob("./en/*.json", { eager: true, import: "default" });
 
-// One flat dictionary. Hindi later: build the same object from hi.json + hi/*.json.
+// One flat dictionary per language. Hindi files (hi.json, hi/*.json) are optional until they are written.
 export const dictionary = Object.assign({}, common, ...Object.values(areaFiles));
+const hiFiles = import.meta.glob(["./hi.json", "./hi/*.json"], { eager: true, import: "default" });
+export const dictionaries = { en: dictionary, hi: Object.assign({}, ...Object.values(hiFiles)) };
 
 /**
  * Looks up a UI string by key and fills in {placeholders}.
  * t("report.pincode.notServed", { pincode: "144401" })
- * A missing key returns the key itself, so gaps are visible on screen instead of blank.
+ * A key missing in `lang` falls back to English; missing in English too, it returns the key
+ * itself, so gaps are visible on screen instead of blank.
  */
-export function t(key, vars) {
-  const template = dictionary[key];
+export function t(key, vars, lang = "en") {
+  const template = dictionaries[lang]?.[key] ?? dictionary[key];
   if (typeof template !== "string") return key;
   if (!vars) return template;
   // Replace each {name} with vars.name; unknown placeholders are left as they are.

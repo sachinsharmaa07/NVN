@@ -3,6 +3,12 @@ import { parseEnv } from "../../src/config/env.js";
 
 const URI = "mongodb://127.0.0.1:27017/nivaran_dev";
 const M2M = { AUTH0_M2M_CLIENT_ID: "client-id", AUTH0_M2M_CLIENT_SECRET: "client-secret" };
+const HMAC = { HMAC_SECRET: "ab".repeat(32) };
+const CLOUD = {
+  CLOUDINARY_CLOUD_NAME: "nivaran",
+  CLOUDINARY_API_KEY: "123456789",
+  CLOUDINARY_API_SECRET: "secret-secret",
+};
 
 describe("parseEnv", () => {
   it("applies defaults when only MONGODB_URI is given", () => {
@@ -31,6 +37,8 @@ describe("parseEnv", () => {
         AUTH0_DOMAIN: "nivaran.eu.auth0.com",
         AUTH0_AUDIENCE: "https://api.nivaran.in",
         ...M2M,
+        ...HMAC,
+        ...CLOUD,
       }).problems,
     ).toEqual(["MONGODB_URI: required"]);
   });
@@ -83,6 +91,24 @@ describe("parseEnv", () => {
       "AUTH0_AUDIENCE",
       "AUTH0_M2M_CLIENT_ID",
       "AUTH0_M2M_CLIENT_SECRET",
+      "HMAC_SECRET",
+      "CLOUDINARY_CLOUD_NAME",
+      "CLOUDINARY_API_KEY",
+      "CLOUDINARY_API_SECRET",
+    ]);
+  });
+
+  it("outside production the Cloudinary keys are optional but come as a set of three", () => {
+    expect(parseEnv({ MONGODB_URI: URI, ...CLOUD }).ok).toBe(true);
+    expect(parseEnv({ MONGODB_URI: URI, CLOUDINARY_API_KEY: "1" }).problems).toEqual([
+      expect.stringMatching(/set all three or none/),
+    ]);
+  });
+
+  it("accepts HMAC_SECRET only as 64 hex characters", () => {
+    expect(parseEnv({ MONGODB_URI: URI, ...HMAC }).ok).toBe(true);
+    expect(parseEnv({ MONGODB_URI: URI, HMAC_SECRET: "short" }).problems).toEqual([
+      expect.stringMatching(/^HMAC_SECRET/),
     ]);
   });
 
@@ -95,6 +121,8 @@ describe("parseEnv", () => {
       AUTH0_DOMAIN: "nivaran.eu.auth0.com",
       AUTH0_AUDIENCE: "https://api.nivaran.in",
       ...M2M,
+      ...HMAC,
+      ...CLOUD,
     });
     expect(result.problems).toEqual([expect.stringMatching(/^TRUST_PROXY/)]);
   });
@@ -132,5 +160,17 @@ describe("parseEnv", () => {
     expect(parseEnv({ MONGODB_URI: URI, ...M2M }).ok).toBe(true);
     const half = parseEnv({ MONGODB_URI: URI, AUTH0_M2M_CLIENT_ID: "only-id" });
     expect(half.problems).toEqual([expect.stringMatching(/set both or neither/)]);
+  });
+
+  it("parses DNS_SERVERS into a list of IPs and rejects anything else", () => {
+    const parse = (v) => parseEnv({ MONGODB_URI: URI, DNS_SERVERS: v });
+    expect(parse(" 1.1.1.1, 2001:4860:4860::8888 ,").config.DNS_SERVERS).toEqual([
+      "1.1.1.1",
+      "2001:4860:4860::8888",
+    ]);
+    expect(parse("").config.DNS_SERVERS).toBeUndefined();
+    expect(parse("dns.google").ok).toBe(false);
+    expect(parse("1.1.1.1,999.1.1.1").ok).toBe(false);
+    expect(parse(" , ").ok).toBe(false);
   });
 });
