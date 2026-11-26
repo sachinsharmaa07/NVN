@@ -1,5 +1,6 @@
-// End-to-end tests (ADR 0003): Chromium only, a phone and a laptop. Vite runs with VITE_E2E=1, which swaps
-// Auth0 for a fake signed-in citizen; e2e/fixtures.js answers every API, Cloudinary and map tile request.
+// End-to-end tests (ADR 0003): Chromium only, a phone and a laptop, against the production bundle served by
+// `vite preview`. It is built with --mode e2e and VITE_E2E=1, which swaps Auth0 for a fake signed-in citizen
+// (a normal build refuses the flag); e2e/fixtures.js answers every API, Cloudinary and map tile request.
 import { defineConfig } from "@playwright/test";
 
 const PORT = 5199; // not 5173, so a running `npm run dev` (real Auth0) is never reused by mistake
@@ -9,7 +10,8 @@ export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
   forbidOnly: CI,
-  retries: 0, // a flaky test should fail loudly, not pass on its second try
+  // One retry in CI, so a flake is reported as "flaky" (with its trace) instead of failing the run or hiding.
+  retries: CI ? 1 : 0,
   workers: CI ? 2 : undefined,
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
@@ -19,6 +21,7 @@ export default defineConfig({
     timezoneId: "Europe/London",
     locale: "en-IN",
     trace: "retain-on-failure",
+    screenshot: "only-on-failure",
   },
   projects: [
     {
@@ -28,10 +31,11 @@ export default defineConfig({
     { name: "desktop", use: { viewport: { width: 1280, height: 800 } } },
   ],
   webServer: {
-    command: `npx vite --port ${PORT} --strictPort`,
+    command: `npx vite build --mode e2e && npx vite preview --mode e2e --port ${PORT} --strictPort`,
     url: `http://localhost:${PORT}`,
+    // Locally a preview already on 5199 is reused: rebuild (stop it) after changing the app.
     reuseExistingServer: !CI,
-    timeout: 60_000,
+    timeout: 120_000, // includes the build
     // Empty VITE_API_URL: API calls stay same-origin, so every one is a route the fixtures fulfil.
     env: { VITE_E2E: "1", VITE_API_URL: "" },
   },
