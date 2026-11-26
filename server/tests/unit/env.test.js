@@ -22,6 +22,7 @@ describe("parseEnv", () => {
       LOG_LEVEL: "info",
       TRUST_PROXY: 0,
       AUTH_CLOCK_TOLERANCE_SECONDS: 5,
+      SLA_JOB_INTERVAL_MS: 300_000,
     });
     expect(Object.isFrozen(result.config)).toBe(true);
   });
