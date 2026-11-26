@@ -1,0 +1,40 @@
+# Nivaran API
+
+Base URL locally: `http://localhost:5001`. Every error has the shape
+`{ "error": { "code": "UPPER_SNAKE", "message": "...", "details"?: ... } }`.
+Living document: update it with every feature (see `CLAUDE.md`, "Living docs").
+
+## Pincodes
+
+### POST /api/pincodes/:pin/check-point
+
+Public (no sign-in), 60 requests per minute per IP. Is a map pin inside this pincode? Decision M1-7.
+
+Body: `{ "lat": number, "lng": number }` (WGS84 degrees, no other keys).
+
+Response `200`: `{ "inside": boolean, "precision": "exact" | "approx" }`
+
+| `precision` | Meaning |
+| --- | --- |
+| `exact` | The pincode has a polygon (`boundarySource` `manual` or `aikosh`); the pin was tested against it with MongoDB `$geoIntersects`. |
+| `approx` | No polygon yet. The pin was tested against a circle around the pincode's centroid with radius `radiusM` (farthest GeoNames place + 1.5 km, 3 to 25 km). The client should say the check is approximate. |
+
+```bash
+curl -s -X POST http://localhost:5001/api/pincodes/144401/check-point \
+  -H 'Content-Type: application/json' -d '{"lat": 31.2235, "lng": 75.7752}'
+# 200 {"inside":true,"precision":"approx"}
+
+curl -s -X POST http://localhost:5001/api/pincodes/999999/check-point \
+  -H 'Content-Type: application/json' -d '{"lat": 31.2, "lng": 75.7}'
+# 404 {"error":{"code":"PINCODE_NOT_FOUND","message":"We don't know this pincode."}}
+```
+
+| Status | Code | When |
+| --- | --- | --- |
+| 400 | `VALIDATION_ERROR` | Pin not 6 digits (or starts with 0), `lat`/`lng` missing, not numbers, out of range, or extra keys |
+| 404 | `PINCODE_NOT_FOUND` | Pincode not in the directory |
+| 422 | `PINCODE_NOT_SERVED` | Pincode known but not served (no coordinates, e.g. imported from the CSV only) |
+| 429 | `RATE_LIMITED` | More than 60 checks a minute from one IP |
+
+`POST /api/issues` (M1 step 8, not built yet) must use the same check (`locatePoint` in
+`server/src/services/pincodeService.js`) and return the same `precision`.

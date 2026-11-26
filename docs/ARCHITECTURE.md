@@ -102,6 +102,7 @@ flowchart LR
 | Design tokens (light and dark), shell, landing page, profile, admin users, suspended, forbidden pages | **BUILT** | `client/src/styles/globals.css`, `layouts/`, `pages/` |
 | `City` (with `status`), `Department`, `Pincode`, `Waitlist` models, M1 index migration | **BUILT** | `server/src/models/`, `scripts/migrateM1Indexes.js` (M1 step 3) |
 | National pincode import (GeoNames, one city per district, centroid and `radiusM`) and optional boundary import (dry run, `--apply`, idempotent) | **BUILT** | `scripts/importPincodes.js`, `scripts/importBoundaries.js`, `services/pincodeDirectory.js`, `services/pincodeImportService.js`, `services/boundaryImportService.js`, `utils/geo.js`, `utils/india.js`. Timed on the real file: 19,238 pincodes and 637 cities in about 1 s on a local database. Not yet run against Atlas |
+| `POST /api/pincodes/:pin/check-point` (polygon "exact", else radius circle "approx") | **BUILT** | `routes/pincodeRoutes.js`, `services/pincodeService.js` (`locatePoint`, reused by `POST /api/issues` later), `docs/API.md` |
 | Chat bubble | **PARTIAL** | `components/chat/ChatBubble.jsx` opens a "coming soon" sheet. No API. |
 | `/report`, `/issues`, `/community` | **PARTIAL** | Empty-state shells with the final navigation wiring. |
 | Resend or email notifications | **DESIGNED** | Mentioned for escalations; no code. |

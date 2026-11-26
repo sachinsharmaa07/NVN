@@ -13,5 +13,7 @@
   "errors.common.validation": "Check the fields marked below and try again.",
   "errors.common.conflict": "Someone else changed this at the same time. Refresh the list and try again.",
   "errors.common.unknown": "Something didn't work. Try again in a moment.",
-  "errors.auth.mfaBlocked": "We couldn't finish two-step verification. Sign out, then sign in again and follow the steps. If it keeps happening, contact {contact}."
+  "errors.auth.mfaBlocked": "We couldn't finish two-step verification. Sign out, then sign in again and follow the steps. If it keeps happening, contact {contact}.",
+  "errors.pincode.notFound": "We don't know this pincode. Check the 6 digits and try again.",
+  "errors.pincode.notServed": "Nivaran doesn't cover this pincode yet."
 }

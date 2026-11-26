@@ -29,6 +29,7 @@ const { healthRoutes } = await import("../../src/routes/healthRoutes.js");
 const { meRoutes } = await import("../../src/routes/meRoutes.js");
 const { adminUserRoutes } = await import("../../src/routes/adminUserRoutes.js");
 const { geoRoutes } = await import("../../src/routes/geoRoutes.js");
+const { pincodeRoutes } = await import("../../src/routes/pincodeRoutes.js");
 const { authenticate } = await import("../../src/middleware/auth.js");
 const { loadUser, requireActive, requireVerifiedEmail } =
   await import("../../src/middleware/access.js");
@@ -42,6 +43,7 @@ const MOUNTS = [
   { prefix: "/me", router: meRoutes },
   { prefix: "/admin/users", router: adminUserRoutes },
   { prefix: "", router: geoRoutes },
+  { prefix: "/pincodes", router: pincodeRoutes, isPublic: true },
 ];
 
 /** Every { method, path, handlers } of a router, flattened. */
@@ -93,10 +95,16 @@ describe("route inventory", () => {
     );
   });
 
-  it("the public list is health only, and it is read-only", () => {
+  // Public POSTs that only read (a body carries the input, nothing is written). Each one is named here on purpose.
+  const PUBLIC_READ_POSTS = ["POST /api/pincodes/:pin/check-point"];
+
+  it("public routes are read-only: GET, or a named read-only POST", () => {
     const publicRoutes = all.filter((r) => r.isPublic);
     expect(publicRoutes.length).toBeGreaterThan(0);
-    expect(publicRoutes.every((r) => r.method === "GET")).toBe(true);
+    for (const r of publicRoutes) {
+      const name = `${r.method} ${r.path}`;
+      expect(r.method === "GET" || PUBLIC_READ_POSTS.includes(name), name).toBe(true);
+    }
   });
 
   it.each(protectedRoutes.map((r) => [`${r.method} ${r.path}`, r]))(
