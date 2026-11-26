@@ -33,8 +33,8 @@ export default defineConfig({
   webServer: {
     command: `npx vite build --mode e2e && npx vite preview --mode e2e --port ${PORT} --strictPort`,
     url: `http://localhost:${PORT}`,
-    // Locally a preview already on 5199 is reused: rebuild (stop it) after changing the app.
-    reuseExistingServer: !CI,
+    // Always a fresh build (about 1 s): a preview left on 5199 would test an old bundle.
+    reuseExistingServer: false,
     timeout: 120_000, // includes the build
     // Empty VITE_API_URL: API calls stay same-origin, so every one is a route the fixtures fulfil.
     env: { VITE_E2E: "1", VITE_API_URL: "" },
