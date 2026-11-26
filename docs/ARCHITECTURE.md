@@ -260,6 +260,42 @@ flowchart LR
 | Real time | Not used. TanStack Query refetching instead. | Socket.IO deferred, needs a multi-instance adapter. | ADR 0001 |
 | Out of scope sign-ins | Out-of-scope or missing id returns **404**, never 403 | Existence of other cities' users must not leak. | CLAUDE.md |
 
+### 4.4 M1 core loop HLD (pincode and report)
+
+Status: models and import scripts **BUILT** (M1 steps 3 and 4); API, routing, upload and wizard **DESIGNED** (steps 5 to 11).
+
+```mermaid
+flowchart LR
+  subgraph Offline["One-off scripts (dry run, --apply)"]
+    CSV["data/pincodes.csv<br/>(data.gov.in)"] --> IP["importPincodes.js<br/>stream, group by pin,<br/>bulkWrite x500"]
+    GJ["data/boundaries/phagwara.geojson<br/>(hand-drawn)"] --> IB["importBoundaries.js<br/>validate rings,<br/>boundary + centroid"]
+  end
+  IP --> PC[("pincodes")]
+  IB --> PC
+  CT[("cities")] -. "--city PB pilot" .-> IP
+  subgraph Runtime["API (steps 5 to 8)"]
+    LK["GET /api/pincodes/:pin"] --> PC
+    WL["POST /api/waitlist<br/>HMAC(email)"] --> WT[("waitlists")]
+    IS["POST /api/issues<br/>pin-in-polygon, route, SLA,<br/>NIV-YYYY-NNNNNN"] --> PC
+    IS --> IU[("issues, counters")]
+    IS --> DM[("category to department map")]
+  end
+  W["Report wizard<br/>1 pincode, 2 map pin, 3 photos + details"] --> LK
+  W --> WL
+  W --> IS
+```
+
+Data flow: (1) scripts load the pincode directory and the pilot polygons; (2) the wizard looks up a pincode: served
+with a boundary means "pin on the map", not served means "join the waitlist"; (3) the client checks the pin against
+the polygon for fast feedback, and the server checks again (`utils/geo.js`) before it creates the issue; (4) the issue
+gets a department from the category map (`other` goes to triage), an expected-by date from SLA policy, and a ticket ID
+from an atomic per-year counter.
+
+Trade-offs: polygons live in MongoDB (2dsphere) instead of a GIS service, which is enough for one city and easy to
+replace via `boundarySource`. Waitlist stores only an HMAC, so nothing personal leaks, but we cannot notify people when
+a pincode opens (decision O1). Revisit when a second city joins: a bulk boundary source (AIKosh) and an import job
+instead of a laptop script.
+
 ---
 
 ## 5. Technology stack and why
