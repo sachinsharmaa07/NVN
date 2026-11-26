@@ -83,7 +83,14 @@ describe("PATCH /api/issues/:ticketId/status", () => {
       version: 0,
     });
     expect(res.status).toBe(200);
-    expect(res.body.afterPhotos).toEqual([{ publicId: PHOTO, width: 800, height: 600 }]);
+    expect(res.body.afterPhotos).toEqual([
+      {
+        publicId: PHOTO,
+        width: 800,
+        height: 600,
+        url: `https://res.cloudinary.com/nivaran-test/image/upload/${PHOTO}`,
+      },
+    ]);
     expect((await Issue.findById(issue._id).lean()).resolvedAt).toBeInstanceOf(Date);
   });
 

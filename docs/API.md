@@ -156,6 +156,8 @@ curl -s http://localhost:5001/api/issues/NIV-2026-000001 -H "Authorization: Bear
 # 200 {"ticketId":"NIV-2026-000001","status":"assigned","category":"pothole","title":"Deep pothole",
 #      "pincode":"144601","queue":"department","expectedBy":"...","slaState":"on_track","onHold":false,
 #      "version":1,"createdAt":"...","precision":"approx","department":{"id":"...","name":"Roads"},
+#      "photos":[{"publicId":"nivaran/development/reports/abc","width":1600,"height":1200,
+#                 "url":"https://res.cloudinary.com/<cloud>/image/upload/nivaran/development/reports/abc"}],
 #      "afterPhotos":[],"holdReason":null,
 #      "timeline":[{"status":"submitted","at":"...","role":"citizen","note":null},
 #                  {"status":"assigned","at":"...","role":"staff","note":"Crew booked"}]}
@@ -216,9 +218,13 @@ Without `status`, only open issues (`submitted, assigned, in_progress, reopened`
 ```bash
 curl -s "http://localhost:5001/api/staff/issues?sla=at_risk" -H "Authorization: Bearer $TOKEN"
 # 200 {"items":[{...summary, "description":"...","departmentId":"...","location":{"lat":31.38,"lng":75.38},
-#      "photos":[{"publicId":"...","width":1600,"height":1200}],"afterPhotos":[],"holdReason":null}],
+#      "photos":[{"publicId":"...","width":1600,"height":1200,"url":"https://res.cloudinary.com/..."}],
+#      "afterPhotos":[],"holdReason":null}],
 #      "nextCursor":null}
 ```
+
+Every photo (report and after, here and on the issue routes) carries `url`, Cloudinary's public delivery URL, or
+`null` when uploads are not configured.
 
 ## Notifications
 
