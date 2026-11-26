@@ -1,0 +1,13 @@
+{
+  "notifications.label": "Notifications",
+  "notifications.labelUnread": "Notifications, {count} unread",
+  "notifications.title": "Notifications",
+  "notifications.empty": "Nothing yet. Updates on your tickets will show here.",
+  "notifications.new": "New: ",
+  "notifications.markAll": "Mark all as read",
+  "notifications.type.statusChanged": "{ticket} is now {status}",
+  "notifications.type.onHold": "{ticket} is on hold",
+  "notifications.type.resumed": "Work on {ticket} has started again",
+  "notifications.type.slaBreached": "{ticket} is overdue",
+  "notifications.type.slaEscalated": "{ticket} was escalated to you"
+}
