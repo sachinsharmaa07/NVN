@@ -84,9 +84,9 @@ export function NotificationBell() {
           </>
         )}
       </DropdownMenuContent>
-      {/* Announces a change in the count (after Mark all read, or a new one arriving). */}
+      {/* Announces new unread ones; empty otherwise, so it never talks over the page's own messages. */}
       <span role="status" className="sr-only">
-        {label}
+        {unread > 0 ? label : ""}
       </span>
     </DropdownMenu>
   );

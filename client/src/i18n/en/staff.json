@@ -38,5 +38,6 @@
   "staff.hold.hint": "The SLA clock pauses. The resident sees this reason.",
   "staff.hold.submit": "Put on hold",
   "staff.hold.done": "Issue on hold. The SLA clock is paused.",
-  "staff.resume.done": "Issue resumed. The SLA clock is running again."
+  "staff.resume.done": "Issue resumed. The SLA clock is running again.",
+  "staff.status.afterPhoto": "Photo after the fix (needed to resolve)"
 }
