@@ -33,6 +33,7 @@ Process
 - Skills: backend steps `backend-design:think-before-coding`; schema steps `backend-design:data-modeling-discipline`
   and the `schema-reviewer` agent; write steps `backend-design:idempotency-and-side-effects`; UI steps
   `frontend-design`, then `design:accessibility-review`.
+- Test pincode: 144601 (Kapurthala).
 - No commit, push, delete or `--apply` against `nivaran_dev` without my approval. Tests use `nivaran_test` only.
 
 ---
@@ -160,6 +161,11 @@ Do:
   pincode check, server `$geoIntersects` re-check (422 `OUTSIDE_PINCODE`), photo check, then ONE transaction:
   counter, routing, expectedBy, insert, AuditLog `issue.created`. Same key again returns the first issue with 200.
 - `GET /api/issues/:ticketId` for the reporter only (others get 404). Full tracking UI is M2.
+- Photo check (Batch B addendum): Cloudinary does not enforce 5 MB on signed uploads. Verify each `public_id`
+  with the Cloudinary Admin API (`fetch` + basic auth, no SDK, 5 s timeout): it must exist, `bytes <= 5242880`,
+  `format` in jpg/png/webp/heic, and sit in our folder. Otherwise 400 `INVALID_PHOTO` and delete the offending asset.
+  Cloudinary unreachable: 503 `UPSTREAM_UNAVAILABLE`. Tests use a mocked `fetch`. Remove the `shortcut:` comment in
+  `uploadService.js` once this lands.
 - Add curl examples to `docs/API.md`.
 
 Checks: tests for happy path, outside pin, unserved pincode, replayed key, 4 photos, foreign photo, other user's
@@ -199,6 +205,9 @@ Do:
   double tap never makes two tickets. Never optimistic.
 - Success: the counterfoil (ticket ID in display font, department or "City triage", expected-by in IST,
   Copy ticket ID, "Track this issue" linking to a placeholder for M2). Clear the draft.
+
+- EXIF (Batch B addendum): after the first real upload, confirm the stored asset has no GPS metadata. If the
+  `c_limit` incoming transformation does not strip it, add the strip-metadata flag to the signed params.
 
 Checks: tests for double-submit, upload failure, server 422 shown on the map step; Playwright run of the whole
 flow with a test user against `nivaran_test` data.
