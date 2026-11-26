@@ -53,8 +53,8 @@ not set up. To turn sign-in on, follow [docs/AUTH0_SETUP.md](docs/AUTH0_SETUP.md
 
 ### macOS note
 
-Port 5000 is used by AirPlay Receiver on macOS 12 and later. Either turn it off in
-**System Settings > General > AirDrop & Handoff**, or set `PORT=5050` in `server/.env` and
+The API defaults to 5001 because AirPlay Receiver holds 5000 on macOS 12 and later. To use another port,
+set `PORT=5050` in `server/.env` and
 `VITE_API_URL=http://localhost:5050` in `client/.env` to match.
 
 ## Environment variables
@@ -64,7 +64,7 @@ Port 5000 is used by AirPlay Receiver on macOS 12 and later. Either turn it off 
 | Variable | Example / default | Secret? | What it is |
 | --- | --- | --- | --- |
 | `NODE_ENV` | `development` | no | `development`, `test` or `production` |
-| `PORT` | `5000` | no | Port the API listens on |
+| `PORT` | `5001` | no | Port the API listens on |
 | `MONGODB_URI` | `mongodb+srv://.../nivaran_dev` | **yes** | Atlas connection string for the dev database |
 | `MONGODB_URI_TEST` | `mongodb://.../nivaran_test` | **yes** | Test database; tests wipe it, so the name must end in `_test`. Must be a replica set. Optional (see "Running the tests") |
 | `CLIENT_URL` | `http://localhost:5173` | no | The client's origin; the only origin CORS allows (required in production) |
