@@ -106,10 +106,13 @@ flowchart LR
 | Default departments and category map per city (`CategoryMapping`, seed script) | **BUILT** | `models/CategoryMapping.js`, `utils/categories.js`, `scripts/seedDepartments.js`, `services/departmentSeedService.js`. On the real data: 637 cities, 3,185 departments, 3,822 mappings in 0.2 s locally |
 | Chat bubble | **PARTIAL** | `components/chat/ChatBubble.jsx` opens a "coming soon" sheet. No API. |
 | `/report`, `/issues`, `/community` | **PARTIAL** | Empty-state shells with the final navigation wiring. |
+| `GET /api/pincodes/:pin`, `POST /api/waitlist` (section 4.5) | **BUILT** | `routes/pincodeRoutes.js`, `routes/waitlistRoutes.js`, `services/pincodeService.js`, `services/waitlistService.js` |
+| `SlaPolicy` national defaults and `expectedBy`; `Counter` and ticket IDs | **BUILT** | `models/SlaPolicy.js`, `models/Counter.js`, `utils/expectedBy.js`, `services/slaService.js`, `services/ticketService.js`, `scripts/seedSlaPolicies.js` |
+| Cloudinary signed uploads (`POST /api/uploads/sign`, `node:crypto`) | **BUILT** | `routes/uploadRoutes.js`, `services/uploadService.js` |
+| Report wizard step 1 (pincode lookup, waitlist, session draft) | **BUILT** | `pages/Report.jsx`, `components/report/`, `hooks/useLookupPincode.js` |
 | Resend or email notifications | **DESIGNED** | Mentioned for escalations; no code. |
-| Issue, Report, SlaPolicy, Post, Comment, ChatMessage, Counter models | **DESIGNED** | `docs/DESIGN.md` section 3 only. |
+| Issue, Report, Post, Comment, ChatMessage models | **DESIGNED** | `docs/DESIGN.md` section 3 only. |
 | Leaflet map, in-house point-in-polygon | **DESIGNED** | ADR 0001. `utils/geo.js` exists (ring checks, centroid); the point-in-polygon check comes with `POST /api/issues`. |
-| Cloudinary signed uploads | **DESIGNED** | ADR 0001. |
 | Gemini chatbot and blog assist | **DESIGNED** | DESIGN.md sections 5 and 6. |
 | SLA job, escalation, priority score | **DESIGNED** | DESIGN.md section 7B. |
 
@@ -266,7 +269,8 @@ flowchart LR
 ### 4.4 M1 core loop HLD (pincode and report), national coverage
 
 Status: models, directory import, boundary import, department seed and `POST /api/pincodes/:pin/check-point` are
-**BUILT**; pincode lookup, waitlist API, issues and the wizard are **DESIGNED** (steps 5 to 11).
+**BUILT**, and so are pincode lookup, the waitlist API, SLA defaults, the ticket counter, upload signing and wizard
+step 1 (section 4.5); issues and wizard steps 2 and 3 are **DESIGNED**.
 
 ```mermaid
 flowchart LR
@@ -700,7 +704,11 @@ All errors share the shape `{ "error": { "code": "UPPER_SNAKE", "message": "..."
 | `GET /api/admin/users` | authenticate, loadUser, requireActive, requireVerifiedEmail, `user:read_scope` | 60/min/user | `limit` (1-50, default 20), `cursor`, `q` (3-64), `role`, `status` | `{ items, nextCursor }` |
 | `PATCH /api/admin/users/:id/role` | same, `user:promote` | 10/min/user | `{ role, reason (5-500), cityId?, departmentId?, stateCode? }` strict | `{ user }` |
 | `PATCH /api/admin/users/:id/status` | same, `user:suspend` | 10/min/user | `{ status, reason }` strict | `{ user }` |
-| `GET /api/cities` | same, `user:promote` | 60/min/user | none | `{ items }` (max 500). A city admin sees only their own. |
+| `GET /api/cities` | same, `user:promote` | 60/min/user | `stateCode`, `q` (prefix), `cursor`, `limit` (1-50) | `{ items, nextCursor }`. A city admin sees only their own. |
+| `GET /api/pincodes/:pin` | none (public) | 30/min/IP | `:pin` | pincode, city name, localities, shape, `precision`, `served` |
+| `POST /api/pincodes/:pin/check-point` | none (public) | 60/min/IP | `{ lat, lng }` | `{ inside, precision }` |
+| `POST /api/waitlist` | none (public) | 5/hour/IP | `{ pin, email }` | `{ joined: true }` (same on repeat) |
+| `POST /api/uploads/sign` | full chain, `issue:create` | 20/10 min/user | none | Cloudinary signed params |
 | `GET /api/departments?cityId=` | same, `user:promote` | 60/min/user | `cityId` | `{ items }`. A city admin may only ask for their own city. |
 
 Admin and personal-data routes send `Cache-Control: no-store`.
@@ -1604,7 +1612,7 @@ account is redirected to `/suspended` from every route, public ones included.
 | Example ticket | `TimelinePreview` | A `StatusTimeline` with the connector drawing in |
 | Trust | `TrustSection`, `LandingFooter` | Why you can trust it |
 
-### 15.7 Report wizard (DESIGNED, spec in UI.md section 7)
+### 15.7 Report wizard (step 1 BUILT, steps 2 and 3 DESIGNED; spec in UI.md section 7)
 
 Route `/report?step=1..3` (Back works, a `sessionStorage` draft survives refresh). Step bar in words: "Step 2 of 3:
 Place the pin". Footer: Back (outline) left, Next (default) right. Chat bubble hidden on step 2.

@@ -18,6 +18,9 @@ const KEYS = {
   AUTH_NOT_CONFIGURED: "errors.auth.providerUnavailable",
   PINCODE_NOT_FOUND: "errors.pincode.notFound",
   PINCODE_NOT_SERVED: "errors.pincode.notServed",
+  INVALID_PINCODE: "errors.pincode.invalid",
+  WAITLIST_NOT_CONFIGURED: "errors.common.unavailable",
+  UPLOADS_NOT_CONFIGURED: "errors.common.unavailable",
 };
 
 // Where an unknown code ends up: our own generic line, never the server's text.
