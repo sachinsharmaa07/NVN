@@ -65,5 +65,14 @@
   "report.review.photos": "Photos",
   "report.review.photoCount": "{count} uploaded",
   "report.review.submit": "Submit report",
-  "report.review.submitting": "Submitting…"
+  "report.review.submitting": "Submitting…",
+  "report.done.title": "Report submitted",
+  "report.done.yourTicket": "Your ticket. Keep it to follow the issue.",
+  "report.done.submittedOn": "Submitted {date}",
+  "report.done.department": "Sent to",
+  "report.done.triage": "City triage: a city officer will pick the department",
+  "report.done.expectedBy": "Expected by",
+  "report.done.track": "Track this issue",
+  "report.done.another": "Report another issue",
+  "report.review.draftSaved": "Your draft is saved."
 }
