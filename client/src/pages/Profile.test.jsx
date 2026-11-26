@@ -34,14 +34,12 @@ describe("Profile", () => {
     expect(screen.queryByLabelText("Email")).not.toBeInTheDocument();
   });
 
-  it("an unverified user gets a link to verify instead of the badge", () => {
+  it("an unverified user sees Not verified and no verify link", () => {
     renderWithAuth(<Profile />, {
       auth: authState("unverified", { user: { ...people.unverified } }),
     });
-    expect(screen.getByRole("link", { name: "Verify your email" })).toHaveAttribute(
-      "href",
-      "/verify-email",
-    );
+    expect(screen.getByText("Not verified")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /verify/i })).not.toBeInTheDocument();
   });
 
   it("a valid submit sends only the three allowed fields", async () => {

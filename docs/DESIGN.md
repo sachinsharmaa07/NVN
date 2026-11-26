@@ -63,7 +63,7 @@ nivaran/
     src/
       components/    ui/ (shadcn), layout/, map/, chat/
       pages/         Home, Report, MyIssues, IssueDetail, StaffQueue, Admin,
-                     Community, PostEditor, PostDetail, VerifyEmail
+                     Community, PostEditor, PostDetail
       hooks/         useAuthApi, usePincode, useChat, usePermissions
       lib/           api.js (fetch + token), queryClient.js
       App.jsx, main.jsx
@@ -177,7 +177,7 @@ erDiagram
   }
   USER {
     ObjectId _id PK
-    string auth0Id UK
+    string[] auth0Ids UK
     string email
     string name
     string role
@@ -261,7 +261,7 @@ erDiagram
 | Collection | Index | Serves |
 | --- | --- | --- |
 | pincodes | `pin` unique; `boundary: 2dsphere` | Pincode lookup; point-in-area check |
-| users | `auth0Id` unique; `{cityId, role}` | Login; staff lists |
+| users | `auth0Ids` unique; verified `email` unique; `{cityId, role}` | Login; staff lists |
 | issues | `ticketId` unique; `location: 2dsphere`; `{cityId, status, priorityScore: -1}`; `{reporterIds: 1}` | Chatbot lookup; duplicate search; staff queue; "my issues" |
 | reports | `{issueId: 1, createdAt: -1}` | Issue timeline |
 | posts | `{status, createdAt: -1}`; `{cityId, status, createdAt: -1}`; text index on `title, bodyMd` | Feed, city feed, search |
@@ -458,7 +458,7 @@ stateDiagram-v2
 
 1. **Auth0 application:** type *Single Page Application*. `@auth0/auth0-react` uses the OAuth 2.0 Authorization Code flow with PKCE, so no secret lives in the browser.
 2. **Auth0 API:** create an API with your identifier (e.g. `https://api.nivaran.in`), signing algorithm **RS256**, and turn on **RBAC** and **"Add Permissions in the Access Token"**.
-3. **Connections:** Google, plus email/password (Auth0 sends the verification email for email sign-ups).
+3. **Connections:** Google (`google-oauth2`) and passwordless email (`email`, a 6-digit code). No passwords.
 4. **Post-login Action:** add namespaced claims to the access token, e.g. `https://nivaran.in/email_verified` and `https://nivaran.in/roles`, so the API can read them.
 5. **Server check** on every request:
 
@@ -479,7 +479,7 @@ export const checkJwt = auth({
 ### Email verification
 
 - `requireVerifiedEmail` middleware returns **403 `EMAIL_NOT_VERIFIED`** for: creating issues, adding reports, posting, commenting, and ticket lookups in chat.
-- Unverified users can still browse public pages and their profile; the client shows a **VerifyEmail** page with a "Resend email" button that calls your server, which asks Auth0's Management API to resend (machine-to-machine credentials stay on the server).
+- Unverified users can still browse public pages and their profile. Sign-in is Google or Auth0 email OTP, both of which verify the email, so there is no verify page or resend: on `EMAIL_NOT_VERIFIED` the client shows a toast and opens the sign-in sheet.
 - Google sign-ins arrive already verified.
 
 ### Access levels
@@ -564,7 +564,7 @@ The box is only a fast first filter. **The pincode polygon is the real check.**
 | Mobile-first | One-handed layout, bottom action bar, 44 px touch targets, works on slow 4G |
 | Consistency | One design system (shadcn/ui + tokens): same buttons, spacing, colours everywhere |
 | Accessibility (WCAG 2.1 AA) | 4.5:1 contrast, keyboard navigation, labels on inputs, alt text on photos, no colour-only meaning |
-| Helpful errors | Plain language plus next step ("Verify your email to report issues → Resend email") |
+| Helpful errors | Plain language plus next step ("We couldn't confirm your email → Sign in again") |
 | Feedback while loading | Skeletons, optimistic status changes, retry button on failure |
 | Indian context | English first, Hindi-ready (i18n keys from day one), IST times, Indian date format |
 | Trust | Show who handles the issue (department), SLA, before/after photos; never show other citizens' personal details |
@@ -677,8 +677,7 @@ PHASE 1 - AUTH
 Use auth-and-authorization. Auth0 login with Google in the client (@auth0/auth0-react),
 JWT check in the server (express-oauth2-jwt-bearer), GET /api/me creating a citizen on
 first login, RS256 + audience + issuer checks, requireVerifiedEmail, requirePermission and
-scope middleware with the 7 access levels in section 7A, resend-verification endpoint,
-VerifyEmail page. Tests: 401 no token, 403 unverified email, 403 wrong level or scope,
+scope middleware with the 7 access levels in section 7A. Tests: 401 no token, 403 unverified email, 403 wrong level or scope,
 403 suspended user, cannot promote to own level or above.
 ```
 

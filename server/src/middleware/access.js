@@ -10,7 +10,10 @@ import { readClaims, resolveRequestUser } from "../services/userService.js";
  */
 export async function loadUser(req, res, next) {
   try {
-    req.user = await resolveRequestUser(readClaims(req.auth.payload));
+    req.user = await resolveRequestUser(readClaims(req.auth.payload), {
+      log: req.log,
+      requestId: req.id,
+    });
   } catch (err) {
     if (err instanceof AppError) throw err; // e.g. TOKEN_CLAIMS_MISSING
     // The database is the source of truth: if it fails we fail closed, never fall back to the token.

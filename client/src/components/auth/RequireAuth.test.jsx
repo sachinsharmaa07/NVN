@@ -1,17 +1,10 @@
 import { fireEvent, screen } from "@testing-library/react";
-import { useLocation } from "react-router";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { authState, people, renderWithAuth } from "@/test/renderWithAuth";
+import { toast } from "sonner";
 import { RequireAuth } from "./RequireAuth";
 
-function Where() {
-  const { pathname, state } = useLocation();
-  return (
-    <p>
-      at {pathname} from {state?.returnTo ?? "nowhere"}
-    </p>
-  );
-}
+vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
 
 // Renders a protected page at /report?pincode=144401 with a fake auth state.
 function renderAt(auth, props = {}) {
@@ -23,7 +16,7 @@ function renderAt(auth, props = {}) {
       auth,
       path: "/report?pincode=144401",
       routePath: "/report",
-      routes: { "/verify-email": <Where />, "/suspended": <p>suspended page</p> },
+      routes: { "/suspended": <p>suspended page</p> },
     },
   );
 }
@@ -42,10 +35,16 @@ describe("RequireAuth", () => {
     expect(auth.login).toHaveBeenCalledWith("/report?pincode=144401");
   });
 
-  it("sends an unverified user to /verify-email when verification is required", () => {
-    renderAt(authState("unverified"), { verified: true });
+  it("an unverified user gets a toast and the sign-in sheet when verification is required", () => {
+    const { openSignIn } = renderAt(authState("unverified"), { verified: true });
     expect(screen.queryByText("secret page")).not.toBeInTheDocument();
-    expect(screen.getByText("at /verify-email from /report?pincode=144401")).toBeInTheDocument();
+    expect(toast.error).toHaveBeenCalled();
+    expect(openSignIn).toHaveBeenCalledWith({
+      returnTo: "/report?pincode=144401",
+      variant: "gated",
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+    expect(openSignIn).toHaveBeenCalledTimes(2);
   });
 
   it("lets an unverified user into a page that does not require verification", () => {

@@ -29,13 +29,6 @@ export const mfaCalls = () =>
       flag: arg.body.app_metadata.mfa_required,
     }));
 
-/** Every verification-email request so far, as { auth0Id }. */
-export const resendCalls = () =>
-  request.mock.calls
-    .map(([arg]) => arg)
-    .filter((arg) => arg.op === "resendVerification")
-    .map((arg) => ({ auth0Id: arg.body.user_id }));
-
 /** Make the next call fail the way an outage does. `kind`: timeout | network | upstream | ... */
 export async function failNext(kind = "upstream", times = 1) {
   const { AuthProviderError } = await import("../../src/services/auth0ManagementClient.js");

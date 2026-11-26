@@ -5,7 +5,7 @@ import { User, guardedUpdateProblem } from "../../src/models/User.js";
 import { expectStoppedByHook } from "../helpers/hooks.js";
 
 const oid = () => new mongoose.Types.ObjectId();
-const base = { auth0Id: "auth0|u1", email: "a@example.com", emailVerified: true };
+const base = { auth0Ids: ["auth0|u1"], email: "a@example.com", emailVerified: true };
 
 /** Returns the set of invalid paths, or [] when valid. */
 async function invalidPaths(fields) {
@@ -63,7 +63,7 @@ describe("User field rules", () => {
     expect(u.email).toBe("asha@example.com");
   });
   it("defaults: citizen, active, language en, not verified, empty name", () => {
-    const u = new User({ auth0Id: "auth0|x", email: "x@example.com" });
+    const u = new User({ auth0Ids: ["auth0|x"], email: "x@example.com" });
     expect([u.role, u.status, u.preferredLanguage, u.emailVerified, u.name]).toEqual([
       "citizen",
       "active",
@@ -82,7 +82,9 @@ describe("User field rules", () => {
     ["avatar http (not https)", { avatarUrl: "http://x.example/a.png" }, "avatarUrl"],
     ["name over 100 characters", { name: "x".repeat(101) }, "name"],
     ["email over 254 characters", { email: `${"x".repeat(250)}@e.co` }, "email"],
-    ["auth0Id over 128 characters", { auth0Id: "x".repeat(129) }, "auth0Id"],
+    ["a sign-in id over 128 characters", { auth0Ids: ["x".repeat(129)] }, "auth0Ids.0"],
+    ["no sign-in id", { auth0Ids: [] }, "auth0Ids"],
+    ["11 sign-in ids", { auth0Ids: Array.from({ length: 11 }, (_, i) => `a|${i}`) }, "auth0Ids"],
     ["status not active or suspended", { status: "banned" }, "status"],
   ])("%s is invalid", async (_n, fields, path) => {
     expect(await invalidPaths(fields)).toContain(path);
@@ -95,13 +97,15 @@ describe("User field rules", () => {
   ])("accepts %j", async (fields) => {
     expect(await invalidPaths(fields)).toEqual([]);
   });
-  it("email is not unique: two users may share an address (no merging by email)", () => {
-    const emailIndex = User.schema.indexes().find(([spec]) => spec.email === 1 && !spec.cityId);
-    expect(emailIndex?.[1]?.unique).toBeFalsy();
+  it("email is unique only among verified rows", () => {
+    const emailIndexes = User.schema.indexes().filter(([spec]) => spec.email === 1);
+    const unique = emailIndexes.filter(([, opts]) => opts?.unique);
+    expect(unique).toHaveLength(1);
+    expect(unique[0][1].partialFilterExpression).toEqual({ emailVerified: true });
   });
-  it("auth0Id is unique and immutable", () => {
-    expect(User.schema.path("auth0Id").options.unique).toBe(true);
-    expect(User.schema.path("auth0Id").options.immutable).toBe(true);
+  it("auth0Ids is unique across users", () => {
+    const idx = User.schema.indexes().find(([spec]) => spec.auth0Ids === 1);
+    expect(idx?.[1]?.unique).toBe(true);
   });
 });
 
@@ -140,8 +144,8 @@ describe("User write guard: role, scope and status change only on purpose", () =
     ["status", { $set: { status: "suspended" } }],
     ["suspendedReason", { $set: { suspendedReason: "xyz" } }],
   ])("updateOne touching %s without { scopeWrite: true } is rejected", async (_n, update) => {
-    await expectStoppedByHook(() => User.updateOne({ auth0Id: "auth0|x" }, update).exec());
-    await expectStoppedByHook(() => User.findOneAndUpdate({ auth0Id: "auth0|x" }, update).exec());
+    await expectStoppedByHook(() => User.updateOne({ auth0Ids: "auth0|x" }, update).exec());
+    await expectStoppedByHook(() => User.findOneAndUpdate({ auth0Ids: "auth0|x" }, update).exec());
   });
 });
 
@@ -151,11 +155,11 @@ describe("User write guard: every form of write", () => {
     ["updateMany", () => User.updateMany({}, { $set: { role: "super_admin" } }).exec()],
     [
       "replaceOne",
-      () => User.replaceOne({ auth0Id: "a" }, { auth0Id: "a", email: "a@b.in" }).exec(),
+      () => User.replaceOne({ auth0Ids: "a" }, { auth0Ids: "a", email: "a@b.in" }).exec(),
     ],
     [
       "findOneAndReplace",
-      () => User.findOneAndReplace({ auth0Id: "a" }, { email: "a@b.in" }).exec(),
+      () => User.findOneAndReplace({ auth0Ids: "a" }, { email: "a@b.in" }).exec(),
     ],
     [
       "bulkWrite updateOne",
@@ -166,22 +170,22 @@ describe("User write guard: every form of write", () => {
       "bulkWrite insertOne with a role",
       () =>
         User.bulkWrite([
-          { insertOne: { document: { auth0Id: "x", email: "a@b.in", role: "super_admin" } } },
+          { insertOne: { document: { auth0Ids: ["x"], email: "a@b.in", role: "super_admin" } } },
         ]),
     ],
     [
       "insertMany with a role",
-      () => User.insertMany([{ auth0Id: "x", email: "a@b.in", role: "city_admin" }]),
+      () => User.insertMany([{ auth0Ids: ["x"], email: "a@b.in", role: "city_admin" }]),
     ],
     [
       "insertMany suspended",
-      () => User.insertMany([{ auth0Id: "x", email: "a@b.in", status: "suspended" }]),
+      () => User.insertMany([{ auth0Ids: ["x"], email: "a@b.in", status: "suspended" }]),
     ],
     [
       "$setOnInsert of a city",
       () =>
         User.updateOne(
-          { auth0Id: "a" },
+          { auth0Ids: "a" },
           { $setOnInsert: { cityId: oid() } },
           { upsert: true },
         ).exec(),
@@ -190,21 +194,24 @@ describe("User write guard: every form of write", () => {
       "$setOnInsert of role admin",
       () =>
         User.updateOne(
-          { auth0Id: "a" },
+          { auth0Ids: "a" },
           { $setOnInsert: { role: "city_admin" } },
           { upsert: true },
         ).exec(),
     ],
     [
       "$rename into role",
-      () => User.updateOne({ auth0Id: "a" }, { $rename: { name: "role" } }).exec(),
+      () => User.updateOne({ auth0Ids: "a" }, { $rename: { name: "role" } }).exec(),
     ],
     [
       "$rename away from status",
-      () => User.updateOne({ auth0Id: "a" }, { $rename: { status: "x" } }).exec(),
+      () => User.updateOne({ auth0Ids: "a" }, { $rename: { status: "x" } }).exec(),
     ],
-    ["$unset of a city", () => User.updateOne({ auth0Id: "a" }, { $unset: { cityId: "" } }).exec()],
-    ["dotted path", () => User.updateOne({ auth0Id: "a" }, { $set: { "role.x": 1 } }).exec()],
+    [
+      "$unset of a city",
+      () => User.updateOne({ auth0Ids: "a" }, { $unset: { cityId: "" } }).exec(),
+    ],
+    ["dotted path", () => User.updateOne({ auth0Ids: "a" }, { $set: { "role.x": 1 } }).exec()],
   ])("%s is rejected without scopeWrite", async (_n, run) => {
     await stopped(run);
   });

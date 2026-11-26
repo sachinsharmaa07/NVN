@@ -65,7 +65,7 @@ export async function changeRole(actor, id, input, ctx = {}) {
   // Promotion to level >= 4: the flag first. If Auth0 is down nothing is written (extra MFA is harmless,
   // an admin without MFA is not). A same-role retry takes this path too, which is what makes it safe.
   if (nowMfa)
-    await setFlagOrThrow(target.auth0Id, true, { log: ctx.log, userId: String(target._id) });
+    await setFlagOrThrow(target.auth0Ids, true, { log: ctx.log, userId: String(target._id) });
   if (unchanged) {
     // No write and no audit row, but the flag is re-synced on purpose: a retry after a partial failure
     // (flag set, DB write lost) must heal it. Cost: one Auth0 call on a no-op, which is rare and admin-only.

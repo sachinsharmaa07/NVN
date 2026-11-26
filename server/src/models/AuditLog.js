@@ -11,6 +11,7 @@ export const AUDIT_ACTIONS = [
   "user.reactivate",
   "user.bootstrap_super_admin",
   "user.mfa_flag_sync_failed",
+  "user.identity_linked",
 ];
 
 const MAX_SNAPSHOT_BYTES = 4096;

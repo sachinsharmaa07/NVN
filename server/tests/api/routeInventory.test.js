@@ -84,7 +84,6 @@ describe("route inventory", () => {
       expect.arrayContaining([
         "GET /api/me",
         "PATCH /api/me",
-        "POST /api/me/resend-verification",
         "GET /api/admin/users",
         "PATCH /api/admin/users/:id/role",
         "PATCH /api/admin/users/:id/status",
