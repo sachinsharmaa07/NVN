@@ -5,6 +5,7 @@ import { geoRoutes } from "./geoRoutes.js";
 import { healthRoutes } from "./healthRoutes.js";
 import { issueRoutes } from "./issueRoutes.js";
 import { meRoutes } from "./meRoutes.js";
+import { notificationRoutes } from "./notificationRoutes.js";
 import { pincodeRoutes } from "./pincodeRoutes.js";
 import { staffRoutes } from "./staffRoutes.js";
 import { uploadRoutes } from "./uploadRoutes.js";
@@ -20,4 +21,5 @@ apiRoutes.use("/waitlist", waitlistRoutes); // public
 apiRoutes.use("/uploads", uploadRoutes);
 apiRoutes.use("/issues", issueRoutes);
 apiRoutes.use("/staff", staffRoutes);
+apiRoutes.use("/notifications", notificationRoutes);
 apiRoutes.use(geoRoutes); // /cities and /departments
