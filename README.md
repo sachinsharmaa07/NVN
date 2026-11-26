@@ -47,14 +47,14 @@ The app runs without Auth0 settings: there is no Sign in button and protected pa
 not set up. To turn sign-in on, follow [docs/AUTH0_SETUP.md](docs/AUTH0_SETUP.md).
 
 - Open the app: <http://localhost:5173>
-- Check the API: <http://localhost:5000/api/health> should return `"status"` and `"db": "up"`
+- Check the API: <http://localhost:5001/api/health> should return `"status"` and `"db": "up"`
 
 `.env` files hold secrets and are git-ignored. Only the `.env.example` templates are committed.
 
 ### macOS note
 
-Port 5000 is used by AirPlay Receiver on macOS 12 and later. Either turn it off in
-**System Settings > General > AirDrop & Handoff**, or set `PORT=5050` in `server/.env` and
+The API defaults to 5001 because AirPlay Receiver holds 5000 on macOS 12 and later. To use another port,
+set `PORT=5050` in `server/.env` and
 `VITE_API_URL=http://localhost:5050` in `client/.env` to match.
 
 ## Environment variables
@@ -64,7 +64,7 @@ Port 5000 is used by AirPlay Receiver on macOS 12 and later. Either turn it off 
 | Variable | Example / default | Secret? | What it is |
 | --- | --- | --- | --- |
 | `NODE_ENV` | `development` | no | `development`, `test` or `production` |
-| `PORT` | `5000` | no | Port the API listens on |
+| `PORT` | `5001` | no | Port the API listens on |
 | `MONGODB_URI` | `mongodb+srv://.../nivaran_dev` | **yes** | Atlas connection string for the dev database |
 | `MONGODB_URI_TEST` | `mongodb://.../nivaran_test` | **yes** | Test database; tests wipe it, so the name must end in `_test`. Must be a replica set. Optional (see "Running the tests") |
 | `CLIENT_URL` | `http://localhost:5173` | no | The client's origin; the only origin CORS allows (required in production) |
@@ -84,7 +84,7 @@ missing or invalid.
 
 | Variable | Example | Secret? | What it is |
 | --- | --- | --- | --- |
-| `VITE_API_URL` | `http://localhost:5000` | no | Base URL of the API (must match the server's `PORT`) |
+| `VITE_API_URL` | `http://localhost:5001` | no | Base URL of the API (must match the server's `PORT`) |
 | `VITE_AUTH0_DOMAIN` | `nivaran-dev.us.auth0.com` | no | Auth0 tenant host (same as the server's) |
 | `VITE_AUTH0_CLIENT_ID` | from the Auth0 application | no | Client ID of the Single Page Application |
 | `VITE_AUTH0_AUDIENCE` | `https://api.nivaran.in` | no | Must equal the server's `AUTH0_AUDIENCE` |
@@ -119,7 +119,7 @@ env vars above and run the bootstrap script to create the first super admin.
 Routes are protected by a chain of small middleware: `authenticate` (`middleware/auth.js`), then
 `loadUser`, `requireActive`, `requireVerifiedEmail` and `requirePermission(...)` (`middleware/access.js`).
 The scope check (same city, department or state; out of scope is a 404) runs in the service. The
-role and scope rules are pure functions in `server/src/utils/` (`permissions.js`, `access.js`). On
+role and scope rules are pure functions in `server/src/utils/permissions.js`, used by `middleware/access.js`. On
 the client, wrap a page in `<RequireAuth>` (props `verified`, `permission`, `minLevel`); the server
 enforces the same rules.
 

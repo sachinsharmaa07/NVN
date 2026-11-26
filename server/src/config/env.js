@@ -18,7 +18,7 @@ const mongoUri = z
 
 const envSchema = z.object({
   NODE_ENV: optional(z.enum(["development", "test", "production"])).default("development"),
-  PORT: optional(z.coerce.number().int().min(1).max(65535)).default(5000),
+  PORT: optional(z.coerce.number().int().min(1).max(65535)).default(5001),
   MONGODB_URI: optional(mongoUri),
   MONGODB_URI_TEST: optional(mongoUri),
   // Reduced to its origin ("https://a.com/" -> "https://a.com") so it matches the browser's Origin header.

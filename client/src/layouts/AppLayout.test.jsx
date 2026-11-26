@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
@@ -93,7 +93,10 @@ describe("AppLayout", () => {
     fireEvent.click(within(getBottomBar()).getByRole("link", { name: t("shell.nav.community") }));
 
     expect(await screen.findByRole("heading", { name: "Community page" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Home page" })).not.toBeInTheDocument();
+    // The leaving page unmounts on motion's next frame, not synchronously; under load the check could run first.
+    await waitFor(() =>
+      expect(screen.queryByRole("heading", { name: "Home page" })).not.toBeInTheDocument(),
+    );
   });
 
   it("has a skip link that points at the main landmark", () => {
