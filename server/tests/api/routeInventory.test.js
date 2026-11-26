@@ -30,6 +30,7 @@ const { meRoutes } = await import("../../src/routes/meRoutes.js");
 const { adminUserRoutes } = await import("../../src/routes/adminUserRoutes.js");
 const { geoRoutes } = await import("../../src/routes/geoRoutes.js");
 const { pincodeRoutes } = await import("../../src/routes/pincodeRoutes.js");
+const { waitlistRoutes } = await import("../../src/routes/waitlistRoutes.js");
 const { authenticate } = await import("../../src/middleware/auth.js");
 const { loadUser, requireActive, requireVerifiedEmail } =
   await import("../../src/middleware/access.js");
@@ -44,6 +45,7 @@ const MOUNTS = [
   { prefix: "/admin/users", router: adminUserRoutes },
   { prefix: "", router: geoRoutes },
   { prefix: "/pincodes", router: pincodeRoutes, isPublic: true },
+  { prefix: "/waitlist", router: waitlistRoutes, isPublic: true },
 ];
 
 /** Every { method, path, handlers } of a router, flattened. */
@@ -97,13 +99,16 @@ describe("route inventory", () => {
 
   // Public POSTs that only read (a body carries the input, nothing is written). Each one is named here on purpose.
   const PUBLIC_READ_POSTS = ["POST /api/pincodes/:pin/check-point"];
+  // Public writes, each IP rate-limited and idempotent. Named here on purpose.
+  const PUBLIC_WRITES = ["POST /api/waitlist"];
 
-  it("public routes are read-only: GET, or a named read-only POST", () => {
+  it("public routes are read-only (GET or a named read-only POST) or a named public write", () => {
     const publicRoutes = all.filter((r) => r.isPublic);
     expect(publicRoutes.length).toBeGreaterThan(0);
     for (const r of publicRoutes) {
       const name = `${r.method} ${r.path}`;
-      expect(r.method === "GET" || PUBLIC_READ_POSTS.includes(name), name).toBe(true);
+      const allowed = [...PUBLIC_READ_POSTS, ...PUBLIC_WRITES].includes(name);
+      expect(r.method === "GET" || allowed, name).toBe(true);
     }
   });
 

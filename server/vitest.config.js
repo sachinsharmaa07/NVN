@@ -10,6 +10,6 @@ export default defineConfig({
     testTimeout: 20000,
     hookTimeout: 120000, // the first run may download mongod
     // Set before any test file imports src/config/env.js: no MONGODB_URI needed, no log noise.
-    env: { NODE_ENV: "test", LOG_LEVEL: "silent" },
+    env: { NODE_ENV: "test", LOG_LEVEL: "silent", HMAC_SECRET: "ab".repeat(32) },
   },
 });

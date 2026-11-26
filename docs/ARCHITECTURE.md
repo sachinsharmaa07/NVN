@@ -302,6 +302,43 @@ pincode. District cities are an administrative guess at "who fixes this"; real m
 later without changing pincodes' shape. Revisit: AIKosh polygons for dense cities first, and city-admin editing of
 the category map.
 
+### 4.5 Report step 1: pincode lookup and waitlist (BUILT)
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor R as Resident
+  participant W as /report?step=1
+  participant API
+  participant DB as MongoDB
+  R->>W: types 6 digits (or arrives with ?pincode=)
+  W->>W: regex ^[1-9][0-9]{5}$, draft saved to sessionStorage
+  W->>API: GET /api/pincodes/:pin (30/min/IP)
+  API->>DB: pincodes.findOne({ pin }) + city name
+  alt served
+    API-->>W: 200 pin, district, state, cityName, localities, centroid, radiusM, boundary, precision, served: true
+    W-->>R: aria-live "Kapurthala, Punjab" + localities. Resident taps Next (never auto-advance)
+  else known but unserved, or 404 PINCODE_NOT_FOUND
+    API-->>W: 200 served: false, or 404
+    W-->>R: inline waitlist form
+    R->>W: email
+    W->>API: POST /api/waitlist { pin, email } (5/hour/IP)
+    API->>DB: insert { pin, emailHash = HMAC(email) } (E11000 = already there)
+    API-->>W: 200 { joined: true } (same answer on repeat)
+  end
+```
+
+LLD, one chain per endpoint (ADR 0002):
+
+| Endpoint | Route | Controller | Service | Model |
+| --- | --- | --- | --- | --- |
+| `GET /api/pincodes/:pin` | `pincodeRoutes` (ipRateLimit 30/min, `Cache-Control: public, max-age=86400`) | `pincodeController.lookup` | `pincodeService.lookupPincode` | `Pincode`, `City` |
+| `POST /api/waitlist` | `waitlistRoutes` (ipRateLimit 5/hour) | `waitlistController.join` | `waitlistService.joinWaitlist` | `Waitlist` |
+| `POST /api/uploads/sign` | `uploadRoutes` (full chain, `issue:create`, 20/10 min/user) | `uploadController.sign` | `uploadService.signUpload` (`node:crypto`) | none |
+| `GET /api/cities` | `geoRoutes` (`user:promote`, `?stateCode`, `?q`, `?cursor`, `?limit`) | `geoController.listCities` | `adminUserService.listCities` | `City` |
+| (internal) ticket ID | none | none | `ticketService.nextTicketId` (atomic `$inc`) | `Counter` |
+| (internal) expected-by | none | none | `utils/expectedBy.js` (pure) | `SlaPolicy` (seeded by `scripts/seedSlaPolicies.js`) |
+
 ---
 
 ## 5. Technology stack and why
