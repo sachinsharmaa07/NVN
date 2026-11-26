@@ -17,5 +17,7 @@ describe("nextStatuses", () => {
       "rejected",
     ]);
     expect(nextStatuses(issue("assigned", { onHold: true }), "staff")).toEqual([]);
+    const triage = issue("submitted", { departmentId: null, queue: "triage" });
+    expect(nextStatuses(triage, "dept_head")).toEqual([]);
   });
 });

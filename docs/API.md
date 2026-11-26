@@ -189,7 +189,8 @@ Lifecycle: `docs/ARCHITECTURE.md` 12.3.
 | `POST /api/issues/:ticketId/hold` | dept_head, in scope | `reason`, `version` (sets `slaPausedAt`) |
 | `POST /api/issues/:ticketId/resume` | dept_head, in scope | `version` (shifts `expectedBy` by the time held) |
 
-Scope: staff and dept_head their department, city_admin their city (triage included).
+Scope: staff and dept_head their department, city_admin their city (triage included). A dept_head may also
+assign (only) their own city's triage issues (decision M2-10).
 
 ```bash
 curl -s -X PATCH http://localhost:5001/api/issues/NIV-2026-000001/status -H "Authorization: Bearer $TOKEN" \
@@ -210,8 +211,8 @@ curl -s -X PATCH http://localhost:5001/api/issues/NIV-2026-000001/status -H "Aut
 
 ### GET /api/staff/issues?status=&sla=&category=&queue=&cursor=&limit=
 
-Signed in, verified, `issue:read_scope` (MFA for dept_head and above). staff and dept_head see their department,
-city_admin their city with triage (`queue=triage` for only that), state_officer their state, super_admin all.
+Signed in, verified, `issue:read_scope` (MFA for dept_head and above). staff see their department,
+dept_head their department plus their city's triage (M2-10), city_admin their city with triage (`queue=triage` for only that), state_officer their state, super_admin all.
 Without `status`, only open issues (`submitted, assigned, in_progress, reopened`). `sla` one of
 `on_track, at_risk, breached`. Sorted by `expectedBy`, then `createdAt`; cursor-paginated, max 50.
 
@@ -272,4 +273,16 @@ Signed in, `user:promote`, 60 per minute per user. A city admin sees only their 
 ```bash
 curl -s "http://localhost:5001/api/cities?stateCode=PB&q=kap&limit=5" -H "Authorization: Bearer $TOKEN"
 # 200 {"items":[{"id":"...","name":"Kapurthala","code":"PB-KAPURTHALA","stateCode":"PB"}],"nextCursor":null}
+```
+
+### GET /api/departments?cityId=
+
+Signed in, verified, 60 per minute per user. Departments of one city, name order (at most 500).
+`user:promote` holders (role dialog): a city admin only their city (`403` for another), super_admin any.
+`issue:assign` holders without `user:promote` (dept_head, to assign triage; decision M2-10): their own city only,
+another city is `404 NOT_FOUND`. Anyone else `403 FORBIDDEN`.
+
+```bash
+curl -s "http://localhost:5001/api/departments?cityId=$CITY_ID" -H "Authorization: Bearer $TOKEN"
+# 200 {"items":[{"id":"...","name":"Roads","code":"ROADS"},{"id":"...","name":"Water","code":"WATER"}]}
 ```

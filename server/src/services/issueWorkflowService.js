@@ -118,7 +118,7 @@ export async function changeStatus(actor, ticketId, input, ctx = {}) {
 
 /** PATCH /api/issues/:ticketId/assign: a triage issue goes to one of its city's departments. */
 export async function assignIssue(actor, ticketId, { departmentId, version }, ctx = {}) {
-  const issue = await load({ ticketId, ...(await issueScope(actor)) }, version);
+  const issue = await load({ ticketId, ...(await issueScope(actor, { triage: true })) }, version);
   if (issue.queue !== "triage") throw invalid("This issue already has a department.");
   allow(issue, "assigned", actor.role);
   const dept = await Department.findOne({ _id: departmentId, cityId: issue.cityId }, "_id").lean();

@@ -17,10 +17,11 @@ export const OPEN_STATUSES = ["submitted", "assigned", "in_progress", "reopened"
 
 /**
  * Statuses this role may move the issue to through PATCH .../status. A triage issue (no department)
- * goes to `assigned` only through Assign, and nothing moves while on hold.
+ * goes to `assigned` only through Assign, and nothing moves while on hold. A dept_head sees their city's
+ * triage only to assign it (decision M2-10): status changes there are city_admin's.
  */
 export function nextStatuses(issue, role) {
-  if (issue.onHold) return [];
+  if (issue.onHold || (issue.queue === "triage" && role !== "city_admin")) return [];
   return Object.entries(TRANSITIONS[issue.status] ?? {})
     .filter(([to, roles]) => roles.includes(role) && !(to === "assigned" && !issue.departmentId))
     .map(([to]) => to);

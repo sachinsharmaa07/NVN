@@ -27,9 +27,15 @@ export async function listMine(actor, { cursor, limit }) {
  * The issues a staff-side actor may see or work on, as a Mongo filter (scope inside the query).
  * staff and dept_head: their department. city_admin: their city, triage included.
  * state_officer: their state's cities (read only). super_admin: all.
+ * `triage: true` (queue list and assign only, decision M2-10): a dept_head also gets their city's triage.
  */
-export async function issueScope(actor) {
+export async function issueScope(actor, { triage = false } = {}) {
   if (["staff", "dept_head"].includes(actor.role) && actor.departmentId) {
+    if (triage && actor.role === "dept_head" && actor.cityId) {
+      return {
+        $or: [{ departmentId: actor.departmentId }, { cityId: actor.cityId, queue: "triage" }],
+      };
+    }
     return { departmentId: actor.departmentId };
   }
   if (actor.role === "city_admin" && actor.cityId) return { cityId: actor.cityId };
@@ -51,12 +57,13 @@ const laterInQueue = ({ expectedBy, createdAt, _id }) => ({
 
 /** GET /api/staff/issues: soonest due first. Without `status`, only open issues. */
 export async function listStaffQueue(actor, { cursor, limit, status, sla, category, queue }) {
-  const filter = { ...(await issueScope(actor)) };
+  const filter = { ...(await issueScope(actor, { triage: true })) };
   filter.status = status ?? trusted({ $in: OPEN_STATUSES });
   if (sla) filter.slaState = sla;
   if (category) filter.category = category;
   if (queue) filter.queue = queue;
-  if (cursor) Object.assign(filter, laterInQueue(decodeQueueCursor(cursor)));
+  // $and: the scope may hold its own $or, which the cursor's $or must not overwrite.
+  if (cursor) filter.$and = [laterInQueue(decodeQueueCursor(cursor))];
   const rows = await Issue.find(filter)
     .sort({ expectedBy: 1, createdAt: 1, _id: 1 })
     .limit(limit + 1)

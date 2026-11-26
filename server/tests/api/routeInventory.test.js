@@ -20,6 +20,13 @@ vi.mock("../../src/middleware/access.js", async (orig) => {
       guard.permission = permission;
       return guard;
     },
+    // An either-of guard is tagged with its first permission; the others must exist too.
+    requireAnyPermission: (...permissions) => {
+      permissions.forEach((p) => actual.requirePermission(p)); // throws on an unknown name
+      const guard = actual.requireAnyPermission(...permissions);
+      guard.permission = permissions[0];
+      return guard;
+    },
   };
 });
 

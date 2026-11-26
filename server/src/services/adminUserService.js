@@ -248,6 +248,16 @@ export async function listCities(actor, { stateCode, q, cursor, limit = 20 }) {
 export async function listDepartments(actor, { cityId }) {
   assertActorScope(actor, "user:promote");
   if (actor.role !== "super_admin" && !sameId(actor.cityId, cityId)) throw forbidden();
+  return departmentsOf(cityId);
+}
+
+/** issue:assign holders without user:promote (dept_head), to assign triage: own city only, else 404. */
+export async function listAssignableDepartments(actor, { cityId }) {
+  if (!sameId(actor.cityId, cityId)) throw notFound();
+  return departmentsOf(cityId);
+}
+
+async function departmentsOf(cityId) {
   const rows = await Department.find({ cityId })
     .select("name code")
     .sort({ name: 1 })
