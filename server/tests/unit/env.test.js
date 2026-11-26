@@ -4,6 +4,11 @@ import { parseEnv } from "../../src/config/env.js";
 const URI = "mongodb://127.0.0.1:27017/nivaran_dev";
 const M2M = { AUTH0_M2M_CLIENT_ID: "client-id", AUTH0_M2M_CLIENT_SECRET: "client-secret" };
 const HMAC = { HMAC_SECRET: "ab".repeat(32) };
+const CLOUD = {
+  CLOUDINARY_CLOUD_NAME: "nivaran",
+  CLOUDINARY_API_KEY: "123456789",
+  CLOUDINARY_API_SECRET: "secret-secret",
+};
 
 describe("parseEnv", () => {
   it("applies defaults when only MONGODB_URI is given", () => {
@@ -33,6 +38,7 @@ describe("parseEnv", () => {
         AUTH0_AUDIENCE: "https://api.nivaran.in",
         ...M2M,
         ...HMAC,
+        ...CLOUD,
       }).problems,
     ).toEqual(["MONGODB_URI: required"]);
   });
@@ -86,6 +92,16 @@ describe("parseEnv", () => {
       "AUTH0_M2M_CLIENT_ID",
       "AUTH0_M2M_CLIENT_SECRET",
       "HMAC_SECRET",
+      "CLOUDINARY_CLOUD_NAME",
+      "CLOUDINARY_API_KEY",
+      "CLOUDINARY_API_SECRET",
+    ]);
+  });
+
+  it("outside production the Cloudinary keys are optional but come as a set of three", () => {
+    expect(parseEnv({ MONGODB_URI: URI, ...CLOUD }).ok).toBe(true);
+    expect(parseEnv({ MONGODB_URI: URI, CLOUDINARY_API_KEY: "1" }).problems).toEqual([
+      expect.stringMatching(/set all three or none/),
     ]);
   });
 
@@ -106,6 +122,7 @@ describe("parseEnv", () => {
       AUTH0_AUDIENCE: "https://api.nivaran.in",
       ...M2M,
       ...HMAC,
+      ...CLOUD,
     });
     expect(result.problems).toEqual([expect.stringMatching(/^TRUST_PROXY/)]);
   });
