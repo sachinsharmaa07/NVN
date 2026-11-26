@@ -88,8 +88,10 @@ curl -s -X POST http://localhost:5001/api/waitlist \
 Signed in, active, verified email, permission `issue:create`; 20 per 10 minutes per user; `Cache-Control: no-store`.
 Body and query must be empty. Decision 4: the browser uploads straight to Cloudinary with these values; the API
 secret never leaves the server. An incoming transformation (`c_limit,w_1600,h_1600`) re-encodes the original,
-which drops EXIF. Cloudinary cannot cap size on a signed upload, so the client checks `maxBytes` and
-`POST /api/issues` must re-check the stored photo's `bytes`.
+which drops EXIF. Cloudinary does not enforce a size cap on these uploads, so the client checks `maxBytes` and
+`POST /api/issues` checks each `public_id` with the Cloudinary Admin API: it must exist under `folder`, be at most
+`maxBytes`, and be jpg/png/webp/heic. Otherwise the photo is deleted and the submit is
+`400 INVALID_PHOTO` (`details.index` names the photo); Cloudinary unreachable is `503 UPSTREAM_UNAVAILABLE`.
 
 ```bash
 curl -s -X POST http://localhost:5001/api/uploads/sign -H "Authorization: Bearer $TOKEN"

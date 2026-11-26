@@ -139,7 +139,9 @@ calls produce 20 unique, gap-free numbers in a fresh test DB).
 Do:
 - `POST /api/uploads/sign` (requires `issue:create`, 20/hour/user): returns Cloudinary signed params built with
   `node:crypto` (no SDK): `timestamp`, `folder: nivaran/<env>/reports`, `allowed_formats: jpg,png,webp,heic`,
-  `max_file_size: 5242880`, and an incoming transformation that strips metadata (EXIF and GPS).
+  and an incoming transformation that strips metadata (EXIF and GPS). Cloudinary does not enforce `max_file_size`
+  on these uploads, so it is not signed: the response returns `maxBytes: 5242880` for the client to pre-check, and
+  the server enforces the 5 MB cap in step 8's photo check.
 - Server never receives the file. On submit the server re-checks each `public_id` starts with the signed folder and
   belongs to our cloud name (no arbitrary URLs).
 - Env names only: `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` in `config/env.js` and
@@ -164,8 +166,9 @@ Do:
 - Photo check (Batch B addendum): Cloudinary does not enforce 5 MB on signed uploads. Verify each `public_id`
   with the Cloudinary Admin API (`fetch` + basic auth, no SDK, 5 s timeout): it must exist, `bytes <= 5242880`,
   `format` in jpg/png/webp/heic, and sit in our folder. Otherwise 400 `INVALID_PHOTO` and delete the offending asset.
-  Cloudinary unreachable: 503 `UPSTREAM_UNAVAILABLE`. Tests use a mocked `fetch`. Remove the `shortcut:` comment in
-  `uploadService.js` once this lands.
+  Cloudinary unreachable: 503 `UPSTREAM_UNAVAILABLE`. Tests use a mocked `fetch`. BUILT as
+  `services/photoCheckService.js` `verifyPhotos(publicIds)` (returns `{ publicId, width, height }[]`); the route
+  calls it before the transaction.
 - Add curl examples to `docs/API.md`.
 
 Checks: tests for happy path, outside pin, unserved pincode, replayed key, 4 photos, foreign photo, other user's
@@ -208,6 +211,8 @@ Do:
 
 - EXIF (Batch B addendum): after the first real upload, confirm the stored asset has no GPS metadata. If the
   `c_limit` incoming transformation does not strip it, add the strip-metadata flag to the signed params.
+  DONE 26 Nov 2026: GPS-tagged JPEGs (small and large) came back with no EXIF segment; no flag needed (DECISIONS M1-12).
+  Not yet checked: HEIC and PNG sources.
 
 Checks: tests for double-submit, upload failure, server 422 shown on the map step; Playwright run of the whole
 flow with a test user against `nivaran_test` data.
