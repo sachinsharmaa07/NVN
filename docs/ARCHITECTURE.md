@@ -1331,6 +1331,39 @@ sequenceDiagram
   end
 ```
 
+### 11.5 Staff updates status, resident notified (BUILT, M2)
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor S as Staff
+  participant API
+  participant DB as MongoDB
+  participant CL as Cloudinary
+  actor R as Resident
+
+  S->>API: PATCH /api/issues/:ticketId/status {status, note?, afterPhotoPublicIds?, version}
+  API->>API: authenticate, loadUser, requireActive, verified, issue:update_status (MFA for dept_head+)
+  API->>DB: findOne {ticketId, departmentId or cityId of the actor}
+  alt missing or out of scope
+    API-->>S: 404 NOT_FOUND (same body)
+  end
+  API->>API: issueStateMachine: edge? role? note? photos?
+  alt bad edge
+    API-->>S: 400 INVALID_TRANSITION
+  end
+  opt status resolved
+    API->>CL: verifyPhotos(afterPhotoPublicIds)
+  end
+  API->>DB: transaction: findOneAndUpdate {_id, __v: version} ($set, $push history, $inc __v), AuditLog issue.status_change, Notification for the reporter
+  alt version changed meanwhile
+    API-->>S: 409 CONFLICT
+  end
+  API-->>S: 200 {issue with version + 1}
+  R->>API: GET /api/notifications
+  API-->>R: {items: [{type status_changed, ticketId, status}], nextCursor}
+```
+
 ### 11.4 Chatbot (DESIGNED)
 
 ```mermaid
@@ -1383,39 +1416,61 @@ stateDiagram-v2
   signedOut --> loading: login()
 ```
 
-### 12.3 Issue lifecycle (DESIGNED, enums fixed in CLAUDE.md)
+### 12.3 Issue lifecycle (BUILT, M2: `server/src/utils/issueStateMachine.js`)
 
 ```mermaid
 stateDiagram-v2
-  [*] --> submitted
-  submitted --> assigned: dept head assigns
-  assigned --> in_progress: staff starts
-  in_progress --> resolved: staff resolves with after-photo
-  resolved --> closed: citizen confirms or auto-closed after 7 days
-  resolved --> reopened: citizen reopens
-  reopened --> assigned
-  submitted --> rejected: rejected with reason
+  [*] --> submitted: resident submits (POST /api/issues)
+  submitted --> assigned: staff, dept_head, city_admin (triage: PATCH .../assign)
+  submitted --> rejected: dept_head, city_admin, note required
+  assigned --> in_progress: staff, dept_head, city_admin
+  in_progress --> resolved: staff, dept_head, city_admin, at least 1 after photo
+  resolved --> closed: reporter confirms, or SLA job after 7 days
+  resolved --> reopened: reporter, note required, fresh expectedBy
+  reopened --> assigned: staff, dept_head, city_admin
   closed --> [*]
   rejected --> [*]
 ```
 
-Allowed transitions will live in one pure `stateMachine` util with a test for every transition (Phase 4).
+One pure table decides every edge and who may take it: a missing edge is `400 INVALID_TRANSITION`, a real edge
+with the wrong role is `403 FORBIDDEN`. Every change is one conditional update on `{ _id, __v: version }` in a
+transaction with its `issue.status_change` AuditLog row and the reporter's Notification; a stale `version` is
+`409 CONFLICT`. On hold is the `slaPausedAt` flag (dept_head only), not a status.
 
-### 12.4 SLA state (DESIGNED, pure maths already built in the client)
+### 12.4 SLA state (BUILT, M2: `server/src/jobs/slaJob.js`)
 
 ```mermaid
 stateDiagram-v2
-  [*] --> on_track
-  on_track --> at_risk: 75 percent of allowed time used
-  at_risk --> breached: past the due date
-  on_track --> paused: dept head approves hold (slaPausedAt)
-  at_risk --> paused
-  paused --> on_track: clock resumes
-  breached --> [*]
+  [*] --> on_track: submit or reopen (expectedBy, atRiskAt = 75 percent)
+  on_track --> at_risk: job, now >= atRiskAt
+  on_track --> breached: job, now >= expectedBy
+  at_risk --> breached: job, now >= expectedBy
+  note right of on_track
+    slaPausedAt set: the job skips the issue.
+    Resume shifts expectedBy and atRiskAt by the paused time.
+  end note
 ```
 
-`client/src/components/system/slaState.js` already implements `getSlaState({startAt, dueAt, now})` and
-`formatDuration`. "Paused" is a flag, not a server SLA state.
+Only open statuses (`submitted, assigned, in_progress, reopened`) move. "Paused" is a flag, not a state.
+
+#### SLA job flow (one tick, every `SLA_JOB_INTERVAL_MS`, default 5 min)
+
+```mermaid
+flowchart TB
+  T["tick(now)"] --> R["at risk: updateMany open, not paused,<br/>slaState on_track, atRiskAt <= now"]
+  R --> B["breached: updateMany open, not paused,<br/>slaState != breached, expectedBy <= now"]
+  B --> N1{"breached, breachNotifiedDeptHeadAt null?"}
+  N1 -- "claim (set field) + Notification<br/>to dept_heads, one transaction" --> N2
+  N1 -- "triage issue: notify city_admins,<br/>set both fields" --> N2
+  N2{"breachNotifiedDeptHeadAt <= now - 24 h,<br/>breachNotifiedCityAdminAt null?"}
+  N2 -- "claim + Notification to city_admins" --> AC
+  AC{"resolved, resolvedAt <= now - 7 days?"}
+  AC -- "per issue transaction: closed,<br/>history by system, AuditLog, Notification" --> D["log counts"]
+```
+
+Idempotent: every write is guarded by the field it sets, so a rerun or an overlapping tick sends nothing twice.
+One server instance only (ADR 0001); a second instance would still not double-notify, only do wasted work.
+Disabled in tests; `runSlaTick(now)` is exported for direct calls.
 
 ### 12.5 Community moderation (DESIGNED)
 
