@@ -1,4 +1,5 @@
 import { createIssue, getOwnIssue } from "../services/issueService.js";
+import { listMine } from "../services/issueQueryService.js";
 import { AppError } from "../utils/AppError.js";
 import { idempotencyKey } from "../validators/issues.js";
 
@@ -21,4 +22,8 @@ export async function create(req, res) {
 
 export async function getOne(req, res) {
   res.json(await getOwnIssue(req.user, req.valid.params.ticketId));
+}
+
+export async function mine(req, res) {
+  res.json(await listMine(req.user, req.valid.query));
 }

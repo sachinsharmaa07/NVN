@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { expectedBy } from "../../src/utils/expectedBy.js";
+import { atRiskAt, expectedBy } from "../../src/utils/expectedBy.js";
 
 const at = new Date("2026-11-26T10:00:00Z");
 
@@ -20,5 +20,11 @@ describe("expectedBy", () => {
     ["infinite hours", at, Infinity, 0],
   ])("rejects %s", (_, date, hours, paused) => {
     expect(() => expectedBy(date, hours, paused)).toThrow(TypeError);
+  });
+});
+
+describe("atRiskAt", () => {
+  it("is 75% of the way to the deadline", () => {
+    expect(atRiskAt(at, expectedBy(at, 48)).toISOString()).toBe("2026-11-27T22:00:00.000Z");
   });
 });
