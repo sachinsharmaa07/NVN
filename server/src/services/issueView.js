@@ -1,8 +1,14 @@
 // What the API shows of an issue. Fields picked one by one: never reporterId, actor ids or emails.
+import { config } from "../config/env.js";
 import { Department } from "../models/Department.js";
 
+// `url` is Cloudinary's public delivery URL (the client has no cloud name); null when uploads aren't set up.
+const photoUrl = (publicId) =>
+  config.CLOUDINARY_CLOUD_NAME
+    ? `https://res.cloudinary.com/${config.CLOUDINARY_CLOUD_NAME}/image/upload/${publicId}`
+    : null;
 const photos = (list = []) =>
-  list.map(({ publicId, width, height }) => ({ publicId, width, height }));
+  list.map(({ publicId, width, height }) => ({ publicId, width, height, url: photoUrl(publicId) }));
 
 /** List row for "my issues". `version` is what a write must send back (optimistic concurrency). */
 export const summary = (issue) => ({
@@ -43,6 +49,7 @@ export async function detail(issue) {
     ...summary(issue),
     precision: issue.precision,
     department: dept ? { id: String(dept._id), name: dept.name } : null,
+    photos: photos(issue.photos),
     afterPhotos: photos(issue.afterPhotos),
     holdReason: issue.holdReason ?? null,
     timeline: timeline(issue.statusHistory),

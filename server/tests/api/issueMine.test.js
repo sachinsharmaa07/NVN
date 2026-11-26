@@ -79,6 +79,22 @@ describe("GET /api/issues/:ticketId timeline", () => {
     expect(JSON.stringify(res.body)).not.toContain(w.staff.email);
   });
 
+  it("returns the report photos with a delivery url", async () => {
+    const publicId = "nivaran/test/reports/before";
+    const issue = await makeIssue(w, {
+      photos: [{ publicId, width: 1600, height: 1200, bytes: 1 }],
+    });
+    const res = await as(app, w.reporter).get(`/api/issues/${issue.ticketId}`);
+    expect(res.body.photos).toEqual([
+      {
+        publicId,
+        width: 1600,
+        height: 1200,
+        url: `https://res.cloudinary.com/nivaran-test/image/upload/${publicId}`,
+      },
+    ]);
+  });
+
   it("is the same 404 for someone else's issue", async () => {
     const issue = await makeIssue(w);
     const res = await as(app, w.citizen).get(`/api/issues/${issue.ticketId}`);
