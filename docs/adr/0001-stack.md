@@ -34,7 +34,7 @@ Two apps (`client/`, `server/`) in npm workspaces with root scripts (`dev`, `che
 | react-hook-form, @hookform/resolvers | What shadcn's `Form` is built on; validates with the same Zod schemas as the server |
 | lucide-react | Icons (status badges always show icon + label) |
 | sonner | Toasts, the shadcn default |
-| vaul | shadcn `Drawer`: mobile bottom sheets with drag to dismiss (builds on Radix Dialog, ~5 KB gzip est.) |
+| (none) | Drawer is Radix Dialog: mobile bottom sheets, no extra library |
 | leaflet | Map and draggable pin, wrapped in one small `useEffect` component |
 | @fontsource/* | Self-hosted fonts chosen in docs/UI.md; only the variable fonts and Latin + Devanagari subsets |
 
@@ -79,7 +79,7 @@ Sachin's Phase 0 brief replaced some boring-tech cuts above; Sachin chose "follo
 | Global express-rate-limit from Phase 0 | Basic abuse protection on every route; tighter limits per route later |
 | eslint-plugin-react, -jsx-a11y, -n | React, accessibility and Node rules in lint |
 | Vitest + Testing Library + jsdom in the client | Component tests (Home loading, ok, error) |
-| Server port 5000 | Brief's choice. macOS AirPlay Receiver also uses 5000; set `PORT` if it clashes |
+| Server port 5001 | macOS AirPlay Receiver holds 5000; set `PORT` to override |
 | Build tooling: @vitejs/plugin-react, @tailwindcss/vite, @eslint/js, globals, eslint-plugin-react-hooks, -react-refresh | Needed by Vite, Tailwind v4 and ESLint; no runtime code |
 
 `motion` and `@number-flow/react` were added with the visual foundation (24 Nov 2026, Sachin's request): motion for page transitions and scroll reveals, NumberFlow for KPI tiles and the Landing stats row. No smooth-scroll library (see UI.md §4).

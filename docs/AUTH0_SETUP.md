@@ -45,7 +45,9 @@ Use a separate **dev tenant** (for example `nivaran-dev`). Make another one for 
 3. **No automatic account linking.** Do not add any Action, rule or extension that links accounts with
    the same email. Someone who signs up by email and someone who signs in with Google using the same
    address stay two separate Auth0 users (and two Nivaran users). Linking by email can hand one person's
-   account to another. Also turn on **Security > Attack Protection** (brute-force, suspicious IP throttling).
+   account to another. Auth0 itself does not link accounts; our server links only verified emails
+   (`server/src/services/identityLinkService.js`). Also turn on **Security > Attack Protection**
+   (brute-force, suspicious IP throttling).
 
 ## 5. Add our claims to the token
 
@@ -164,5 +166,4 @@ Run these in order against your dev tenant. Tick each when it behaves as describ
 | 503 `AUTH_PROVIDER_UNAVAILABLE` | Auth0 (keys or Management API) is unreachable or the M2M app lacks the two scopes. Check the server log for `auth0.mgmt.misconfigured` |
 | 403 `MFA_REQUIRED` for an admin | The token has no `mfa` claim: sign out and in and finish MFA, and check the Action sets `${ns}mfa` |
 | No Sign in button at all | The client's `.env` is missing one of the three `VITE_AUTH0_*` values |
-| Signed in, but Report sends you to Verify your email | Your email is not verified yet. Open the link Auth0 emailed you, then press "I've verified it" |
 | Bootstrap script exits 2 / 4 / 5 | 2: sign in once first. 4: verify the email. 5: Auth0 flag failed; check the M2M values and scopes, then rerun |
