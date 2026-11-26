@@ -1,14 +1,19 @@
-// Placeholder: Phase 2 owns the full City model. Phase 1 needs it for scope checks and the geo pickers.
+// A city Nivaran serves or is onboarding. Scope checks, admin pickers and pincodes point at it.
 import mongoose from "mongoose";
 import { INDIA_STATE_CODES } from "../utils/india.js";
 import { Department } from "./Department.js";
+import { Pincode } from "./Pincode.js";
 import { User } from "./User.js";
+
+export const CITY_STATUSES = Object.freeze(["active", "onboarding"]);
 
 const citySchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true, maxlength: 100 },
     code: { type: String, required: true, unique: true, match: /^[A-Z0-9]{2,10}$/ },
     stateCode: { type: String, required: true, enum: INDIA_STATE_CODES },
+    // onboarding: set up by admins, not yet taking reports; active: live for residents.
+    status: { type: String, enum: CITY_STATUSES, default: "onboarding" },
   },
   { timestamps: true },
 );
@@ -21,8 +26,9 @@ const refuseIfReferenced = async (ids) => {
   const where = { $in: ids };
   const used =
     (await User.exists({ cityId: mongoose.trusted(where) })) ||
-    (await Department.exists({ cityId: mongoose.trusted(where) }));
-  if (used) throw new Error("City is still referenced by users or departments");
+    (await Department.exists({ cityId: mongoose.trusted(where) })) ||
+    (await Pincode.exists({ cityId: mongoose.trusted(where) }));
+  if (used) throw new Error("City is still referenced by users, departments or pincodes");
 };
 citySchema.pre(
   ["deleteOne", "deleteMany", "findOneAndDelete"],

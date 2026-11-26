@@ -1,4 +1,5 @@
-// Placeholder: Phase 2 owns the full Department model. It has no stateCode (it would drift from City).
+// A city's department. No stateCode (it would drift from City) and no categories: the category to
+// department map is its own collection (M1 step 6).
 import mongoose from "mongoose";
 import { User } from "./User.js";
 
