@@ -55,8 +55,10 @@ describe("GET /api/staff/issues", () => {
     expect(res.body.items[0]).not.toHaveProperty("reporterId");
   });
 
-  it("dept_head sees the same department; other department staff see only theirs", async () => {
-    expect(ids(await as(app, w.head).get("/api/staff/issues"))).toEqual(t("soon", "late"));
+  it("dept_head sees their department and their city's triage (M2-10); other staff see only theirs", async () => {
+    expect(ids(await as(app, w.head).get("/api/staff/issues"))).toEqual(
+      t("triage", "soon", "late"),
+    );
     expect(ids(await as(app, w.waterStaff).get("/api/staff/issues"))).toEqual(t("water"));
   });
 

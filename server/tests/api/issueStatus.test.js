@@ -184,7 +184,8 @@ describe("PATCH /api/issues/:ticketId/status", () => {
 });
 
 describe("PATCH /api/issues/:ticketId/assign", () => {
-  const triage = () => makeIssue(w, { departmentId: null, queue: "triage", category: "other" });
+  const triage = (over = {}) =>
+    makeIssue(w, { departmentId: null, queue: "triage", category: "other", ...over });
 
   it("moves a triage issue to a department of the same city, as assigned", async () => {
     const issue = await triage();
@@ -210,11 +211,12 @@ describe("PATCH /api/issues/:ticketId/assign", () => {
       version: 0,
     });
     expect(foreign.status).toBe(404);
-    const head = await patch(w.head, issue, "assign", {
-      departmentId: String(w.roads._id),
+    const elsewhere = await triage({ cityId: w.city2._id });
+    const head = await patch(w.head, elsewhere, "assign", {
+      departmentId: String(w.roads2._id),
       version: 0,
     });
-    expect(head.status).toBe(404); // a dept_head's scope is their department; triage isn't in it
+    expect(head.status).toBe(404); // a dept_head's triage scope is their own city only (M2-10)
   });
 
   it("is 400 INVALID_TRANSITION for an issue that already has a department", async () => {

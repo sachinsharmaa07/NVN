@@ -126,6 +126,20 @@ export const STAFF_ME = {
   cityId: "6750e2e0e2e0e2e0e2e0e2e2",
   departmentId: CREATED.department.id,
 };
+export const HEAD_ME = {
+  ...STAFF_ME,
+  id: "6750e2e0e2e0e2e0e2e0e2ea",
+  email: "head@example.com",
+  name: "Hari Head",
+  role: "dept_head",
+  level: 4,
+  permissions: [...STAFF_ME.permissions, "issue:assign"],
+};
+export const DEPARTMENTS = [
+  { id: CREATED.department.id, name: "Roads", code: "ROADS" },
+  { id: "6750e2e0e2e0e2e0e2e0e2e3", name: "Water", code: "WATER" },
+];
+
 export const NOTIFICATION = {
   id: "n1",
   type: "status_changed",
@@ -167,6 +181,7 @@ export const test = base.extend({
         staffIssues: listOf([STAFF_ROW]),
         notifications: [200, { items: [], nextCursor: null, unread: 0 }],
         read: [200, { updated: 0 }],
+        departments: [200, { items: DEPARTMENTS }],
         stats: [
           200,
           { totalReports: 0, resolved: 0, medianResolutionHours: null, openByCategory: {} },
@@ -208,6 +223,9 @@ export const test = base.extend({
       );
       await page.route("**/api/notifications/read", (route) => reply(route, answers.read));
       await page.route("**/api/stats", (route) => reply(route, answers.stats));
+      await page.route(/\/api\/departments\?cityId=\w+$/, (route) =>
+        reply(route, answers.departments),
+      );
       await page.route(/\/api\/pincodes\/\d{6}$/, (route) => {
         const pin = route.request().url().split("/").pop();
         return json(route, answers.pincodes[pin] ?? [404, notFound]);

@@ -1,10 +1,12 @@
-// Pickers for the role dialog: GET /api/cities and GET /api/departments?cityId=.
+// Pickers for the role dialog: GET /api/cities and GET /api/departments?cityId=. Departments also serve
+// issue:assign holders without user:promote (dept_head assigning triage, decision M2-10).
 import { Router } from "express";
 import { validate } from "../middleware/validate.js";
 import { authenticate } from "../middleware/auth.js";
 import {
   loadUser,
   requireActive,
+  requireAnyPermission,
   requirePermission,
   requireVerifiedEmail,
 } from "../middleware/access.js";
@@ -33,7 +35,8 @@ geoRoutes.get(
 geoRoutes.get(
   "/departments",
   ...who,
-  requirePermission("user:promote"),
+  // Admins keep the user:promote rules; dept_head (issue:assign) gets their own city only.
+  requireAnyPermission("user:promote", "issue:assign"),
   adminReadLimit,
   validate({ query: departmentsQuery }),
   listDepartments,

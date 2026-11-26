@@ -1,5 +1,14 @@
 // M2 track and resolve end to end against the fake backend in fixtures.js (ADR 0003).
-import { NOTIFICATION, RESOLVED, STAFF_ME, STAFF_ROW, expect, test } from "./fixtures.js";
+import {
+  DEPARTMENTS,
+  HEAD_ME,
+  NOTIFICATION,
+  RESOLVED,
+  STAFF_ME,
+  STAFF_ROW,
+  expect,
+  test,
+} from "./fixtures.js";
 import { SMALL_PHOTO } from "./steps.js";
 
 const ID = RESOLVED.ticketId;
@@ -108,4 +117,21 @@ test("f) a citizen visiting /staff sees the 403 in place", async ({ page, api })
   ).toBeVisible();
   await expect(page).toHaveURL("/staff");
   expect(api.count("GET", "/api/staff/issues")).toBe(0);
+});
+
+test("g) a dept_head assigns a city triage issue to a department", async ({ page, api }) => {
+  api.answers.me = HEAD_ME;
+  const triageRow = { ...STAFF_ROW, status: "submitted", queue: "triage", departmentId: null };
+  api.answers.staffIssues = [200, { items: [triageRow], nextCursor: null }];
+  api.answers.writes.assign = [200, { ...RESOLVED, status: "assigned", version: 3 }];
+  await page.goto("/staff");
+  await page.getByRole("button", { name: /Deep pothole/ }).click();
+  await expect(page.getByRole("button", { name: "Change status" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Assign department" }).click();
+  await page.getByRole("combobox", { name: "Department" }).click();
+  await page.getByRole("option", { name: "Water" }).click();
+  await page.getByRole("button", { name: "Assign", exact: true }).click();
+  await expect(page.getByText("Assigned to Water")).toBeVisible();
+  expect(sentBody(api, "/assign")).toEqual({ departmentId: DEPARTMENTS[1].id, version: 2 });
+  expect(api.count("GET", `/api/departments?cityId=${HEAD_ME.cityId}`)).toBe(1);
 });
