@@ -110,6 +110,50 @@ Then: `POST uploadUrl` as multipart with `file`, `api_key`, `timestamp`, `folder
 | 429 | `RATE_LIMITED` | More than 20 in 10 minutes |
 | 503 | `UPLOADS_NOT_CONFIGURED` | `CLOUDINARY_*` not set |
 
+## Issues
+
+### POST /api/issues
+
+Signed in, active, verified email, permission `issue:create`; 10 per hour per user; `Cache-Control: no-store`.
+Header `Idempotency-Key: <UUID>` (one per draft). The same key from the same user returns the first issue with
+`200` and writes nothing. Order: replay check, served pincode, pin check (`locatePoint`, same as check-point),
+photo check (Cloudinary Admin API), then one transaction: ticket counter, routing (`other` or no mapping goes to
+city triage), `expectedBy` from the city's `SlaPolicy` or the national one, insert, AuditLog `issue.created`.
+
+```bash
+curl -s -X POST http://localhost:5001/api/issues -H "Authorization: Bearer $TOKEN" \
+  -H "Idempotency-Key: $(uuidgen)" -H "Content-Type: application/json" \
+  -d '{"pincode":"144601","lat":31.38,"lng":75.39,"category":"pothole","title":"Deep pothole",
+       "description":"A deep pothole outside the bus stand, two feet wide.","photos":["nivaran/development/reports/abc"]}'
+# 201 {"ticketId":"NIV-2026-000001","status":"submitted","category":"pothole","title":"Deep pothole",
+#      "pincode":"144601","precision":"approx","queue":"department","department":{"id":"...","name":"Roads"},
+#      "expectedBy":"2026-12-03T06:30:00.000Z","createdAt":"2026-11-26T06:30:00.000Z"}
+```
+
+Body (strict): `pincode`, `lat`, `lng`, `category` (M1-6), `title` 5 to 100, `description` 20 to 1000, `photos`
+0 to 3 public_ids from `POST /api/uploads/sign` uploads.
+
+| Status | Code | When |
+| --- | --- | --- |
+| 400 | `VALIDATION_ERROR` | Bad or extra body field, 4 photos |
+| 400 | `INVALID_IDEMPOTENCY_KEY` | Header missing or not a UUID |
+| 400 | `INVALID_PHOTO` | Photo not ours, missing, over 5 MB or wrong format (`details.index`); the asset is deleted |
+| 401/403 | auth codes | Not signed in, suspended, unverified, or no `issue:create` |
+| 404 | `PINCODE_NOT_FOUND` | Unknown pincode |
+| 422 | `PINCODE_NOT_SERVED` | Known pincode we don't serve |
+| 422 | `OUTSIDE_PINCODE` | The pin is outside the pincode's polygon or circle |
+| 429 | `RATE_LIMITED` | More than 10 in an hour |
+| 503 | `UPSTREAM_UNAVAILABLE` / `UPLOADS_NOT_CONFIGURED` | Cloudinary unreachable / not set up |
+
+### GET /api/issues/:ticketId
+
+Signed in, active, permission `issue:read_own`. The reporter's own issue, same shape as above. Someone else's
+ticket and a missing one are the same `404 NOT_FOUND`; a malformed id is `400`.
+
+```bash
+curl -s http://localhost:5001/api/issues/NIV-2026-000001 -H "Authorization: Bearer $TOKEN"
+```
+
 ## Geo pickers
 
 ### GET /api/cities?stateCode=&q=&cursor=&limit=

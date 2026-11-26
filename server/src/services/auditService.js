@@ -10,7 +10,9 @@ const ALLOWED_KEYS = {
   "user.reactivate": ["status", "suspendedReason"],
   "user.mfa_flag_sync_failed": ["errorCode"],
   "user.identity_linked": ["provider"], // the provider only, never the full sub
+  "issue.created": ["ticketId", "category", "queue", "departmentId"], // never the location or text
 };
+const targetOf = (action) => action.split(".")[0];
 
 /** Keeps only the allow-listed keys with a value. Returns undefined when nothing is left. */
 function snapshot(action, values) {
@@ -32,7 +34,7 @@ export async function record(entry, { session } = {}) {
     throw new Error(`Unknown audit action ${entry.action}`);
   const doc = {
     ...entry,
-    targetType: "user",
+    targetType: targetOf(entry.action),
     before: snapshot(entry.action, entry.before),
     after: snapshot(entry.action, entry.after),
   };

@@ -3,6 +3,7 @@ import { Router } from "express";
 import { adminUserRoutes } from "./adminUserRoutes.js";
 import { geoRoutes } from "./geoRoutes.js";
 import { healthRoutes } from "./healthRoutes.js";
+import { issueRoutes } from "./issueRoutes.js";
 import { meRoutes } from "./meRoutes.js";
 import { pincodeRoutes } from "./pincodeRoutes.js";
 import { uploadRoutes } from "./uploadRoutes.js";
@@ -16,4 +17,5 @@ apiRoutes.use("/admin/users", adminUserRoutes);
 apiRoutes.use("/pincodes", pincodeRoutes); // public
 apiRoutes.use("/waitlist", waitlistRoutes); // public
 apiRoutes.use("/uploads", uploadRoutes);
+apiRoutes.use("/issues", issueRoutes);
 apiRoutes.use(geoRoutes); // /cities and /departments
