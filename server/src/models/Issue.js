@@ -2,6 +2,7 @@
 import mongoose from "mongoose";
 import { CATEGORIES } from "../utils/categories.js";
 import { PINCODE_RE } from "../utils/india.js";
+import { ROLES } from "../utils/permissions.js";
 import { QUEUES } from "./CategoryMapping.js";
 
 const { ObjectId } = mongoose.Schema.Types;
@@ -19,6 +20,8 @@ export const ISSUE_STATUSES = Object.freeze([
 export const PRECISIONS = Object.freeze(["exact", "approx"]); // decision M1-7
 export const TICKET_RE = /^NIV-\d{4}-\d{6}$/;
 export const MAX_PHOTOS = 3;
+export const SLA_STATES = Object.freeze(["on_track", "at_risk", "breached"]);
+export const NOTE_MAX = 500;
 
 const photoSchema = new mongoose.Schema(
   {
@@ -33,7 +36,9 @@ const historySchema = new mongoose.Schema(
   {
     status: { type: String, enum: ISSUE_STATUSES, required: true },
     at: { type: Date, required: true },
-    by: { type: ObjectId, ref: "User", required: true },
+    by: { type: ObjectId, ref: "User", default: null }, // null: the SLA job (role "system")
+    role: { type: String, enum: [...ROLES, "system"] }, // M2; M1 rows have none
+    note: { type: String, trim: true, maxlength: NOTE_MAX },
   },
   { _id: false },
 );
@@ -70,8 +75,21 @@ const issueSchema = new mongoose.Schema(
     },
     status: { type: String, enum: ISSUE_STATUSES, required: true, default: "submitted" },
     statusHistory: { type: [historySchema], default: [] },
+    afterPhotos: {
+      type: [photoSchema],
+      default: [],
+      validate: { validator: (v) => v.length <= MAX_PHOTOS, message: "at most 3 photos" },
+    },
     slaPausedAt: { type: Date, default: null },
+    holdReason: { type: String, trim: true, maxlength: NOTE_MAX, default: null },
     expectedBy: { type: Date, required: true },
+    // 75% of the allowed time, stored so the SLA job finds due issues with an index (M2).
+    atRiskAt: { type: Date, default: null },
+    slaState: { type: String, enum: SLA_STATES, default: "on_track" },
+    resolvedAt: { type: Date, default: null },
+    // Escalation steps already sent; the SLA job sets each once (idempotence).
+    breachNotifiedDeptHeadAt: { type: Date, default: null },
+    breachNotifiedCityAdminAt: { type: Date, default: null },
     idempotencyKey: { type: String, required: true, immutable: true, maxlength: 64 },
   },
   { timestamps: true },
@@ -86,7 +104,17 @@ issueSchema.pre("validate", function () {
 issueSchema.index({ ticketId: 1 }, { unique: true });
 issueSchema.index({ location: "2dsphere" });
 issueSchema.index({ reporterId: 1, createdAt: -1 }); // "my issues"
-issueSchema.index({ cityId: 1, queue: 1, status: 1, createdAt: -1 }); // staff queues
+issueSchema.index({ cityId: 1, queue: 1, status: 1, createdAt: -1 }); // staff queues (M1)
+// M2 staff queue, sorted by due date: by department (staff, dept_head) or by city (city_admin).
+issueSchema.index({ departmentId: 1, expectedBy: 1, createdAt: 1, _id: 1 });
+issueSchema.index({ cityId: 1, expectedBy: 1, createdAt: 1, _id: 1 });
+issueSchema.index({ expectedBy: 1, createdAt: 1, _id: 1 }); // super_admin, national
+// M2 SLA job: at risk, breached, escalation, auto-close. Stats: open by category.
+issueSchema.index({ slaState: 1, atRiskAt: 1 });
+issueSchema.index({ slaState: 1, expectedBy: 1 });
+issueSchema.index({ slaState: 1, breachNotifiedDeptHeadAt: 1, breachNotifiedCityAdminAt: 1 });
+issueSchema.index({ status: 1, resolvedAt: 1 });
+issueSchema.index({ status: 1, category: 1 });
 // A replayed submit finds the first issue; a racing duplicate hits E11000.
 issueSchema.index({ reporterId: 1, idempotencyKey: 1 }, { unique: true });
 

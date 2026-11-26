@@ -65,6 +65,91 @@ export const CREATED = {
   createdAt: "2026-11-26T06:30:00.000Z",
 };
 
+// M2 shapes (docs/API.md "Issues", "Staff", "Notifications", "Stats").
+export const PHOTO_URL = "https://res.cloudinary.com/nivaran-e2e/image/upload/nivaran/e2e/before";
+const SUMMARY = {
+  ticketId: CREATED.ticketId,
+  status: "resolved",
+  category: "pothole",
+  title: "Deep pothole",
+  pincode: PIN,
+  queue: "department",
+  expectedBy: CREATED.expectedBy,
+  slaState: "on_track",
+  onHold: false,
+  version: 3,
+  createdAt: CREATED.createdAt,
+};
+const photo = { publicId: "nivaran/e2e/before", width: 1, height: 1, url: PHOTO_URL };
+export const RESOLVED = {
+  ...SUMMARY,
+  precision: "approx",
+  department: CREATED.department,
+  photos: [photo],
+  afterPhotos: [{ ...photo, publicId: "nivaran/e2e/after" }],
+  holdReason: null,
+  timeline: [
+    { status: "submitted", at: CREATED.createdAt, role: "citizen", note: null },
+    { status: "assigned", at: "2026-11-26T08:00:00.000Z", role: "staff", note: null },
+    { status: "in_progress", at: "2026-11-27T08:00:00.000Z", role: "staff", note: null },
+    { status: "resolved", at: "2026-11-28T08:00:00.000Z", role: "staff", note: "Filled" },
+  ],
+};
+export const STAFF_ROW = {
+  ...SUMMARY,
+  status: "in_progress",
+  slaState: "at_risk",
+  version: 2,
+  description: "A deep pothole outside the bus stand, two feet wide.",
+  departmentId: CREATED.department.id,
+  location: { lat: CENTROID[1], lng: CENTROID[0] },
+  photos: [photo],
+  afterPhotos: [],
+  holdReason: null,
+};
+export const STAFF_ME = {
+  ...ME,
+  id: "6750e2e0e2e0e2e0e2e0e2e9",
+  email: "dev@example.com",
+  name: "Dev Singh",
+  role: "staff",
+  level: 3,
+  permissions: [
+    "public:read",
+    "profile:read_own",
+    "profile:update_own",
+    "issue:create",
+    "issue:read_own",
+    "issue:read_scope",
+    "issue:update_status",
+  ],
+  cityId: "6750e2e0e2e0e2e0e2e0e2e2",
+  departmentId: CREATED.department.id,
+};
+export const HEAD_ME = {
+  ...STAFF_ME,
+  id: "6750e2e0e2e0e2e0e2e0e2ea",
+  email: "head@example.com",
+  name: "Hari Head",
+  role: "dept_head",
+  level: 4,
+  permissions: [...STAFF_ME.permissions, "issue:assign"],
+};
+export const DEPARTMENTS = [
+  { id: CREATED.department.id, name: "Roads", code: "ROADS" },
+  { id: "6750e2e0e2e0e2e0e2e0e2e3", name: "Water", code: "WATER" },
+];
+
+export const NOTIFICATION = {
+  id: "n1",
+  type: "status_changed",
+  ticketId: CREATED.ticketId,
+  status: "resolved",
+  read: false,
+  createdAt: "2026-11-28T08:00:00.000Z",
+};
+const listOf = (items) => [200, { items, nextCursor: null }];
+
 const notFound = { error: { code: "PINCODE_NOT_FOUND", message: "We don't know this pincode." } };
 // A transparent 1x1 PNG for every map tile.
 const TILE = Buffer.from(
@@ -88,7 +173,22 @@ export const test = base.extend({
         checkPoint: [200, { inside: true, precision: "approx" }],
         issues: [201, CREATED],
         issuesDelayMs: 0,
+        me: ME,
+        // M2. Each may be [status, body] or a function of the request that returns one.
+        mine: listOf([SUMMARY]),
+        detail: [200, RESOLVED],
+        writes: {}, // { confirm: [200, {...}], status: [409, ...] }
+        staffIssues: listOf([STAFF_ROW]),
+        notifications: [200, { items: [], nextCursor: null, unread: 0 }],
+        read: [200, { updated: 0 }],
+        departments: [200, { items: DEPARTMENTS }],
+        stats: [
+          200,
+          { totalReports: 0, resolved: 0, medianResolutionHours: null, openByCategory: {} },
+        ],
       };
+      const reply = (route, answer) =>
+        json(route, typeof answer === "function" ? answer(route.request()) : answer);
       const requests = [];
       const offsite = [];
 
@@ -102,7 +202,30 @@ export const test = base.extend({
       await page.route("https://tile.openstreetmap.org/**", (route) =>
         route.fulfill({ contentType: "image/png", body: TILE }),
       );
-      await page.route("**/api/me", (route) => json(route, [200, { user: ME }]));
+      await page.route("**/api/me", (route) => json(route, [200, { user: answers.me }]));
+      await page.route("https://res.cloudinary.com/**", (route) =>
+        route.fulfill({ contentType: "image/png", body: TILE }),
+      );
+      await page.route(/\/api\/issues\/mine(\?.*)?$/, (route) => reply(route, answers.mine));
+      await page.route(/\/api\/issues\/NIV-\d{4}-\d{6}$/, (route) => reply(route, answers.detail));
+      await page.route(/\/api\/issues\/NIV-\d{4}-\d{6}\/\w+$/, (route) => {
+        const action = route.request().url().split("/").pop();
+        return reply(
+          route,
+          answers.writes[action] ?? [404, { error: { code: "NOT_FOUND", message: "x" } }],
+        );
+      });
+      await page.route(/\/api\/staff\/issues(\?.*)?$/, (route) =>
+        reply(route, answers.staffIssues),
+      );
+      await page.route(/\/api\/notifications(\?.*)?$/, (route) =>
+        reply(route, answers.notifications),
+      );
+      await page.route("**/api/notifications/read", (route) => reply(route, answers.read));
+      await page.route("**/api/stats", (route) => reply(route, answers.stats));
+      await page.route(/\/api\/departments\?cityId=\w+$/, (route) =>
+        reply(route, answers.departments),
+      );
       await page.route(/\/api\/pincodes\/\d{6}$/, (route) => {
         const pin = route.request().url().split("/").pop();
         return json(route, answers.pincodes[pin] ?? [404, notFound]);

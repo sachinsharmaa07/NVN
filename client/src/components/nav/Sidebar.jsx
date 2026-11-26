@@ -5,7 +5,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useSidebarCollapsed } from "@/hooks/useSidebarCollapsed";
 import { t } from "@/i18n/t";
 import { cn } from "@/lib/utils";
-import { navItems } from "./navItems";
+import { useCan } from "@/hooks/useCan";
+import { navItemsFor } from "./navItems";
 import { focusRing } from "./navStyles";
 
 /*
@@ -16,6 +17,8 @@ import { focusRing } from "./navStyles";
  */
 export function Sidebar() {
   const [collapsed, toggle] = useSidebarCollapsed();
+  const can = useCan();
+  const navItems = navItemsFor(can("issue:read_scope"));
   const primary = navItems.find((item) => item.primary);
   const links = navItems.filter((item) => !item.primary);
   const ToggleIcon = collapsed ? PanelLeftOpenIcon : PanelLeftCloseIcon;

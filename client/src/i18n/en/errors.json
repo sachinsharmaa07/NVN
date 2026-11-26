@@ -18,5 +18,6 @@
   "errors.pincode.notServed": "Nivaran doesn't cover this pincode yet.",
   "errors.pincode.invalid": "A pincode is 6 digits and doesn't start with 0.",
   "errors.common.unavailable": "This isn't available right now. Try again later.",
-  "errors.report.invalidPhoto": "One of your photos can't be used. It must be a JPG, PNG, WebP or HEIC under 5 MB. Remove it and add it again."
+  "errors.report.invalidPhoto": "One of your photos can't be used. It must be a JPG, PNG, WebP or HEIC under 5 MB. Remove it and add it again.",
+  "errors.issue.invalidTransition": "This issue can't move to that step now. Refresh it to see where it stands."
 }
