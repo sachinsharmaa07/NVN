@@ -31,6 +31,7 @@ const { adminUserRoutes } = await import("../../src/routes/adminUserRoutes.js");
 const { geoRoutes } = await import("../../src/routes/geoRoutes.js");
 const { pincodeRoutes } = await import("../../src/routes/pincodeRoutes.js");
 const { waitlistRoutes } = await import("../../src/routes/waitlistRoutes.js");
+const { uploadRoutes } = await import("../../src/routes/uploadRoutes.js");
 const { authenticate } = await import("../../src/middleware/auth.js");
 const { loadUser, requireActive, requireVerifiedEmail } =
   await import("../../src/middleware/access.js");
@@ -46,6 +47,7 @@ const MOUNTS = [
   { prefix: "", router: geoRoutes },
   { prefix: "/pincodes", router: pincodeRoutes, isPublic: true },
   { prefix: "/waitlist", router: waitlistRoutes, isPublic: true },
+  { prefix: "/uploads", router: uploadRoutes },
 ];
 
 /** Every { method, path, handlers } of a router, flattened. */

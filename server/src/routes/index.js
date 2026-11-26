@@ -5,6 +5,7 @@ import { geoRoutes } from "./geoRoutes.js";
 import { healthRoutes } from "./healthRoutes.js";
 import { meRoutes } from "./meRoutes.js";
 import { pincodeRoutes } from "./pincodeRoutes.js";
+import { uploadRoutes } from "./uploadRoutes.js";
 import { waitlistRoutes } from "./waitlistRoutes.js";
 
 export const apiRoutes = Router();
@@ -14,4 +15,5 @@ apiRoutes.use("/me", meRoutes);
 apiRoutes.use("/admin/users", adminUserRoutes);
 apiRoutes.use("/pincodes", pincodeRoutes); // public
 apiRoutes.use("/waitlist", waitlistRoutes); // public
+apiRoutes.use("/uploads", uploadRoutes);
 apiRoutes.use(geoRoutes); // /cities and /departments

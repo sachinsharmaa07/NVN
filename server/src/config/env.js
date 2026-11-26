@@ -47,11 +47,17 @@ const envSchema = z.object({
   HMAC_SECRET: optional(
     z.string().regex(/^[0-9a-f]{64}$/i, "64 hex characters (openssl rand -hex 32)"),
   ),
+  // Cloudinary (decision 4), signed uploads with node:crypto, no SDK. The secret is server only, never logged.
+  CLOUDINARY_CLOUD_NAME: optional(z.string().regex(/^[a-z0-9_-]+$/i, "cloud name only")),
+  CLOUDINARY_API_KEY: optional(z.string().regex(/^[0-9]+$/, "digits only")),
+  CLOUDINARY_API_SECRET: optional(z.string().min(10)),
   // Email of the first super admin; only scripts/bootstrapSuperAdmin.js reads it.
   SUPER_ADMIN_EMAIL: optional(
     z.preprocess((v) => (typeof v === "string" ? v.trim().toLowerCase() : v), z.email()),
   ),
 });
+
+const CLOUDINARY_KEYS = ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"];
 
 // The test database may be wiped by tests, so refuse anything that could be the real one.
 function testDbProblems(raw) {
@@ -94,6 +100,10 @@ export function parseEnv(raw) {
     if (!raw.AUTH0_M2M_CLIENT_SECRET)
       problems.push("AUTH0_M2M_CLIENT_SECRET: required in production");
     if (!raw.HMAC_SECRET) problems.push("HMAC_SECRET: required in production");
+    for (const key of CLOUDINARY_KEYS)
+      if (!raw[key]) problems.push(`${key}: required in production`);
+  } else if (CLOUDINARY_KEYS.some((k) => raw[k]) && !CLOUDINARY_KEYS.every((k) => raw[k])) {
+    problems.push(`${CLOUDINARY_KEYS.join(", ")}: set all three or none`);
   } else if (Boolean(raw.AUTH0_M2M_CLIENT_ID) !== Boolean(raw.AUTH0_M2M_CLIENT_SECRET)) {
     // Half a credential pair is always a mistake; say so at start-up, not on the first admin write.
     problems.push("AUTH0_M2M_CLIENT_ID and AUTH0_M2M_CLIENT_SECRET: set both or neither");
