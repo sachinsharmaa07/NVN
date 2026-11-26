@@ -1883,11 +1883,53 @@ flowchart TD
    with an audit row, and prints the masked email.
 3. Sign out and in again and enrol MFA when Auth0 asks. Admin > Users now opens.
 
-### 18.5 Staff and moderator flows (DESIGNED)
+### 18.5 Track and resolve screens (M2 Batch E)
 
-Staff see **Queue** in place of **Report** in the bottom bar and sidebar. They open a paginated, priority-sorted
-queue, change status (never optimistic for resolve), upload an after-photo to resolve, and the citizen confirms or
-reopens. Moderators hide, restore or delete content with a reason, each action written to `AuditLog`.
+Resident (`issue:read_own`):
+
+```mermaid
+flowchart TD
+  CF["Counterfoil: Track this issue"] --> TD
+  N["Bell popover: tap a notification"] --> TD
+  MI["/issues My issues<br/>GET /api/issues/mine (cursor, Load more)<br/>StatusBadge + SlaBadge per row"] --> TD["/issues/:ticketId<br/>counterfoil header, expected-by (IST),<br/>photos before and after, StatusTimeline"]
+  MI -- "empty" --> RP["Report an issue"]
+  TD -- "status resolved" --> Q{"Is it fixed?"}
+  Q -- "Confirm" --> C["POST .../confirm {version}<br/>200: closed"]
+  Q -- "Reopen" --> R["Reason 10+ chars<br/>POST .../reopen {note, version}<br/>200: reopened"]
+  C -- "409" --> X["Someone updated this issue. Reload to see the latest.<br/>refetch the ticket"]
+  R -- "409" --> X
+```
+
+Staff (`issue:read_scope`; staff, dept_head, city_admin and above). Queue replaces Report in the bottom bar and
+sidebar for these roles. A citizen opening `/staff` gets the 403 in place.
+
+```mermaid
+flowchart TD
+  SQ["/staff Queue<br/>GET /api/staff/issues?status&sla&category<br/>sorted by expectedBy (server); table >= 1024px, cards below"] --> DR["Issue drawer (Sheet on desktop, Drawer on phones)<br/>details, photos, SLA, actions"]
+  DR --> ST["Change status panel<br/>only next statuses from the state machine for my role<br/>resolved: after photo via signed upload; rejected: note"]
+  DR --> AS["Assign panel (issue:assign, triage issues)<br/>department of my city"]
+  DR --> HO["Hold (reason) / Resume (dept_head)"]
+  ST & AS & HO -- "200" --> OK["toast, queue refetched,<br/>drawer shows the fresh row or closes if it left the queue"]
+  ST & AS & HO -- "409" --> X["Someone updated this issue. Reload to see the latest.<br/>queue refetched, drawer shows the new version"]
+```
+
+The actions are panels inside the drawer, not a second dialog on top of it (UI.md 6: never stack two overlays). There
+is no staff GET for one issue, so the drawer holds only the `ticketId` and reads the row from the cached queue:
+a refetch updates the version it sends next.
+
+Query keys and invalidation (TanStack Query). Nothing about status is optimistic: the UI changes only after the
+server answers.
+
+| Key | Source | Mutation | On success | On 409 |
+| --- | --- | --- | --- | --- |
+| `["issues", "mine"]` (infinite) | `GET /api/issues/mine` | | | |
+| `["issues", "detail", ticketId]` | `GET /api/issues/:ticketId` | confirm, reopen | `setQueryData(detail)` from the answer; invalidate `["issues", "mine"]` | invalidate the detail |
+| `["staff", "issues", filters]` (infinite) | `GET /api/staff/issues` | status, assign, hold, resume | invalidate `["staff", "issues"]` | invalidate `["staff", "issues"]` |
+| `["notifications"]` | `GET /api/notifications` (first page, `unread`), every 60 s while the tab is visible | mark all read | invalidate `["notifications"]` | |
+| `["stats"]` | `GET /api/stats` (public, no token) | | | |
+| `["departments", cityId]` | `GET /api/departments` (existing `useDepartments`) | | | |
+
+Moderators (hide, restore or delete content with a reason, each written to `AuditLog`) stay DESIGNED for Phase 6.
 
 ---
 
