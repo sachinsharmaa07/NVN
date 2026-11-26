@@ -3,12 +3,13 @@ import { AccountMenu } from "@/components/auth/AccountMenu";
 import { ThemeMenu } from "@/components/theme/ThemeMenu";
 import { t } from "@/i18n/t";
 import { cn } from "@/lib/utils";
+import { NotificationBell } from "./NotificationBell";
 import { focusRing } from "./navStyles";
 
 /*
  * The app bar at the top of every page, on every screen size (docs/UI.md §5).
- * Left: the wordmark, which links home. Right: the theme menu.
- * Right: the theme menu and the account button (Sign in, or the account menu once signed in).
+ * Left: the wordmark, which links home. Right: the notification bell (signed in only), the theme menu
+ * and the account button (Sign in, or the account menu once signed in).
  * The city name joins when pincode lookup exists; we leave it out instead of showing a disabled stub.
  */
 export function TopBar() {
@@ -26,6 +27,7 @@ export function TopBar() {
           {t("app.name")}
         </Link>
         <div className="flex items-center gap-1">
+          <NotificationBell />
           <ThemeMenu />
           <AccountMenu />
         </div>
