@@ -13,6 +13,9 @@ export const UPLOAD_RULES = Object.freeze({
 // An incoming transformation re-encodes the stored original, which drops EXIF (GPS, camera) metadata.
 const INCOMING = "c_limit,w_1600,h_1600";
 
+/** Where report photos live; the photo check refuses anything outside it. */
+export const reportsFolder = () => `nivaran/${config.NODE_ENV}/reports`;
+
 /** Pure: the Cloudinary signature for `params` (values already strings or numbers). */
 export function cloudinarySignature(params, secret) {
   const toSign = Object.keys(params)
@@ -32,7 +35,7 @@ export function signUpload() {
   }
   const params = {
     allowed_formats: UPLOAD_RULES.allowedFormats.join(","),
-    folder: `nivaran/${config.NODE_ENV}/reports`,
+    folder: reportsFolder(),
     timestamp: Math.floor(clock.now().getTime() / 1000),
     transformation: INCOMING,
   };
@@ -41,8 +44,7 @@ export function signUpload() {
     apiKey,
     ...params,
     signature: cloudinarySignature(params, config.CLOUDINARY_API_SECRET),
-    // shortcut: a signed upload cannot cap file size; the client checks maxBytes, and POST /api/issues must
-    // check the stored photo's `bytes` before accepting it. Upgrade: a signed upload preset with a size limit.
+    // A signed upload cannot cap file size: the client pre-checks maxBytes, and photoCheckService enforces it.
     maxBytes: UPLOAD_RULES.maxBytes,
   };
 }

@@ -21,6 +21,8 @@ const KEYS = {
   INVALID_PINCODE: "errors.pincode.invalid",
   WAITLIST_NOT_CONFIGURED: "errors.common.unavailable",
   UPLOADS_NOT_CONFIGURED: "errors.common.unavailable",
+  INVALID_PHOTO: "errors.report.invalidPhoto",
+  UPSTREAM_UNAVAILABLE: "errors.common.unavailable",
 };
 
 // Where an unknown code ends up: our own generic line, never the server's text.
