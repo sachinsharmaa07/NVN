@@ -34,7 +34,7 @@ Two apps (`client/`, `server/`) in npm workspaces with root scripts (`dev`, `che
 | react-hook-form, @hookform/resolvers | What shadcn's `Form` is built on; validates with the same Zod schemas as the server |
 | lucide-react | Icons (status badges always show icon + label) |
 | sonner | Toasts, the shadcn default |
-| vaul | shadcn `Drawer`: mobile bottom sheets with drag to dismiss (builds on Radix Dialog, ~5 KB gzip est.) |
+| (none) | Drawer is Radix Dialog: mobile bottom sheets, no extra library |
 | leaflet | Map and draggable pin, wrapped in one small `useEffect` component |
 | @fontsource/* | Self-hosted fonts chosen in docs/UI.md; only the variable fonts and Latin + Devanagari subsets |
 
