@@ -36,3 +36,6 @@ _to_delete/
 
 # Graphify knowledge graph (regenerate with: graphify extract . --code-only)
 graphify-out/
+
+# National pincode CSV from data.gov.in: over 10 MB, download it (see README "Pincode data")
+data/pincodes.csv
