@@ -27,7 +27,13 @@ Moved out of `CLAUDE.md` on 25 Nov 2026 so that file stays short. Same rules, sa
 
 ## Tests
 - Vitest unit tests for pure logic in `server/src/utils/`; Supertest API tests in `server/tests/api/` on a replica
-  set: `MONGODB_URI_TEST` (name ends `_test`, wiped) or in-memory mongodb-memory-server. Playwright in `client/e2e/`.
+  set: `MONGODB_URI_TEST` (name ends `_test`, wiped) or in-memory mongodb-memory-server.
+- Client: Vitest + Testing Library in `client/src/**/*.test.jsx` (jsdom; stub Leaflet's `PinMap`).
+- E2E (ADR 0003): Playwright in `client/e2e/*.spec.js`, Chromium, projects `mobile` (360×740) and `desktop`
+  (1280×800). Vite runs with `VITE_E2E=1` (fake signed-in citizen; `vite build` refuses the flag). Every request
+  is answered by `e2e/fixtures.js` with the shapes in `docs/API.md`; anything off `localhost` fails the test.
+  Change an API shape: update `docs/API.md`, the server tests and the fixtures together. Select by role, label
+  or text, never by CSS class (Leaflet's `.leaflet-marker-icon` is the one exception). No `waitForTimeout`.
 - **Naming:** files `camelCase.js`, components `PascalCase.jsx`, models singular (`SlaPolicy`), routes `/api/` +
   kebab-case plural, error codes and env vars UPPER_SNAKE, i18n keys `area.screen.key`.
 
@@ -35,9 +41,10 @@ Moved out of `CLAUDE.md` on 25 Nov 2026 so that file stays short. Same rules, sa
 - server: express, mongoose, zod, pino, pino-http, helmet, cors, express-rate-limit, dotenv, express-oauth2-jwt-bearer
 - client: react, react-dom, react-router, @tanstack/react-query, tailwindcss, shadcn deps (radix-ui, lucide-react,
   sonner, class-variance-authority, clsx, tailwind-merge, tw-animate-css), react-hook-form + @hookform/resolvers,
-  @auth0/auth0-react, @fontsource/*, motion (variants in `lib/motion.js`), @number-flow/react, leaflet (Phase 3)
+  @auth0/auth0-react, @fontsource/*, motion (variants in `lib/motion.js`), @number-flow/react, leaflet (report map)
 - dev: eslint 9 + plugins, prettier, concurrently, vite, vitest, supertest, jsdom, @testing-library/*
-- Later, with their phase: @google/genai, @playwright/test, @base-ui-components/react (only where Radix lacks),
+- dev (client): @playwright/test (e2e, ADR 0003)
+- Later, with their phase: @google/genai, @base-ui-components/react (only where Radix lacks),
   Magic UI accents (Home only, UI.md §6.1), marked + sanitize-html together. Drawer is Radix Dialog; no `vaul`.
 - In-house, no package: request-id, Cloudinary signing (`node:crypto`), SLA timer, point-in-polygon
   (`utils/geo.js`), i18n `t()`.
