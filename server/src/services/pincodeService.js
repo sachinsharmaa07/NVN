@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import { Pincode } from "../models/Pincode.js";
 import { AppError } from "../utils/AppError.js";
 import { distanceM } from "../utils/geo.js";
+import { PINCODE_RE } from "../utils/india.js";
 
 /**
  * Decision M1-7. `pincode`: a row with _id, boundary, centroid, radiusM. `point`: { lat, lng }.
@@ -31,4 +32,31 @@ export async function checkPoint(pin, point) {
     throw new AppError("PINCODE_NOT_SERVED", 422, "Nivaran doesn't cover this pincode yet.");
   }
   return locatePoint(row, point);
+}
+
+/**
+ * GET /api/pincodes/:pin. Every field the report wizard needs for step 1 and the map in step 2.
+ * A known but unserved pincode is a 200 with served: false, so the wizard can offer the waitlist.
+ */
+export async function lookupPincode(pin) {
+  if (!PINCODE_RE.test(pin)) {
+    throw new AppError("INVALID_PINCODE", 400, "A pincode is 6 digits and does not start with 0.");
+  }
+  const row = await Pincode.findOne({ pin })
+    .select("pin district state cityId localities centroid radiusM boundary isServed")
+    .populate("cityId", "name")
+    .lean();
+  if (!row) throw new AppError("PINCODE_NOT_FOUND", 404, "We don't know this pincode.");
+  return {
+    pin: row.pin,
+    district: row.district,
+    state: row.state,
+    cityName: row.cityId?.name ?? null,
+    localities: row.localities,
+    centroid: row.centroid ?? null,
+    radiusM: row.radiusM ?? null,
+    boundary: row.boundary ?? null,
+    precision: row.boundary ? "exact" : "approx",
+    served: row.isServed,
+  };
 }

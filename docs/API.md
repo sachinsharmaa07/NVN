@@ -6,6 +6,29 @@ Living document: update it with every feature (see `CLAUDE.md`, "Living docs").
 
 ## Pincodes
 
+### GET /api/pincodes/:pin
+
+Public, 30 requests per minute per IP. `Cache-Control: public, max-age=86400`. Report step 1.
+
+```bash
+curl -s http://localhost:5001/api/pincodes/144601
+# 200 {"pin":"144601","district":"Kapurthala","state":"Punjab","cityName":"Kapurthala",
+#      "localities":["Kapurthala","Sultanpur Road"],"centroid":{"type":"Point","coordinates":[75.38,31.38]},
+#      "radiusM":4000,"boundary":null,"precision":"approx","served":true}
+
+curl -s http://localhost:5001/api/pincodes/044401
+# 400 {"error":{"code":"INVALID_PINCODE","message":"A pincode is 6 digits and does not start with 0."}}
+```
+
+`precision` is `exact` when `boundary` is a polygon, else `approx` (circle `radiusM` around `centroid`).
+A known pincode we do not serve yet is `200` with `served: false` (and `cityName: null`): offer the waitlist.
+
+| Status | Code | When |
+| --- | --- | --- |
+| 400 | `INVALID_PINCODE` | Not 6 digits, or starts with 0 |
+| 404 | `PINCODE_NOT_FOUND` | Not in the directory (offer the waitlist) |
+| 429 | `RATE_LIMITED` | More than 30 lookups a minute from one IP |
+
 ### POST /api/pincodes/:pin/check-point
 
 Public (no sign-in), 60 requests per minute per IP. Is a map pin inside this pincode? Decision M1-7.
@@ -38,3 +61,22 @@ curl -s -X POST http://localhost:5001/api/pincodes/999999/check-point \
 
 `POST /api/issues` (M1 step 8, not built yet) must use the same check (`locatePoint` in
 `server/src/services/pincodeService.js`) and return the same `precision`.
+
+## Waitlist
+
+### POST /api/waitlist
+
+Public, 5 requests per hour per IP. Decision O1: stores `HMAC-SHA-256(HMAC_SECRET, lowercased email)` only.
+Idempotent: a repeat (any letter case) answers the same `200`, so the response never says whether an email was listed.
+
+```bash
+curl -s -X POST http://localhost:5001/api/waitlist \
+  -H 'Content-Type: application/json' -d '{"pin":"110001","email":"asha@example.com"}'
+# 200 {"joined":true}
+```
+
+| Status | Code | When |
+| --- | --- | --- |
+| 400 | `VALIDATION_ERROR` | Bad pin or email, or extra keys |
+| 429 | `RATE_LIMITED` | More than 5 a hour from one IP |
+| 503 | `WAITLIST_NOT_CONFIGURED` | `HMAC_SECRET` not set |
