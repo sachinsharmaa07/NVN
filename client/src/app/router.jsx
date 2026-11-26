@@ -6,6 +6,7 @@ import {
   AdminUsers,
   Community,
   Forbidden,
+  IssueDetail,
   Issues,
   Landing,
   NotFound,
@@ -43,6 +44,7 @@ export const routes = [
       { path: "forbidden", element: <Forbidden /> },
       { path: "admin/users", element: <AdminUsers /> },
       { path: "issues", element: <Issues /> },
+      { path: "issues/:ticketId", element: <IssueDetail /> },
       { path: "community", element: <Community /> },
       // Development only: /dev/styleguide (StyleGuide is null in production builds).
       ...(StyleGuide ? [{ path: "dev/styleguide", element: <StyleGuide /> }] : []),

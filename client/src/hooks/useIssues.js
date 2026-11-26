@@ -1,0 +1,58 @@
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { useApi } from "@/hooks/useApi";
+import { t } from "@/i18n/t";
+
+export const MINE_KEY = ["issues", "mine"];
+export const detailKey = (ticketId) => ["issues", "detail", ticketId];
+
+/** My issues, newest first; "Load more" fetches the next cursor (ARCHITECTURE 18.5). */
+export function useMyIssues() {
+  const api = useApi();
+  return useInfiniteQuery({
+    queryKey: MINE_KEY,
+    initialPageParam: "",
+    queryFn: ({ pageParam, signal }) =>
+      api(`/api/issues/mine?limit=20${pageParam ? `&cursor=${pageParam}` : ""}`, { signal }),
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+  });
+}
+
+export function useIssue(ticketId) {
+  const api = useApi();
+  return useQuery({
+    queryKey: detailKey(ticketId),
+    queryFn: ({ signal }) => api(`/api/issues/${ticketId}`, { signal }),
+  });
+}
+
+/** A 409 means someone else moved the issue first: say so and fetch the latest (never optimistic). */
+export function onConflict(error, refetch) {
+  if (error?.status !== 409) return false;
+  toast.error(t("issues.conflict"));
+  refetch();
+  return true;
+}
+
+/**
+ * The reporter's answer to "Is it fixed?": `action` is "confirm" or "reopen" (with `note`).
+ * The server's answer replaces the cached ticket; My issues refetches.
+ */
+export function useResolveAnswer(ticketId) {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ action, version, note }) =>
+      api(`/api/issues/${ticketId}/${action}`, {
+        method: "POST",
+        body: action === "reopen" ? { note, version } : { version },
+      }),
+    onSuccess: (issue, { action }) => {
+      toast.success(t(action === "reopen" ? "issues.resolve.reopened" : "issues.resolve.closed"));
+      queryClient.setQueryData(detailKey(ticketId), issue);
+      queryClient.invalidateQueries({ queryKey: MINE_KEY });
+    },
+    onError: (error) =>
+      onConflict(error, () => queryClient.invalidateQueries({ queryKey: detailKey(ticketId) })),
+  });
+}

@@ -26,7 +26,7 @@ describe("Counterfoil", () => {
     expect(screen.getByText(/^3 Dec(?: 2026)?, 5:00 PM$/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Track this issue" })).toHaveAttribute(
       "href",
-      "/issues",
+      "/issues/NIV-2026-000123",
     );
   });
 

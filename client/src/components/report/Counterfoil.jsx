@@ -49,8 +49,7 @@ export function Counterfoil({ issue, onReportAnother }) {
       </dl>
       <div className="flex flex-wrap justify-center gap-3">
         <Button asChild size="lg">
-          {/* shortcut: the tracking page is M2; until then this opens My issues. */}
-          <Link to="/issues">{t("report.done.track")}</Link>
+          <Link to={`/issues/${issue.ticketId}`}>{t("report.done.track")}</Link>
         </Button>
         <Button variant="outline" size="lg" onClick={onReportAnother}>
           {t("report.done.another")}
