@@ -72,11 +72,11 @@ flowchart LR
     VF["Visual foundation: tokens, shell, landing, motion"]
     P1["Phase 1: Auth0 sign-in, roles in MongoDB,<br/>admin users, audit log, MFA flag"]
     M1["M1: City, Department, Pincode, Waitlist, CategoryMapping,<br/>national pincode import, boundary import,<br/>department seed, check-point API"]
-    M2["M2 backend: state machine, staff queue, SLA job,<br/>notifications, stats"]
+    M2["M2: state machine, staff queue, SLA job,<br/>notifications, stats, My issues, ticket page,<br/>staff console, bell"]
   end
   subgraph Partial["PARTIAL"]
     CH["Chat bubble: opens a placeholder panel"]
-    RP["Report, Issues, Community pages: empty-state shells"]
+    RP["Community page: empty-state shell"]
   end
   subgraph Designed["DESIGNED only"]
     P2["M1: pincode lookup API, waitlist API"]
@@ -105,7 +105,8 @@ flowchart LR
 | `POST /api/pincodes/:pin/check-point` (polygon "exact", else radius circle "approx") | **BUILT** | `routes/pincodeRoutes.js`, `services/pincodeService.js` (`locatePoint`, reused by `POST /api/issues` later), `docs/API.md` |
 | Default departments and category map per city (`CategoryMapping`, seed script) | **BUILT** | `models/CategoryMapping.js`, `utils/categories.js`, `scripts/seedDepartments.js`, `services/departmentSeedService.js`. On the real data: 637 cities, 3,185 departments, 3,822 mappings in 0.2 s locally |
 | Chat bubble | **PARTIAL** | `components/chat/ChatBubble.jsx` opens a "coming soon" sheet. No API. |
-| `/report`, `/issues`, `/community` | **PARTIAL** | Empty-state shells with the final navigation wiring. |
+| `/community` | **PARTIAL** | Empty-state shell with the final navigation wiring. |
+| My issues, ticket page (confirm, reopen), staff queue and drawer, notification bell, landing stats | **BUILT** (M2) | `pages/Issues.jsx`, `pages/IssueDetail.jsx`, `pages/staff/StaffQueue.jsx`, `components/issues/`, `components/staff/`, `components/nav/NotificationBell.jsx`, `hooks/useIssues.js`, `useStaffIssues.js`, `useNotifications.js`, `e2e/track.spec.js`, section 18.5 |
 | `GET /api/pincodes/:pin`, `POST /api/waitlist` (section 4.5) | **BUILT** | `routes/pincodeRoutes.js`, `routes/waitlistRoutes.js`, `services/pincodeService.js`, `services/waitlistService.js` |
 | `SlaPolicy` national defaults and `expectedBy`; `Counter` and ticket IDs | **BUILT** | `models/SlaPolicy.js`, `models/Counter.js`, `utils/expectedBy.js`, `services/slaService.js`, `services/ticketService.js`, `scripts/seedSlaPolicies.js` |
 | Cloudinary signed uploads (`POST /api/uploads/sign`, `node:crypto`) | **BUILT** | `routes/uploadRoutes.js`, `services/uploadService.js` |
@@ -1620,7 +1621,9 @@ flowchart LR
   AL --> L2["/report RequireAuth verified<br/>PARTIAL placeholder"]
   AL --> L3["/profile"]
   AL --> L4["/admin/users"]
-  AL --> L5["/issues PARTIAL"]
+  AL --> L5["/issues My issues"]
+  AL --> L5b["/issues/:ticketId ticket"]
+  AL --> L5c["/staff Queue<br/>RequireAuth issue:read_scope"]
   AL --> L6["/community PARTIAL"]
   AL --> L7["/forbidden"]
   AL --> L8["/dev/styleguide dev builds only"]
@@ -1668,7 +1671,7 @@ client/src/
 | `lib/authedRequest.js` | Adds the Bearer token, retries once on 401 with a fresh token. |
 | `hooks/useApi.js` | Wraps the above and routes wrong-state answers to the right screen (section 6.9). |
 | `lib/queryClient.js` | `staleTime` 30 s, one retry for network, timeout and 5xx (not 503), no mutation retries, refetch on window focus. |
-| Query keys | `ME_KEY` for `/api/me`; admin list keys in `useAdminUsers`. After a mutation the list is invalidated. |
+| Query keys | `ME_KEY` for `/api/me`; admin list keys in `useAdminUsers`; M2 keys in section 18.5. After a mutation the list is invalidated. |
 | Planned (UI.md) | Optimistic updates with rollback for "me too", comments and status changes. Never optimistic for report submission or anything that moves an SLA clock. |
 
 ### 15.5 Shell and navigation
@@ -1684,7 +1687,7 @@ account is redirected to `/suspended` from every route, public ones included.
 | --- | --- | --- |
 | Hero | `Hero`, `PincodeInput` | What Nivaran does plus the six-box pincode field (validated client-side, then `/report?pincode=...`). The only `<h1>`. |
 | How it works | `HowItWorks` | Three steps, scroll-revealed |
-| Numbers | `StatsRow` with `StatCard` | NumberFlow counts up once on first view, `en-IN` grouping. Sample numbers. |
+| Numbers | `StatsRow` with `StatCard` | `GET /api/stats` (no token): reported, fixed, open now, typical hours to fix. NumberFlow counts up once on first view, `en-IN` grouping. Hidden while loading or if the call fails. |
 | Example ticket | `TimelinePreview` | A `StatusTimeline` with the connector drawing in |
 | Trust | `TrustSection`, `LandingFooter` | Why you can trust it |
 
@@ -1705,7 +1708,7 @@ Place the pin". Footer: Back (outline) left, Next (default) right. Chat bubble h
    (min 20 chars, live count), up to 3 photos (canvas to 1600 px, signed upload per photo with progress and Retry,
    kept in memory only), review, "Submit report" with one `Idempotency-Key` per draft (disabled while sending; 422
    `OUTSIDE_PINCODE` returns to step 2). Success: the **counterfoil** (display font, postmark, perforated top edge,
-   Copy ticket ID, "Expected by 26 Nov, 5:00 PM", "Track this issue" to `/issues` until M2).
+   Copy ticket ID, "Expected by 26 Nov, 5:00 PM", "Track this issue" to `/issues/:ticketId`).
 
 ---
 
@@ -1883,7 +1886,7 @@ flowchart TD
    with an audit row, and prints the masked email.
 3. Sign out and in again and enrol MFA when Auth0 asks. Admin > Users now opens.
 
-### 18.5 Track and resolve screens (M2 Batch E)
+### 18.5 Track and resolve screens (M2 Batch E, BUILT)
 
 Resident (`issue:read_own`):
 
@@ -1927,7 +1930,7 @@ server answers.
 | `["staff", "issues", filters]` (infinite) | `GET /api/staff/issues` | status, assign, hold, resume | invalidate `["staff", "issues"]` | invalidate `["staff", "issues"]` |
 | `["notifications"]` | `GET /api/notifications` (first page, `unread`), every 60 s while the tab is visible | mark all read | invalidate `["notifications"]` | |
 | `["stats"]` | `GET /api/stats` (public, no token) | | | |
-| `["departments", cityId]` | `GET /api/departments` (existing `useDepartments`) | | | |
+| `["geo", "departments", cityId]` | `GET /api/departments` (existing `useDepartments`) | | | |
 
 Moderators (hide, restore or delete content with a reason, each written to `AuditLog`) stay DESIGNED for Phase 6.
 
