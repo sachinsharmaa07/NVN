@@ -41,7 +41,21 @@ describe("migrateM1Indexes", () => {
       applied: true,
       missingIndexes: {},
       citiesWithoutStatus: 0,
+      staleIndexes: [],
     });
+  });
+
+  it("dry run reports the old { stateCode, name } city index; --apply drops it after building its replacement", async () => {
+    await City.collection.createIndex({ stateCode: 1, name: 1 });
+
+    expect((await migrateM1Indexes()).staleIndexes).toEqual(["stateCode_1_name_1"]);
+    expect(await names(City)).toContain("stateCode_1_name_1");
+
+    expect((await migrateM1Indexes({ apply: true })).staleIndexes).toEqual(["stateCode_1_name_1"]);
+    expect(await names(City)).not.toContain("stateCode_1_name_1");
+    expect(await names(City)).toContain("stateCode_1_name_1__id_1");
+
+    expect((await migrateM1Indexes({ apply: true })).staleIndexes).toEqual([]);
   });
 });
 
