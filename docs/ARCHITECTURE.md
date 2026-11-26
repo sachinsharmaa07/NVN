@@ -2012,9 +2012,28 @@ Tests refuse to run against anything that could be the real database (name must 
 
 ## 20. Deployment and operations
 
-> **Status: not decided.** The repository has CI but no deployment configuration. The topology below is what the
-> existing settings (`TRUST_PROXY` mentions Render or Nginx, Atlas-only database, `CLIENT_URL`, built `client/dist`)
-> point to. Treat it as a **proposal** and confirm hosts before building. ADR 0001 says no Docker for now.
+> **Status:** containers BUILT for local runs and CI (ADR 0004); hosting **not decided**. The repository has no
+> deployment configuration. The hosted topology further down is a **proposal**; confirm hosts before building.
+
+### 20.1 Containers (BUILT, ADR 0004)
+
+```mermaid
+flowchart LR
+  B(["Browser<br/>localhost:8080"]) --> WEB["web: nginx-unprivileged :8080<br/>client/dist, SPA fallback, gzip,<br/>CSP + security headers"]
+  WEB -- "/api/* proxy<br/>X-Forwarded-For/Proto, X-Request-Id" --> API["api: node:22-alpine :5001<br/>NODE_ENV=production, TRUST_PROXY=1<br/>user node, HEALTHCHECK /api/health"]
+  API --> DB[("MongoDB Atlas (MONGODB_URI)<br/>or profile local-db: mongo:8 rs0")]
+  API --> AUTH0[("Auth0")]
+  B --> AUTH0
+  B --> CL[("Cloudinary, OSM tiles")]
+  ENV["server/.env (run time only)"] -.-> API
+  CENV["client/.env (public build args)"] -.-> WEB
+  CI["GitHub Actions job docker:<br/>buildx + gha cache, no push,<br/>smoke with local-db"] -.-> WEB & API
+```
+
+`web` starts only after `api` is healthy, and `api` waits for `mongo` when the `local-db` profile is on.
+`npm run docker:smoke` brings everything up, curls `/` and `/api/health` through nginx and tears it down.
+
+### 20.2 Hosted topology (proposal)
 
 ```mermaid
 flowchart LR
@@ -2031,7 +2050,7 @@ flowchart LR
 | Concern | Plan |
 | --- | --- |
 | Environments | Separate Auth0 tenants for dev and production (the setup guide says so). Separate Atlas databases `nivaran_dev`, `nivaran_test`, and production. |
-| Production start-up checks | `CLIENT_URL`, `TRUST_PROXY >= 1`, `AUTH0_DOMAIN`, `AUTH0_AUDIENCE`, M2M id and secret are all required, or the process exits. |
+| Production start-up checks | `CLIENT_URL`, `TRUST_PROXY >= 1`, `AUTH0_DOMAIN`, `AUTH0_AUDIENCE`, M2M id and secret, `HMAC_SECRET` and the Cloudinary keys are all required, or the process exits. The containers pass them unchanged. |
 | Indexes | `autoIndex` is off in production. Run the migration scripts (dry run first, then `--apply`) to build them. |
 | First admin | `npm run bootstrap:super-admin -w server` after the owner signs in once. |
 | After an Auth0 outage | `npm run sync:mfa-flags -w server`. |
@@ -2039,7 +2058,7 @@ flowchart LR
 | Backups | Atlas automated backups; user content is soft-deleted (designed). |
 | Scaling limit | One instance. Before a second one: a Mongo-backed rate-limit store and a cron lock document so only one instance runs the SLA job (ADR 0001). |
 | Before launch | Replace Auth0's dev Google keys with your own Google OAuth client; set the real site origin in Auth0 callback, logout and web-origin lists; resolve the open support-contact question (Q9). |
-| Local commands | `npm ci`, `npm run dev` (both apps), `npm run check` (what CI runs), `npm run test:e2e` (later). Node version in `.nvmrc`. |
+| Local commands | `npm ci`, `npm run dev` (both apps), `npm run check` (what CI runs), `npm run test:e2e`, `npm run docker:up` / `docker:smoke` (ADR 0004). Node version in `.nvmrc`. |
 
 ---
 
