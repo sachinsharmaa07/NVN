@@ -1,5 +1,6 @@
 // Admin rules for users: list, role change, suspend/reactivate, geo pickers. The service owns every
 // rule; controllers only pass the actor (req.user), the validated input and request context.
+import mongoose from "mongoose";
 import { logger } from "../config/logger.js";
 import { City } from "../models/City.js";
 import { Department } from "../models/Department.js";
@@ -8,6 +9,8 @@ import { AppError } from "../utils/AppError.js";
 import { clock } from "../utils/clock.js";
 import { resolveScope, SCOPE_FIELDS } from "./adminUserScope.js";
 import { lookupGeoNames } from "./geoNames.js";
+import { escapeRegex } from "./adminUserList.js";
+import { decodeNameCursor, encodeNameCursor } from "../utils/cursor.js";
 import * as audit from "./auditService.js";
 import {
   assertActorScope,
@@ -196,14 +199,49 @@ export async function setStatus(actor, id, { status, reason }, ctx = {}) {
   return { user: serializeAdminUser(updated, actor, await lookupGeoNames([updated])) };
 }
 
-const GEO_CAP = 500; // a deliberate ceiling: the pickers are small lists, never paginated
+const GEO_CAP = 500; // departments per city stay a small list; cities are paginated (637 and growing)
 
-/** GET /api/cities: a city_admin sees only their own city, a super_admin sees all. */
-export async function listCities(actor) {
+/**
+ * GET /api/cities?stateCode=&q=&cursor=&limit=. A city_admin sees only their own city, a super_admin all.
+ * Name order, keyset on (name, _id), backed by { name, _id } or { stateCode, name, _id }.
+ */
+export async function listCities(actor, { stateCode, q, cursor, limit = 20 }) {
   assertActorScope(actor, "user:promote");
   const filter = actor.role === "super_admin" ? {} : { _id: actor.cityId };
-  const rows = await City.find(filter).select("name code").sort({ name: 1 }).limit(GEO_CAP).lean();
-  return { items: rows.map((c) => ({ id: String(c._id), name: c.name, code: c.code })) };
+  if (stateCode) filter.stateCode = stateCode;
+  // shortcut: case-insensitive prefix scans the whole name index (fine for ~700 cities); add a
+  // lowercased name field if the list grows past a few thousand.
+  const nameConds = [];
+  if (q)
+    nameConds.push({ name: mongoose.trusted({ $regex: `^${escapeRegex(q)}`, $options: "i" }) });
+  if (cursor) {
+    const after = decodeNameCursor(cursor);
+    const id = new mongoose.Types.ObjectId(after._id);
+    // trusted per operator: the global sanitizeFilter would turn each one into a literal match.
+    nameConds.push({
+      $or: [
+        { name: mongoose.trusted({ $gt: after.name }) },
+        { name: after.name, _id: mongoose.trusted({ $gt: id }) },
+      ],
+    });
+  }
+  if (nameConds.length) filter.$and = nameConds;
+  const rows = await City.find(filter)
+    .select("name code stateCode")
+    .sort({ name: 1, _id: 1 })
+    .limit(limit + 1)
+    .lean();
+  const items = rows.slice(0, limit);
+  const nextCursor = rows.length > limit ? encodeNameCursor(items[items.length - 1]) : null;
+  return {
+    items: items.map((c) => ({
+      id: String(c._id),
+      name: c.name,
+      code: c.code,
+      stateCode: c.stateCode,
+    })),
+    nextCursor,
+  };
 }
 
 /** GET /api/departments?cityId=. A city_admin may only ask for their own city. */

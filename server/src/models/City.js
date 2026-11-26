@@ -20,8 +20,9 @@ const citySchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-// State officers list their state's cities, name-sorted. `code` is unique-indexed by its option.
-citySchema.index({ stateCode: 1, name: 1 });
+// GET /api/cities keyset pages in (name, _id) order, all cities or one state's. `code` is unique by its option.
+citySchema.index({ name: 1, _id: 1 });
+citySchema.index({ stateCode: 1, name: 1, _id: 1 });
 
 // MongoDB has no foreign keys, so deletion is blocked here while anything still points at the city.
 const refuseIfReferenced = async (ids) => {

@@ -80,3 +80,43 @@ curl -s -X POST http://localhost:5001/api/waitlist \
 | 400 | `VALIDATION_ERROR` | Bad pin or email, or extra keys |
 | 429 | `RATE_LIMITED` | More than 5 a hour from one IP |
 | 503 | `WAITLIST_NOT_CONFIGURED` | `HMAC_SECRET` not set |
+
+## Uploads
+
+### POST /api/uploads/sign
+
+Signed in, active, verified email, permission `issue:create`; 20 per 10 minutes per user; `Cache-Control: no-store`.
+Body and query must be empty. Decision 4: the browser uploads straight to Cloudinary with these values; the API
+secret never leaves the server. An incoming transformation (`c_limit,w_1600,h_1600`) re-encodes the original,
+which drops EXIF. Cloudinary cannot cap size on a signed upload, so the client checks `maxBytes` and
+`POST /api/issues` must re-check the stored photo's `bytes`.
+
+```bash
+curl -s -X POST http://localhost:5001/api/uploads/sign -H "Authorization: Bearer $TOKEN"
+# 200 {"uploadUrl":"https://api.cloudinary.com/v1_1/<cloud>/image/upload","apiKey":"123456789",
+#      "allowed_formats":"jpg,png,webp,heic","folder":"nivaran/development/reports","timestamp":1795689600,
+#      "transformation":"c_limit,w_1600,h_1600","signature":"<40 hex>","maxBytes":5242880}
+```
+
+Then: `POST uploadUrl` as multipart with `file`, `api_key`, `timestamp`, `folder`, `allowed_formats`,
+`transformation`, `signature` (valid for about an hour).
+
+| Status | Code | When |
+| --- | --- | --- |
+| 400 | `VALIDATION_ERROR` | Any body or query key |
+| 401/403 | auth codes | Not signed in, suspended, unverified, or no `issue:create` |
+| 429 | `RATE_LIMITED` | More than 20 in 10 minutes |
+| 503 | `UPLOADS_NOT_CONFIGURED` | `CLOUDINARY_*` not set |
+
+## Geo pickers
+
+### GET /api/cities?stateCode=&q=&cursor=&limit=
+
+Signed in, `user:promote`, 60 per minute per user. A city admin sees only their own city.
+`stateCode` (one of the state codes), `q` (1-64 chars, anchored escaped case-insensitive name prefix),
+`limit` (1-50, default 20), `cursor` (from `nextCursor`). Name order, keyset on `(name, _id)`.
+
+```bash
+curl -s "http://localhost:5001/api/cities?stateCode=PB&q=kap&limit=5" -H "Authorization: Bearer $TOKEN"
+# 200 {"items":[{"id":"...","name":"Kapurthala","code":"PB-KAPURTHALA","stateCode":"PB"}],"nextCursor":null}
+```

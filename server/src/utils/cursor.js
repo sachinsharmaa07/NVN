@@ -42,3 +42,24 @@ export function pageOf(rows, limit) {
   const nextCursor = rows.length > limit ? encodeCursor(items[items.length - 1]) : null;
   return { items, nextCursor };
 }
+
+/** Name-ordered lists (name asc, _id asc): { name, _id } -> opaque string, and back. */
+export const encodeNameCursor = ({ name, _id }) =>
+  Buffer.from(JSON.stringify({ n: name, i: String(_id) })).toString("base64url");
+
+export function decodeNameCursor(text) {
+  let payload;
+  try {
+    payload = JSON.parse(Buffer.from(text, "base64url").toString("utf8"));
+  } catch {
+    throw bad();
+  }
+  if (
+    typeof payload?.n !== "string" ||
+    typeof payload?.i !== "string" ||
+    !OBJECT_ID_RE.test(payload.i)
+  ) {
+    throw bad();
+  }
+  return { name: payload.n, _id: payload.i };
+}
