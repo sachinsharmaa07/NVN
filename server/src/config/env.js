@@ -38,7 +38,7 @@ const envSchema = z.object({
   AUTH0_AUDIENCE: optional(z.string().min(1)),
   // How far the token's exp/nbf may be off our clock, in seconds. Explicit, never above 30.
   AUTH_CLOCK_TOLERANCE_SECONDS: optional(z.coerce.number().int().min(0).max(30)).default(5),
-  // Auth0 Machine-to-Machine app for the Management API (resend verification, MFA flag). Server only,
+  // Auth0 Machine-to-Machine app for the Management API (MFA flag). Server only,
   // never in client/.env. Scopes: update:users, update:users_app_metadata. The secret is never logged.
   AUTH0_M2M_CLIENT_ID: optional(z.string().min(1)),
   AUTH0_M2M_CLIENT_SECRET: optional(z.string().min(1)),
@@ -89,7 +89,7 @@ export function parseEnv(raw) {
     if (!raw.AUTH0_M2M_CLIENT_SECRET)
       problems.push("AUTH0_M2M_CLIENT_SECRET: required in production");
   } else if (Boolean(raw.AUTH0_M2M_CLIENT_ID) !== Boolean(raw.AUTH0_M2M_CLIENT_SECRET)) {
-    // Half a credential pair is always a mistake; say so at start-up, not on the first resend.
+    // Half a credential pair is always a mistake; say so at start-up, not on the first admin write.
     problems.push("AUTH0_M2M_CLIENT_ID and AUTH0_M2M_CLIENT_SECRET: set both or neither");
   }
   problems.push(...testDbProblems(raw));

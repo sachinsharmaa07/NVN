@@ -49,10 +49,11 @@ describe("AccountMenu", () => {
     );
   });
 
-  it("unverified: 'Verify your email' comes first", () => {
+  it("unverified: no verify item (there is no verification link any more)", () => {
     renderWithAuth(<AccountMenu />, { auth: authState("unverified") });
     open();
-    expect(screen.getAllByRole("menuitem")[0]).toHaveTextContent("Verify your email");
+    expect(screen.getAllByRole("menuitem")[0]).toHaveTextContent("Profile");
+    expect(screen.queryByText("Verify your email")).not.toBeInTheDocument();
   });
 
   it("suspended: only Sign out", () => {

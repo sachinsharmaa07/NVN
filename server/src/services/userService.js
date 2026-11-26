@@ -8,7 +8,7 @@ import { AppError } from "../utils/AppError.js";
 import { clock } from "../utils/clock.js";
 import { levelOf, MFA_MIN_LEVEL, permissionsOf } from "../utils/permissions.js";
 import { lookupGeoNames } from "./geoNames.js";
-import { resendVerificationEmail } from "./authProviderService.js";
+import { linkByVerifiedEmail } from "./identityLinkService.js";
 
 const log = logger.child({ component: "userService" });
 
@@ -41,7 +41,7 @@ const idOrNull = (v) => (v ? String(v) : null);
 export function toRequestUser(record, claims) {
   return {
     id: String(record._id),
-    auth0Id: record.auth0Id,
+    auth0Id: claims.auth0Id, // the sign-in id used for this request
     email: record.email,
     name: record.name ?? "",
     avatarUrl: record.avatarUrl ?? "",
@@ -96,58 +96,54 @@ const cleanName = (v) => (typeof v === "string" ? v.trim().slice(0, 100) : "");
 const cleanAvatar = (v) =>
   typeof v === "string" && /^https:\/\//.test(v) && v.length <= 2048 ? v : "";
 
-/** Creates the citizen on first sight. One atomic upsert, so parallel first requests make one user. */
-async function createOnFirstSight(claims, now) {
+/** Creates the citizen on first sight. Throws E11000 when a parallel first request won the race. */
+async function createOnFirstSight(claims, email, now) {
+  // Role and status are fixed here, never from claims.
+  const doc = await User.create({
+    auth0Ids: [claims.auth0Id],
+    email,
+    emailVerified: claims.emailVerified,
+    name: cleanName(claims.name),
+    avatarUrl: cleanAvatar(claims.picture),
+    role: "citizen",
+    status: "active",
+    preferredLanguage: "en",
+    lastLoginAt: now,
+  });
+  const emailHash = createHash("sha256").update(email).digest("hex").slice(0, 16);
+  log.info(
+    { event: "auth.jit_created", userId: String(doc._id), auth0Id: claims.auth0Id, emailHash },
+    "Created citizen on first sign-in",
+  );
+  return doc.toObject();
+}
+
+/**
+ * Finds the user for this sign-in id, else links it to the owner of the same verified email, else
+ * creates a citizen. Two unique indexes (auth0Ids; email where verified) make racing first requests
+ * collide with E11000; the loser runs once more and finds or links the winner's row.
+ */
+async function findLinkOrCreate(claims, now, ctx) {
   const email = cleanEmail(claims.email);
-  if (!email) {
-    throw new AppError(
-      "TOKEN_CLAIMS_MISSING",
-      401,
-      "Your sign-in is missing details. Sign in again.",
-    );
+  for (let attempt = 0; ; attempt += 1) {
+    const found = await User.findOne({ auth0Ids: claims.auth0Id }).lean();
+    if (found) return { record: found, fresh: false };
+    const linked = await linkByVerifiedEmail(claims, email, ctx);
+    if (linked) return { record: linked, fresh: false };
+    if (!email) {
+      throw new AppError(
+        "TOKEN_CLAIMS_MISSING",
+        401,
+        "Your sign-in is missing details. Sign in again.",
+      );
+    }
+    try {
+      return { record: await createOnFirstSight(claims, email, now), fresh: true };
+    } catch (err) {
+      if (err?.code !== 11000 || attempt > 0) throw err;
+      log.info({ event: "auth.jit_retry" }, "Retrying first sign-in after duplicate key");
+    }
   }
-  // $setOnInsert only: an existing row is never touched here, and role/status never come from claims.
-  const update = {
-    $setOnInsert: {
-      email,
-      emailVerified: claims.emailVerified,
-      name: cleanName(claims.name),
-      avatarUrl: cleanAvatar(claims.picture),
-      role: "citizen",
-      status: "active",
-      preferredLanguage: "en",
-      lastLoginAt: now,
-    },
-  };
-  const options = {
-    upsert: true,
-    returnDocument: "after",
-    lean: true,
-    runValidators: true,
-    includeResultMetadata: true,
-  };
-  let result;
-  try {
-    result = await User.findOneAndUpdate({ auth0Id: claims.auth0Id }, update, options);
-  } catch (err) {
-    // Lost the race with a parallel first request (duplicate auth0Id): the user exists now, so retry once.
-    if (err?.code !== 11000) throw err;
-    log.info({ event: "auth.jit_retry" }, "Retrying first-login upsert after duplicate key");
-    result = await User.findOneAndUpdate({ auth0Id: claims.auth0Id }, update, options);
-  }
-  if (!result.lastErrorObject?.updatedExisting) {
-    const emailHash = createHash("sha256").update(email).digest("hex").slice(0, 16);
-    log.info(
-      {
-        event: "auth.jit_created",
-        userId: String(result.value._id),
-        auth0Id: claims.auth0Id,
-        emailHash,
-      },
-      "Created citizen on first sign-in",
-    );
-  }
-  return result.value;
 }
 
 /**
@@ -177,11 +173,22 @@ async function refreshIfStale(record, claims, now) {
     if (avatar) set.avatarUrl = avatar; // no picture claim must not wipe a good avatar
     // `name` is the user's to edit, so it is never overwritten
   }
-  const updated = await User.findOneAndUpdate(
-    { _id: record._id, status: "active", $or: triggers },
-    { $set: set },
-    { returnDocument: "after", lean: true, runValidators: true },
-  );
+  let updated;
+  try {
+    updated = await User.findOneAndUpdate(
+      { _id: record._id, status: "active", $or: triggers },
+      { $set: set },
+      { returnDocument: "after", lean: true, runValidators: true },
+    );
+  } catch (err) {
+    // Another user already holds this address verified (email_verified_unique): keep the old copy.
+    if (err?.code !== 11000) throw err;
+    log.warn(
+      { event: "auth.verified_email_conflict", userId: String(record._id) },
+      "Verified email already belongs to another user; not refreshed",
+    );
+    return record;
+  }
   if (
     updated &&
     stale &&
@@ -199,14 +206,14 @@ async function refreshIfStale(record, claims, now) {
 
 /**
  * Turns verified token claims into req.user. A suspended user is returned untouched (requireActive
- * blocks them); only active users cause a write.
+ * blocks them); only active users cause a write. `ctx` is { log, requestId } for the link audit row.
  */
-export async function resolveRequestUser(claims) {
+export async function resolveRequestUser(claims, ctx = {}) {
   const now = clock.now();
-  let record = await User.findOne({ auth0Id: claims.auth0Id }).lean();
-  if (!record) record = await createOnFirstSight(claims, now);
-  else if (record.status === "active") record = await refreshIfStale(record, claims, now);
-  return toRequestUser(record, claims);
+  const { record, fresh } = await findLinkOrCreate(claims, now, ctx);
+  const current =
+    !fresh && record.status === "active" ? await refreshIfStale(record, claims, now) : record;
+  return toRequestUser(current, claims);
 }
 
 /** PATCH /api/me. Only these three fields can change; null for the pincode clears it. */
@@ -232,12 +239,4 @@ export async function updateOwnProfile(userId, { name, preferredLanguage, defaul
     preferredLanguage: record.preferredLanguage,
     defaultPincode: record.defaultPincode ?? null,
   };
-}
-
-/** POST /api/me/resend-verification. The Auth0 user id comes from our record, never the request. */
-export async function resendVerification(user, { log: reqLog } = {}) {
-  if (user.emailVerified) {
-    throw new AppError("ALREADY_VERIFIED", 409, "Your email is already verified.");
-  }
-  await resendVerificationEmail(user.auth0Id, { log: reqLog, userId: user.id });
 }

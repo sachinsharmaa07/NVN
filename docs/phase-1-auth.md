@@ -2,6 +2,11 @@
 
 Status: Approved and built (Phase 1).
 
+> **Changed after Phase 1 (Nov 2026):** sign-in is Google or Auth0 email OTP only (no passwords, no
+> verification link). The `POST /api/me/resend-verification` endpoint, the VerifyEmail page,
+> `useResendVerification`/`useResendCooldown` and `ALREADY_VERIFIED` were removed. `EMAIL_NOT_VERIFIED`
+> now shows a toast and opens the sign-in sheet. Sections below that mention them are historical.
+
 Scope: Auth0 login, the request pipeline (`authenticate` → `loadUser` → `requireActive` → `requireVerifiedEmail` → `requirePermission` → scope check in the service), roles and scope, profile, admin user management, audit log, bootstrap of the first super admin, and the client screens that go with them.
 
 ## 1. Rules this design follows
@@ -123,13 +128,13 @@ Rules:
 - `loadUser` writes only for active users; suspension is checked before any write (kept from today).
 - Role, scope and status never come from the token.
 
-**First request (JIT).** Filter `{auth0Id}` (unique index). Update is `$setOnInsert` only: `email`, `emailVerified`, `name`, `avatarUrl`, `role:"citizen"`, `status:"active"`, `preferredLanguage:"en"`, `lastLoginAt`. Options: `upsert`, `returnDocument:"after"`, `runValidators`. On E11000 retry once. Five concurrent first requests produce exactly one user (test A7).
+**First request (JIT).** Find by `{auth0Ids: sub}`. If none and the token email is verified, link `sub` to the user with that verified email (`identityLinkService.js`: for level >= 4 the Auth0 `mfa_required` flag is set on the new id first, and an Auth0 failure refuses the link with 503; the `$addToSet` and an `user.identity_linked` audit row share one transaction; max 10 ids). Otherwise `create` a citizen with `email`, `emailVerified`, `name`, `avatarUrl`, `role:"citizen"`, `status:"active"`, `preferredLanguage:"en"`, `lastLoginAt`. On E11000 (unique `auth0Ids`, or unique email among verified rows) run the whole lookup once more. Concurrent first requests produce exactly one user (tests A7, identityLink).
 
 **15-minute throttle.** One conditional write: `findOneAndUpdate({_id, status:"active", $or:[{lastLoginAt:null},{lastLoginAt:{$lt: now-15m}}]}, {$set:{email, avatarUrl, emailVerified, lastLoginAt: now}})`. Racing requests: one wins, the rest get `null` and use the document they loaded. `name` is written only on insert (the user owns it via `PATCH /me`). Exception: if the token says verified and the DB says not, write at once so "I've verified it" works. Consequence: avatar and email shown elsewhere can be up to 15 minutes stale [Q12].
 
 **`emailVerified`.** The token claim decides on every request. The DB field mirrors it and is read only where there is no token (admin list, bootstrap, the resend 409 check).
 
-**DB email differs from the token.** The token wins and overwrites the DB email (lowercased). Role, scope and status key on `auth0Id`, so they never move with email. For level >= 4 users log `auth.email_changed` at warn. Email is not unique: a Google login and a password login with the same address are two users and are never auto-merged (merging by email is an account-takeover path).
+**DB email differs from the token.** The token wins and overwrites the DB email (lowercased). Role, scope and status key on the user row, so they never move with email. For level >= 4 users log `auth.email_changed` at warn. Email is unique only among verified rows: sign-ins with the same **verified** address are linked to one user; an unverified address is never linked (that would be an account-takeover path). A refresh that would make a second verified row with one address is skipped (`auth.verified_email_conflict`).
 
 ## 5. Permission matrix
 
@@ -170,7 +175,7 @@ Invariants live in the schema first (MongoDB has no FK, CHECK or RLS, so each ru
 | Field | Type | Constraints | Default | Why |
 |---|---|---|---|---|
 | `_id` | ObjectId | | auto | All API `:id` params use it, never `auth0Id` |
-| `auth0Id` | String | required, unique, immutable, trim, max 128 | none | The identity (token `sub`) |
+| `auth0Ids` | [String] | 1 to 10 items, each trim, max 128; unique across users | none | Every token `sub` that signs in as this user |
 | `email` | String | required, lowercase, trim, max 254, **not unique** | none | Contact only; never an identity |
 | `emailVerified` | Boolean | required | false | Mirror of the claim |
 | `name` | String | trim, max 100 | "" | User-editable via `PATCH /me` |
@@ -227,7 +232,8 @@ Status transitions: active → suspended (actor level > target level, not self; 
 
 | Index | Serves |
 |---|---|
-| `{auth0Id:1}` unique | every request, JIT race |
+| `{auth0Ids:1}` unique | every request, JIT race |
+| `{email:1}` unique, partial `emailVerified:true` | verified-email linking, link race |
 | `{email:1}` | email prefix search (anchored lowercase escaped regex), exact lookup (bootstrap, promotion candidates) |
 | `{cityId:1, role:1, createdAt:-1, _id:-1}` | city-scoped list, role filter, cursor order (replaces `{cityId, role}`, which is its prefix) |
 | `{departmentId:1, role:1, createdAt:-1, _id:-1}` | department-scoped list |
@@ -373,13 +379,13 @@ Renames: `ACCOUNT_SUSPENDED` → `SUSPENDED`; `RESEND_UNAVAILABLE` → `AUTH_PRO
 | 2 | Privilege escalation via role PATCH | Grant at or above own level, change yourself, promote across departments | `canAssignRole` in the service on the DB-loaded actor and target: new role < actor level, current target role < actor level, target is not the actor, target in scope. A dept_head can only set roles <= 3 inside their own `{cityId, departmentId}`. Scope fields on the target are derived from the actor, not trusted from the body; only a super_admin may set `stateCode` or create a state_officer | `admin.role_denied` (warn) | A higher actor reverts; the AuditLog `before` shows the old value |
 | 3 | Mass assignment | `PATCH /api/me` with `{role}`, `{status}`, `{cityId}`, `{emailVerified}` | Zod `.strict()` on every body. `/me` allows only `name`, `preferredLanguage`, `defaultPincode`. Services pick fields explicitly, never `update(body)` | `validation.rejected` (info, paths only) | None needed |
 | 4 | Token replay after suspension | A suspended user holds a valid access token for up to 1 hour | `loadUser` reads status from MongoDB on every request, so `SUSPENDED` 403 applies to all routes on the next call. Token lifetime stays 1 hour. Optional, best effort: set `blocked:true` in Auth0 on suspend | `auth.suspended_blocked` (warn) | Reactivate through the status PATCH |
-| 5 | JIT race | Several first requests at once | One atomic `findOneAndUpdate` upsert with `$setOnInsert`, unique index on `auth0Id`, one retry on E11000. Role is `citizen` on insert only, never from claims | `auth.jit_created` once per user; `auth.jit_retry` on 11000 | If duplicates exist the unique index build fails; merge by hand, rebuild the index |
+| 5 | JIT race | Several first requests at once | Unique indexes on `auth0Ids` and on verified `email`; one retry of find/link/create on E11000. Role is `citizen` on insert only, never from claims | `auth.jit_created` once per user; `auth.jit_retry` on 11000 | If duplicates exist the unique index build fails; merge by hand, rebuild the index |
 | 6 | Management API outage | Resend, the MFA flag sync, or the M2M token fetch times out, 5xx or 429 | 5 s timeout, no retry on writes. M2M token cached in memory until 60 s before expiry. Promotion order: (1) set `mfa_required` in Auth0 (idempotent), (2) one Mongo transaction for role + AuditLog. If step 1 fails nothing is written. Demotion: commit first, clear the flag best effort. Failure gives 503 `AUTH_PROVIDER_UNAVAILABLE`; a failed upstream resend does not use up the 3 per hour | `mgmt.api_error` (error); alert above 5 in 5 min | Retry the promotion; `scripts/reconcileMfaFlags.js` finds level >= 4 users whose flag is missing |
 | 7 | M2M credential leak | Secret in logs, an error body or the bundle | Minimum scopes only (see Q6). Secret lives in server env, never `VITE_`, is redacted in pino, upstream bodies never reach responses. Token cached in memory only | CI grep test for `client_secret` in logs; Auth0 tenant logs | Rotate the secret, restart, review tenant logs |
 | 8 | Clock skew | A host with a skewed clock rejects fresh tokens or accepts expired ones | Make `clockTolerance` explicit (5 s, never above 30 s). Hosts run NTP | `auth.rejected` with reason class right after a deploy | Fix NTP, restart |
 | 9 | CORS | A reflected or wildcard origin | `CLIENT_URL` exact-match list, no `*`, `Vary: Origin`. Bearer tokens are sent in a header, so `credentials` is not needed (**change**: today `credentials: true`) | `cors.rejected` (warn) | Fix env, restart |
 | 10 | Rate limits | Admin brute force, resend spam (costs Auth0 email quota), floods | Existing global per-IP limit. Per user: resend 3 per hour, admin reads 60 per minute, admin writes 10 per minute. Failed `authenticate` per IP 30 per 5 min. `TRUST_PROXY` must be right | `rate.limited` (warn) | Limits expire; restart clears the in-memory store |
-| 11 | Email-verification bypass | Claim missing, the string `"true"`, a stale token, or an attacker pre-registering a victim's email on the password connection | `requireVerifiedEmail` uses `=== true`. We never link or merge accounts by email: identity is `auth0Id`. No role is granted by email match except the bootstrap (row 13). Auth0 setup: no automatic account linking | `auth.unverified_blocked` (info) | Unverified accounts hold no privilege; review duplicate emails across `auth0Id`s |
+| 11 | Email-verification bypass | Claim missing, the string `"true"`, a stale token, or an attacker pre-registering a victim's email on the password connection | `requireVerifiedEmail` uses `=== true`. Sign-in ids are linked by email only when both the token and the stored row say verified; admins need the Auth0 MFA flag set on the new id first (fail closed). No role is granted by email match except the bootstrap (row 13). Auth0 setup: no automatic account linking | `auth.unverified_blocked` (info) | Unverified accounts hold no privilege; `migrate:users-v2` stops on duplicate verified emails |
 | 12 | MFA gap | A user is promoted to level >= 4 while holding a session that never did MFA; the Action only enforces MFA at login | The Action adds a claim `https://nivaran.in/mfa` = true when `event.authentication.methods` contains `mfa`. The server requires it for any DB role of level >= 4, **fail closed** (missing means not done) and returns 403 `MFA_REQUIRED`. The client answers with `loginWithRedirect({ authorizationParams: { prompt: "login" } })`. Check in the tenant that refresh-token exchanges keep the MFA method; if not, force a re-login | `auth.mfa_required_blocked` (warn) | The user signs in again |
 | 13 | `SUPER_ADMIN_EMAIL` abuse | Someone registers that email first without verifying it | The script runs manually, never at start-up or on a route. It promotes only when the DB row has `emailVerified === true` and exactly one row matches. It is idempotent, refuses when a super_admin already exists unless `--force`, sets `mfa_required`, and writes an AuditLog | `admin.bootstrap` (warn) | Suspend and demote the wrong account in Mongo with an audit entry |
 | 14 | Audit gaps or tampering | The role change commits but the audit write fails, or rows are edited | Decision: one Mongo transaction for role update + AuditLog insert; if the audit write fails the change fails (500). The audit service exports no update or delete, schema hooks block them, and ESLint forbids importing the model elsewhere. Production DB user should lack audit delete if Atlas roles allow | `admin.audit_write_failed` (error), alert on any | Retry; nothing is half written |

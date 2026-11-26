@@ -1,5 +1,5 @@
-// One-off data migration for Phase 1 (`verified` -> `emailVerified`, status default, new indexes).
-// Idempotent: a second run changes nothing and says so. Called only by scripts/migrateUsersV1.js.
+// One-off data migrations. v1: Phase 1 (`verified` -> `emailVerified`, status default, new indexes).
+// v2: auth0Id -> auth0Ids. Both idempotent; called only by scripts/migrateUsersV1.js and V2.js.
 import { AuditLog } from "../models/AuditLog.js";
 import { City } from "../models/City.js";
 import { Department } from "../models/Department.js";
@@ -77,5 +77,39 @@ export async function migrateUsersV1() {
   // createIndexes (not syncIndexes) so nothing we did not name is ever dropped. Production runs with
   // autoIndex off, so this is where its indexes get built.
   for (const model of [User, AuditLog, City, Department]) await model.createIndexes();
+  return report;
+}
+
+/**
+ * auth0Id -> auth0Ids (copy; the old field stays for rollback). Dry run unless `apply`. Stops, writing
+ * nothing, when two rows share a verified email: the new unique index could not be built, and a human
+ * must decide which row is the real account. Idempotent. Called only by scripts/migrateUsersV2.js.
+ */
+export async function migrateUsersV2({ apply = false } = {}) {
+  const duplicates = await User.collection
+    .aggregate([
+      { $match: { emailVerified: true } },
+      { $group: { _id: "$email", ids: { $push: "$_id" }, n: { $sum: 1 } } },
+      { $match: { n: { $gt: 1 } } },
+      { $limit: 50 },
+    ])
+    .toArray();
+  const report = {
+    applied: false,
+    duplicates: duplicates.map((d) => d.ids.map(String)), // ids only: emails stay out of the output
+    toCopy: 0,
+    droppedIndexes: [],
+  };
+  if (duplicates.length > 0) return report;
+
+  const pending = { auth0Id: { $exists: true }, auth0Ids: { $exists: false } };
+  report.toCopy = await User.collection.countDocuments(pending);
+  if (!apply) return report;
+
+  await User.collection.updateMany(pending, [{ $set: { auth0Ids: ["$auth0Id"] } }]);
+  // The old unique index would see every new row (no auth0Id) as a duplicate null.
+  if (await dropIndexIfPresent("auth0Id_1")) report.droppedIndexes.push("auth0Id_1");
+  await User.createIndexes();
+  report.applied = true;
   return report;
 }

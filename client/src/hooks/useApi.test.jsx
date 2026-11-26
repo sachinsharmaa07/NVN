@@ -5,7 +5,10 @@ import { AuthContext } from "@/components/auth/authContext";
 import { SignInPromptContext } from "@/components/auth/signInPromptContext";
 import { authState, fakeFetch } from "@/test/renderWithAuth";
 import { MemoryRouter, useLocation } from "react-router";
+import { toast } from "sonner";
 import { useApi } from "./useApi";
+
+vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
 
 beforeEach(() => window.sessionStorage.clear());
 afterEach(() => vi.unstubAllGlobals());
@@ -39,14 +42,17 @@ describe("useApi", () => {
     await expect(result.current.api("/api/x")).resolves.toEqual({ a: 1 });
   });
 
-  it("EMAIL_NOT_VERIFIED: marks the user unverified and goes to /verify-email with returnTo", async () => {
-    const { result, auth } = setup({ "/api/x": err("EMAIL_NOT_VERIFIED", 403) });
+  it("EMAIL_NOT_VERIFIED: marks the user unverified, shows a toast and opens the sign-in sheet", async () => {
+    const { result, auth, openSignIn } = setup({ "/api/x": err("EMAIL_NOT_VERIFIED", 403) });
     await expect(result.current.api("/api/x")).rejects.toMatchObject({
       code: "EMAIL_NOT_VERIFIED",
     });
     expect(auth.markUnverified).toHaveBeenCalled();
-    await waitFor(() => expect(result.current.path).toBe("/verify-email"));
-    expect(result.current.state).toEqual({ returnTo: "/admin/users?q=abc" });
+    expect(toast.error).toHaveBeenCalledWith(
+      "We couldn't confirm your email. Sign in again with Google or an email code.",
+    );
+    expect(openSignIn).toHaveBeenCalledWith({ returnTo: "/admin/users?q=abc", variant: "gated" });
+    expect(result.current.path).toBe("/admin/users"); // no navigation
   });
 
   it("SUSPENDED: stores the reason and goes to /suspended", async () => {

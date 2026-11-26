@@ -12,10 +12,13 @@ const log = logger.child({ component: "mfaFlagService" });
 
 export const requiresMfaFlag = (role) => levelOf(role) >= MFA_MIN_LEVEL;
 
-/** Sets the flag or throws 503. Any non-AppError (network, timeout) is mapped, never leaked. */
-export async function setFlagOrThrow(auth0Id, required, ctx = {}) {
+/**
+ * Sets the flag on every sign-in id or throws 503 at the first failure (one id without MFA would be
+ * a way round it). Any non-AppError (network, timeout) is mapped, never leaked.
+ */
+export async function setFlagOrThrow(auth0Ids, required, ctx = {}) {
   try {
-    await setMfaRequired(auth0Id, required, ctx);
+    for (const id of auth0Ids) await setMfaRequired(id, required, ctx);
   } catch (err) {
     if (err instanceof AppError) throw err;
     log.error({ event: "mgmt.api_error", err }, "Management API call failed");
@@ -33,14 +36,17 @@ export async function setFlagOrThrow(auth0Id, required, ctx = {}) {
  */
 export async function clearFlagBestEffort(target, actor, ctx = {}) {
   let failure;
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    try {
-      await setMfaRequired(target.auth0Id, false, { log: ctx.log, userId: String(target._id) });
-      return true;
-    } catch (err) {
-      failure = err;
+  for (const id of target.auth0Ids) {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        await setMfaRequired(id, false, { log: ctx.log, userId: String(target._id) });
+        break;
+      } catch (err) {
+        if (attempt === 1) failure = err;
+      }
     }
   }
+  if (!failure) return true;
   const errorCode = failure?.code ?? failure?.name ?? "UNKNOWN";
   (ctx.log ?? log).error(
     { event: "auth0.mfa_flag_clear_pending", userId: String(target._id), errorCode },
@@ -108,7 +114,7 @@ export async function promoteToSuperAdmin(email, { force = false } = {}) {
 
   // Flag first: if Auth0 is down nothing is written, and a retry is safe.
   try {
-    await setFlagOrThrow(user.auth0Id, true, { userId: String(user._id) });
+    await setFlagOrThrow(user.auth0Ids, true, { userId: String(user._id) });
   } catch (err) {
     throw BOOTSTRAP("BOOTSTRAP_PROVIDER_FAILED", 503, "Could not set mfa_required in Auth0.", {
       cause: err.code,
@@ -168,19 +174,22 @@ export async function promoteToSuperAdmin(email, { force = false } = {}) {
  */
 export async function syncMfaFlags({ onProgress } = {}) {
   const totals = { total: 0, required: 0, cleared: 0, failed: 0 };
-  const cursor = User.find({}, { auth0Id: 1, role: 1 }).lean().cursor();
+  const cursor = User.find({}, { auth0Ids: 1, role: 1 }).lean().cursor();
   for await (const user of cursor) {
-    totals.total += 1;
     const required = requiresMfaFlag(user.role);
-    try {
-      await setMfaRequired(user.auth0Id, required, { userId: String(user._id) });
-      totals[required ? "required" : "cleared"] += 1;
-    } catch (err) {
-      totals.failed += 1;
-      log.error(
-        { event: "mgmt.api_error", userId: String(user._id), errorCode: err?.code },
-        "Flag sync failed",
-      );
+    // Counted per sign-in id: each is its own Auth0 user with its own flag.
+    for (const id of user.auth0Ids) {
+      totals.total += 1;
+      try {
+        await setMfaRequired(id, required, { userId: String(user._id) });
+        totals[required ? "required" : "cleared"] += 1;
+      } catch (err) {
+        totals.failed += 1;
+        log.error(
+          { event: "mgmt.api_error", userId: String(user._id), errorCode: err?.code },
+          "Flag sync failed",
+        );
+      }
     }
     onProgress?.(totals);
   }

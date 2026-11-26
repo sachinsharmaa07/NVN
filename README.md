@@ -72,7 +72,7 @@ Port 5000 is used by AirPlay Receiver on macOS 12 and later. Either turn it off 
 | `TRUST_PROXY` | `0` | no | Proxies in front of the API (1 on Render); must be 1 or more in production |
 | `AUTH0_DOMAIN` | `nivaran-dev.us.auth0.com` | no | Auth0 tenant host, no `https://`. Required in production |
 | `AUTH0_AUDIENCE` | `https://api.nivaran.in` | no | The Auth0 API identifier. Required in production |
-| `AUTH0_M2M_CLIENT_ID` | from the Auth0 M2M app | **yes** (treat the pair as one secret) | Machine-to-Machine app for the Management API. Needed for "resend verification email", role changes that set the MFA flag, and the scripts. Without it those answer 503 `AUTH_NOT_CONFIGURED` |
+| `AUTH0_M2M_CLIENT_ID` | from the Auth0 M2M app | **yes** (treat the pair as one secret) | Machine-to-Machine app for the Management API. Needed for role changes that set the MFA flag, and the scripts. Without it those answer 503 `AUTH_NOT_CONFIGURED` |
 | `AUTH0_M2M_CLIENT_SECRET` | from the Auth0 M2M app | **yes** | Server only, never in `client/.env`, never logged. Set both M2M values or neither |
 | `SUPER_ADMIN_EMAIL` | `you@example.com` | no (personal data, keep out of git) | Read only by `npm run bootstrap:super-admin -w server`. That person must have signed in once with a verified email |
 | `AUTH_CLOCK_TOLERANCE_SECONDS` | `5` | no | Allowed clock difference when checking token expiry, 0 to 30. Keep hosts on NTP |
@@ -89,7 +89,6 @@ missing or invalid.
 | `VITE_AUTH0_CLIENT_ID` | from the Auth0 application | no | Client ID of the Single Page Application |
 | `VITE_AUTH0_AUDIENCE` | `https://api.nivaran.in` | no | Must equal the server's `AUTH0_AUDIENCE` |
 | `VITE_SUPPORT_CONTACT` | `your city admin` | no | Optional. Who a suspended user is told to contact. Default: "your city admin" |
-| `VITE_AUTH0_DB_CONNECTION` | `Username-Password-Authentication` | no | Optional. Name of the Auth0 database connection behind "Use email and password". Set it only if your tenant renamed it |
 
 Anything prefixed `VITE_` is bundled into the browser code, so never put a secret in `client/.env`.
 Nothing in this file is a secret. The Auth0 domain, client ID and audience are public by design. The
@@ -113,7 +112,6 @@ env vars above and run the bootstrap script to create the first super admin.
 | `GET /api/health` | anyone | Status and database state |
 | `GET /api/me` | signed in | Creates your citizen record on first sign-in, returns your profile |
 | `PATCH /api/me` | signed in | Edits your name, preferred language and default pincode |
-| `POST /api/me/resend-verification` | signed in, unverified | Asks Auth0 to resend the verification email (3 an hour per user; 503 until the M2M app is set up) |
 | `GET /api/admin/users` | city_admin, state_officer, super_admin; verified email, MFA | Lists users in your scope (cursor pages, search, role filter) |
 | `PATCH /api/admin/users/:id/role` | city_admin, super_admin | Changes a role below your own level, with a reason; writes an AuditLog |
 | `PATCH /api/admin/users/:id/status` | city_admin, super_admin | Suspends or reactivates a user below your level, with a reason |
@@ -152,7 +150,8 @@ print secrets.
 | --- | --- | --- |
 | `npm run bootstrap:super-admin -w server` | Makes `SUPER_ADMIN_EMAIL` the first `super_admin` (sets the Auth0 MFA flag first, then one transaction with an AuditLog row). Safe to rerun. Needs `MONGODB_URI` and both M2M values | `0` done or already done, `1` unexpected or missing settings, `2` no such user (sign in once first), `3` several users with that email, `4` email not verified, `5` Auth0 flag could not be set, `6` account suspended, `7` another super admin exists, `8` the user changed while promoting (run it again). Add `--force` to create a second one: `npm run bootstrap:super-admin -w server -- --force` |
 | `npm run sync:mfa-flags -w server` | Sets Auth0's `mfa_required` flag from the database for every user (on for level 4 and above, off below). Use it after an Auth0 outage left flags out of step. Safe to rerun | `0` all synced, `1` unexpected or some users failed |
-| `npm run migrate:users-v1 -w server` | Moves the `users` collection to the Phase 1 shape (`verified` renamed to `emailVerified`, `status` set to `active`), swaps old indexes for new ones, and lists rows that break the scope rules without changing them. Run it after any deploy that changes indexes (production has autoIndex off) | `0` done, `1` error |
+| `npm run migrate:users-v1 -w server` | Moves the `users` collection to the Phase 1 shape (`verified` renamed to `emailVerified`, `status` set to `active`), swaps old indexes for new ones, and lists rows that break the scope rules without changing them. Run it after any deploy that changes indexes (production has autoIndex off). On a database without `auth0Ids`, run `migrate:users-v2` first | `0` done, `1` error |
+| `npm run migrate:users-v2 -w server` | Copies each user's `auth0Id` into `auth0Ids` and builds the new indexes (unique `auth0Ids`, unique email among verified rows). Dry run by default; add `-- --apply` to write. Stops without writing if two users share a verified email | `0` done, `1` error, `2` duplicate verified emails |
 
 ## Running the tests
 
@@ -187,7 +186,7 @@ its own Atlas database user with access to `nivaran_test` only.
 │       ├── components/        ui/ (shadcn, generated), system/ (StatusBadge, SlaCountdown,
 │       │                      TicketId...), nav/, auth/, theme/, chat/, map/
 │       ├── layouts/           AppLayout (the shell) and PageTransition
-│       ├── pages/             Landing/, Report, Issues, Community, Profile, VerifyEmail, Suspended,
+│       ├── pages/             Landing/, Report, Issues, Community, Profile, Suspended,
 │       │                      Forbidden, admin/AdminUsers, dev/StyleGuide
 │       ├── hooks/
 │       ├── lib/               api.js, motion.js (shared animation variants) and helpers

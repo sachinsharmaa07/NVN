@@ -1,6 +1,7 @@
 // One-off, safe to rerun: migrate the users collection to the Phase 1 shape and build indexes.
 // npm run migrate:users-v1 -w server. Exit codes: 0 done, 1 error.
 // Production runs with autoIndex off, so run this after each deploy that changes indexes.
+// Run migrate:users-v2 first on a database without auth0Ids: the index build here needs them.
 import { config } from "../src/config/env.js";
 import { connectDb, disconnectDb } from "../src/config/db.js";
 import { migrateUsersV1 } from "../src/services/migrationService.js";

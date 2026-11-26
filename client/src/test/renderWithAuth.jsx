@@ -71,7 +71,7 @@ export function authState(kind, extra = {}) {
 
 /*
  * Renders `ui` at `path` inside a fake auth context, a fresh QueryClient (no retries) and a
- * memory router. `routes` adds stand-in pages ({ "/verify-email": <p>verify</p> }) so redirects
+ * memory router. `routes` adds stand-in pages ({ "/suspended": <p>suspended</p> }) so redirects
  * can be seen. Returns Testing Library's result plus { auth, openSignIn }.
  */
 export function renderWithAuth(ui, { auth, path = "/", state, routePath = "*", routes = {} } = {}) {
