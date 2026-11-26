@@ -1,5 +1,7 @@
 import { MapPinIcon } from "lucide-react";
+import { useState } from "react";
 import { useSearchParams } from "react-router";
+import { MapStep } from "@/components/report/MapStep";
 import { PincodeStep } from "@/components/report/PincodeStep";
 import { readDraft, saveDraft } from "@/components/report/reportDraft";
 import { EmptyState } from "@/components/system/EmptyState";
@@ -20,6 +22,9 @@ export function Report() {
   const initialPin = isValidPincode(fromLink) ? fromLink : (draft.pincode ?? "");
 
   const goTo = (n) => setSearchParams({ step: String(n) });
+  // Set when a submit comes back 422 OUTSIDE_PINCODE, shown once the map step opens again.
+  const [mapNotice, setMapNotice] = useState("");
+  const saved = draft.lng != null ? [draft.lng, draft.lat] : null;
 
   return (
     <div className="mx-auto flex w-full max-w-160 flex-col gap-8 px-4 py-8 md:px-6 md:py-12 lg:px-8">
@@ -33,6 +38,18 @@ export function Report() {
           onNext={(pin) => {
             saveDraft({ pincode: pin });
             goTo(2);
+          }}
+        />
+      ) : step === 2 ? (
+        <MapStep
+          pincode={draft.pincode}
+          saved={saved}
+          notice={mapNotice}
+          onBack={() => goTo(1)}
+          onNext={({ lat, lng, precision }) => {
+            saveDraft({ lat, lng, precision });
+            setMapNotice("");
+            goTo(3);
           }}
         />
       ) : (

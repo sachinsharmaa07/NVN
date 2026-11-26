@@ -16,5 +16,18 @@
   "report.pincode.waitlistSubmit": "Join the waitlist",
   "report.pincode.waitlistSending": "Joining…",
   "report.pincode.waitlistDone": "You're on the waitlist for {pincode}. You can close this page.",
-  "report.pincode.waitlistEmailError": "Enter an email like name@example.com."
+  "report.pincode.waitlistEmailError": "Enter an email like name@example.com.",
+  "report.location.approx": "Approximate area: the shaded circle is a rough outline of {pincode}. Put the pin where the problem is, inside the circle.",
+  "report.location.exact": "Put the pin where the problem is, inside the outlined area of {pincode}.",
+  "report.location.mapLabel": "Map of pincode {pincode}. Tap to place the pin, or drag it.",
+  "report.location.pinLabel": "Report pin. Use the arrow keys to move it.",
+  "report.location.outsidePincode": "This spot is outside pincode {pincode}. Move the pin inside the shaded area or change the pincode.",
+  "report.location.notServed": "We can't show the map for this pincode. Go back and check it.",
+  "report.location.useMine": "Use my location",
+  "report.location.locating": "Finding your location…",
+  "report.location.located": "Pin placed at your location, accurate to about {metres} m. Move it if the problem is elsewhere.",
+  "report.location.geoDenied": "We couldn't get your location. Allow location access, or tap the map instead.",
+  "report.location.geoUnavailable": "This browser can't share your location. Tap the map instead.",
+  "report.location.tapHint": "Tap the map to drop the pin.",
+  "report.location.keyboardHint": "Drag the pin, or focus it and use the arrow keys."
 }

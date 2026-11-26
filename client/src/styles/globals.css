@@ -24,6 +24,8 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.22 0.02 235);
   --primary: oklch(0.47 0.08 215);
+  /* The counterfoil's round date stamp only (UI.md §1). */
+  --postmark: oklch(0.53 0.153 32);
   --primary-foreground: oklch(0.985 0.004 220);
   --secondary: oklch(0.955 0.008 220);
   --secondary-foreground: oklch(0.26 0.02 235);
@@ -95,6 +97,7 @@
   --popover: oklch(0.23 0.018 235);
   --popover-foreground: oklch(0.95 0.008 220);
   --primary: oklch(0.76 0.1 205);
+  --postmark: oklch(0.7 0.13 32);
   --primary-foreground: oklch(0.16 0.02 230);
   --secondary: oklch(0.26 0.02 235);
   --secondary-foreground: oklch(0.92 0.01 220);
@@ -156,6 +159,7 @@
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
+  --color-postmark: var(--postmark);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -341,4 +345,12 @@
   [data-slot="dialog-content"] {
     transform: none !important;
   } /* appear, don't slide */
+}
+
+/* Report map (UI.md §5): Leaflet's zoom buttons are 30px; map controls need a 44px touch target. */
+.leaflet-control-zoom a.leaflet-control-zoom-in,
+.leaflet-control-zoom a.leaflet-control-zoom-out {
+  width: 44px;
+  height: 44px;
+  line-height: 44px;
 }
