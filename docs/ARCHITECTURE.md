@@ -261,41 +261,44 @@ flowchart LR
 | Real time | Not used. TanStack Query refetching instead. | Socket.IO deferred, needs a multi-instance adapter. | ADR 0001 |
 | Out of scope sign-ins | Out-of-scope or missing id returns **404**, never 403 | Existence of other cities' users must not leak. | CLAUDE.md |
 
-### 4.4 M1 core loop HLD (pincode and report)
+### 4.4 M1 core loop HLD (pincode and report), national coverage
 
-Status: models and import scripts **BUILT** (M1 steps 3 and 4); API, routing, upload and wizard **DESIGNED** (steps 5 to 11).
+Status: models, directory import, boundary import, department seed and `POST /api/pincodes/:pin/check-point` are
+**BUILT**; pincode lookup, waitlist API, issues and the wizard are **DESIGNED** (steps 5 to 11).
 
 ```mermaid
 flowchart LR
-  subgraph Offline["One-off scripts (dry run, --apply)"]
-    CSV["data/pincodes.csv<br/>(data.gov.in)"] --> IP["importPincodes.js<br/>stream, group by pin,<br/>bulkWrite x500"]
-    GJ["data/boundaries/phagwara.geojson<br/>(hand-drawn)"] --> IB["importBoundaries.js<br/>validate rings,<br/>boundary + centroid"]
+  subgraph Offline["One-off scripts (dry run, --apply, rerun = 0 changes)"]
+    TSV["data/pincodes.tsv<br/>(GeoNames IN, ~155k places)"] --> IP["importPincodes.js --format geonames<br/>group by pin: places, mean centre, radiusM<br/>bulkWrite x500"]
+    IP --> CT[("cities<br/>one per state + district")]
+    GJ["data/boundaries/*.geojson<br/>(optional, manual)"] --> IB["importBoundaries.js"]
+    CT --> SD["seedDepartments.js<br/>5 departments + category map per city"]
   end
-  IP --> PC[("pincodes")]
+  IP --> PC[("pincodes<br/>centroid, radiusM, boundary?")]
   IB --> PC
-  CT[("cities")] -. "--city PB pilot" .-> IP
-  subgraph Runtime["API (steps 5 to 8)"]
-    LK["GET /api/pincodes/:pin"] --> PC
-    WL["POST /api/waitlist<br/>HMAC(email)"] --> WT[("waitlists")]
-    IS["POST /api/issues<br/>pin-in-polygon, route, SLA,<br/>NIV-YYYY-NNNNNN"] --> PC
-    IS --> IU[("issues, counters")]
-    IS --> DM[("category to department map")]
+  SD --> DP[("departments,<br/>categorymappings")]
+  subgraph Runtime["API"]
+    CP["POST /api/pincodes/:pin/check-point<br/>polygon: exact, else circle: approx"] --> PC
+    IS["POST /api/issues (step 8)<br/>same check, route by category map"] --> PC
+    IS --> DP
   end
-  W["Report wizard<br/>1 pincode, 2 map pin, 3 photos + details"] --> LK
-  W --> WL
+  W["Report wizard"] --> CP
   W --> IS
 ```
 
-Data flow: (1) scripts load the pincode directory and the pilot polygons; (2) the wizard looks up a pincode: served
-with a boundary means "pin on the map", not served means "join the waitlist"; (3) the client checks the pin against
-the polygon for fast feedback, and the server checks again (`utils/geo.js`) before it creates the issue; (4) the issue
-gets a department from the category map (`other` goes to triage), an expected-by date from SLA policy, and a ticket ID
-from an atomic per-year counter.
+Data flow: (1) the GeoNames directory gives every pincode its places, a mean centre and a radius, and creates one
+city per district; (2) the seed gives each city default departments and the category map; (3) a pin is checked
+against the polygon where one exists, else against the radius circle, and the answer says which (`precision`);
+(4) the issue goes to the department mapped for its category in the pincode's district city (`other` to triage).
 
-Trade-offs: polygons live in MongoDB (2dsphere) instead of a GIS service, which is enough for one city and easy to
-replace via `boundarySource`. Waitlist stores only an HMAC, so nothing personal leaks, but we cannot notify people when
-a pincode opens (decision O1). Revisit when a second city joins: a bulk boundary source (AIKosh) and an import job
-instead of a laptop script.
+Load: about 19k pincodes, about 750 district cities, about 3,750 departments, about 4,500 mapping rows. Everything fits
+in one MongoDB replica set with plain indexes; the import is a laptop script under two minutes.
+
+Trade-offs: a radius circle is crude (it can overlap neighbouring pincodes and miss odd shapes), but it covers all of
+India today with no polygon data; `precision: "approx"` tells the client so, and a polygon replaces it pincode by
+pincode. District cities are an administrative guess at "who fixes this"; real municipal bodies can replace them
+later without changing pincodes' shape. Revisit: AIKosh polygons for dense cities first, and city-admin editing of
+the category map.
 
 ---
 
