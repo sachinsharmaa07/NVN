@@ -77,6 +77,7 @@ set `PORT=5050` in `server/.env` and
 | `HMAC_SECRET` | output of `openssl rand -hex 32` | **yes** | Key for hashing waitlist emails (decision O1). 64 hex characters. Required in production. Set once: changing it orphans every stored hash |
 | `SUPER_ADMIN_EMAIL` | `you@example.com` | no (personal data, keep out of git) | Read only by `npm run bootstrap:super-admin -w server`. That person must have signed in once with a verified email |
 | `AUTH_CLOCK_TOLERANCE_SECONDS` | `5` | no | Allowed clock difference when checking token expiry, 0 to 30. Keep hosts on NTP |
+| `DNS_SERVERS` | `1.1.1.1,8.8.8.8` | no | Dev only, usually empty. DNS servers for the `mongodb+srv` lookup (see Troubleshooting) |
 
 The server checks these with Zod when it starts and exits with a list of the wrong keys if any are
 missing or invalid.
@@ -201,6 +202,12 @@ database, Cloudinary keys or internet: `VITE_E2E=1` swaps sign-in for a fake ver
 production bundle (`vite build --mode e2e` into `dist-e2e/`, served by `vite preview`). Any other build
 with `VITE_E2E` set stops with an error, so the fake sign-in can never ship. In CI the `e2e`
 job runs after `check` and uploads `playwright-report` when it fails.
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| Server start fails with `querySrv ECONNREFUSED _mongodb._tcp...` | The network (often a phone hotspot) hands out a link-local IPv6 DNS server (`fe80::...%en0`) that Node's resolver cannot use for the SRV lookup | Set `DNS_SERVERS=1.1.1.1,8.8.8.8` in `server/.env` and restart. Dev only; leave it empty elsewhere |
 
 ## Folder tree
 

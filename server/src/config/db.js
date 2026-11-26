@@ -1,4 +1,5 @@
 // MongoDB connection via Mongoose. Services ask isDbUp(); nothing else touches the connection object.
+import dns from "node:dns";
 import mongoose from "mongoose";
 import { config } from "./env.js";
 import { logger } from "./logger.js";
@@ -30,6 +31,8 @@ function attachListeners() {
 /** Connects once; rejects if the server cannot be reached within ~5 s. */
 export async function connectDb(uri) {
   attachListeners();
+  // Must run before connect: the driver resolves the mongodb+srv SRV record with Node's resolver.
+  if (config.DNS_SERVERS) dns.setServers(config.DNS_SERVERS);
   await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000, autoIndex });
 }
 

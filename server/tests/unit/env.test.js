@@ -161,4 +161,16 @@ describe("parseEnv", () => {
     const half = parseEnv({ MONGODB_URI: URI, AUTH0_M2M_CLIENT_ID: "only-id" });
     expect(half.problems).toEqual([expect.stringMatching(/set both or neither/)]);
   });
+
+  it("parses DNS_SERVERS into a list of IPs and rejects anything else", () => {
+    const parse = (v) => parseEnv({ MONGODB_URI: URI, DNS_SERVERS: v });
+    expect(parse(" 1.1.1.1, 2001:4860:4860::8888 ,").config.DNS_SERVERS).toEqual([
+      "1.1.1.1",
+      "2001:4860:4860::8888",
+    ]);
+    expect(parse("").config.DNS_SERVERS).toBeUndefined();
+    expect(parse("dns.google").ok).toBe(false);
+    expect(parse("1.1.1.1,999.1.1.1").ok).toBe(false);
+    expect(parse(" , ").ok).toBe(false);
+  });
 });

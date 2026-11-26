@@ -51,6 +51,19 @@ const envSchema = z.object({
   CLOUDINARY_CLOUD_NAME: optional(z.string().regex(/^[a-z0-9_-]+$/i, "cloud name only")),
   CLOUDINARY_API_KEY: optional(z.string().regex(/^[0-9]+$/, "digits only")),
   CLOUDINARY_API_SECRET: optional(z.string().min(10)),
+  // Dev only: DNS servers for the mongodb+srv lookup, comma-separated IPs (e.g. 1.1.1.1,8.8.8.8).
+  // Node cannot use the link-local IPv6 DNS (fe80::...%en0) phone hotspots hand out: querySrv ECONNREFUSED.
+  DNS_SERVERS: optional(
+    z
+      .string()
+      .transform((v) =>
+        v
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+      )
+      .pipe(z.array(z.union([z.ipv4(), z.ipv6()])).min(1)),
+  ),
   // Email of the first super admin; only scripts/bootstrapSuperAdmin.js reads it.
   SUPER_ADMIN_EMAIL: optional(
     z.preprocess((v) => (typeof v === "string" ? v.trim().toLowerCase() : v), z.email()),
