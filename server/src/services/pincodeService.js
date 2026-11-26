@@ -1,5 +1,5 @@
 // Pincode reads for the report flow. checkPoint is the one place that decides "is this pin inside the
-// pincode", so POST /api/issues (M1 step 8) must call locatePoint too, never its own copy.
+// pincode", so POST /api/issues must call locatePoint too, never its own copy.
 import mongoose from "mongoose";
 import { Pincode } from "../models/Pincode.js";
 import { AppError } from "../utils/AppError.js";

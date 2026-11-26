@@ -1,4 +1,4 @@
-// Every issue write after submit (M2 steps 4 and 5; hold and resume in issueHoldService). One path: find in scope (404), check the version (409)
+// Every issue write after submit (hold and resume are in issueHoldService). One path: find in scope (404), check the version (409)
 // and the state machine (400/403), then ONE transaction: conditional update on { _id, __v }, AuditLog row,
 // reporter notification. Services get plain values, never req.
 import { Issue } from "../models/Issue.js";

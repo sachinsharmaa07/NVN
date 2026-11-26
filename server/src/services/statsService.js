@@ -1,4 +1,4 @@
-// GET /api/stats (M2 step 9): public counts, no personal data. Cached in memory for 5 minutes, so a
+// GET /api/stats: public counts, no personal data. Cached in memory for 5 minutes, so a
 // busy landing page costs four aggregate reads per 5 minutes, not per visit.
 import { Issue } from "../models/Issue.js";
 import { CATEGORIES } from "../utils/categories.js";

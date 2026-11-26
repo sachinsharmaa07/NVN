@@ -1,4 +1,4 @@
-// A reported civic issue (M1 step 8). Written only by issueService, inside the submit transaction.
+// A reported civic issue. Written only by issueService, inside the submit transaction.
 import mongoose from "mongoose";
 import { CATEGORIES } from "../utils/categories.js";
 import { PINCODE_RE } from "../utils/india.js";

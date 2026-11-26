@@ -1,4 +1,4 @@
-// Staff work queue (M2 step 3). Scope (department or city) is applied in the service's query.
+// Staff work queue. Scope (department or city) is applied in the service's query.
 import { Router } from "express";
 import { validate } from "../middleware/validate.js";
 import { authenticate } from "../middleware/auth.js";

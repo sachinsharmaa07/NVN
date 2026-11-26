@@ -1,5 +1,5 @@
 // A city's department. No stateCode (it would drift from City) and no categories: the category to
-// department map is its own collection (M1 step 6).
+// department map is its own collection.
 import mongoose from "mongoose";
 import { CategoryMapping } from "./CategoryMapping.js";
 import { User } from "./User.js";

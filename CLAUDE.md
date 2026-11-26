@@ -9,7 +9,7 @@ React Router, TanStack Query, Tailwind CSS v4, shadcn/ui, Leaflet | Auth0. npm w
 one `package-lock.json`. **Ports:** server 5001 (macOS AirPlay holds 5000), client 5173.
 
 ## Where things live
-- Plan: `docs/PLAN.md`. Decisions: `docs/DECISIONS.md` (change a row there first, then the code). Handoff: `docs/HANDOFF.md`.
+- Plan: `docs/PLAN.md`. Decisions: `docs/DECISIONS.md` (change a row there first, then the code).
 - Layout, server details, enums, tests, dependency list, graphify: **`docs/CONVENTIONS.md`**.
 - Skills (use only these): frontend-design:frontend-design (UI), backend-design:think-before-coding (server code),
   engineering:system-design (HLD: components, data flow, APIs), engineering:architecture (LLD decisions and ADRs).

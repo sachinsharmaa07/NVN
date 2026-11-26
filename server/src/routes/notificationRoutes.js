@@ -1,4 +1,4 @@
-// In-app notifications (M2 step 8): only the signed-in user's own rows, matched on userId in the service.
+// In-app notifications: only the signed-in user's own rows, matched on userId in the service.
 import { Router } from "express";
 import { validate } from "../middleware/validate.js";
 import { authenticate } from "../middleware/auth.js";
