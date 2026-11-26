@@ -11,6 +11,11 @@ const ALLOWED_KEYS = {
   "user.mfa_flag_sync_failed": ["errorCode"],
   "user.identity_linked": ["provider"], // the provider only, never the full sub
   "issue.created": ["ticketId", "category", "queue", "departmentId"], // never the location or text
+  // M2: the note or hold reason goes in `reason`, never in before/after.
+  "issue.status_change": ["ticketId", "status"],
+  "issue.assign": ["ticketId", "status", "queue", "departmentId"],
+  "issue.hold": ["ticketId", "slaPausedAt", "expectedBy"],
+  "issue.resume": ["ticketId", "slaPausedAt", "expectedBy"],
 };
 const targetOf = (action) => action.split(".")[0];
 
