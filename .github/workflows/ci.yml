@@ -1,4 +1,5 @@
-# Lint, format check, unit tests and a client build on every push and pull request, then the e2e suite.
+# Lint, format check, unit tests and a client build on every push and pull request, then the e2e suite
+# and the Docker images with a smoke test.
 name: CI
 
 # Pushes to main and every pull request. Feature branches are checked through their PR, which also
@@ -77,3 +78,76 @@ jobs:
           name: playwright-report
           path: client/playwright-report/
           retention-days: 7
+
+  # Docker images (ADR 0004): built with the GitHub Actions layer cache, never pushed, then smoke-tested.
+  # The API refuses to start without MongoDB, so the smoke run uses compose's local-db profile (mongo:8 as a
+  # one-node replica set) and checks the real /api/health (200 only with the database up) through nginx.
+  # Every other setting is a dummy value that passes the production checks; no secret is used.
+  docker:
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: server/Dockerfile
+          tags: nivaran-api:local
+          load: true
+          push: false
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+
+      - name: Build web image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: client/Dockerfile
+          tags: nivaran-web:local
+          load: true
+          push: false
+          build-args: |
+            VITE_AUTH0_DOMAIN=nivaran-ci.example.auth0.com
+            VITE_AUTH0_CLIENT_ID=ci-dummy
+            VITE_AUTH0_AUDIENCE=https://api.nivaran.test
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+
+      - name: Dummy env files (outside the build context, never in an image)
+        run: |
+          cat > "$RUNNER_TEMP/api.env" <<'ENV'
+          MONGODB_URI=mongodb://mongo:27017/nivaran?replicaSet=rs0
+          AUTH0_DOMAIN=nivaran-ci.example.auth0.com
+          AUTH0_AUDIENCE=https://api.nivaran.test
+          AUTH0_M2M_CLIENT_ID=ci-dummy
+          AUTH0_M2M_CLIENT_SECRET=ci-dummy-secret
+          HMAC_SECRET=0000000000000000000000000000000000000000000000000000000000000000
+          CLOUDINARY_CLOUD_NAME=nivaran-ci
+          CLOUDINARY_API_KEY=123456789
+          CLOUDINARY_API_SECRET=ci-dummy-secret
+          SLA_JOB_INTERVAL_MS=0
+          ENV
+          cat > "$RUNNER_TEMP/web.env" <<'ENV'
+          VITE_AUTH0_DOMAIN=nivaran-ci.example.auth0.com
+          ENV
+
+      # Same script as local runs; --no-build uses the images built above.
+      - run: npm run docker:smoke
+        env:
+          API_ENV_FILE: ${{ runner.temp }}/api.env
+          WEB_ENV_FILE: ${{ runner.temp }}/web.env
+          COMPOSE_PROFILES: local-db
+          SMOKE_BUILD: --no-build
+
+      - if: failure()
+        run: docker compose --env-file "$RUNNER_TEMP/web.env" logs --no-color
+        env:
+          API_ENV_FILE: ${{ runner.temp }}/api.env
+          COMPOSE_PROFILES: local-db

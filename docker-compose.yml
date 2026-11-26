@@ -1,0 +1,85 @@
+# Nivaran in containers (ADR 0004): local runs and the CI smoke test. Not a deployment.
+# Run from the repo root through the npm scripts (they pass --env-file client/.env for the web build args;
+# WEB_ENV_FILE and API_ENV_FILE point at other files, as CI does):
+#   npm run docker:up | docker:down | docker:logs | docker:smoke
+# Optional local MongoDB: COMPOSE_PROFILES=local-db and, in server/.env,
+#   MONGODB_URI=mongodb://mongo:27017/nivaran?replicaSet=rs0
+name: nivaran
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    image: nivaran-api:local
+    env_file: ${API_ENV_FILE:-server/.env} # CI points this at a dummy file
+    environment:
+      NODE_ENV: production
+      CLIENT_URL: http://localhost:8080
+      TRUST_PROXY: "1"
+      PORT: "5001"
+    ports:
+      - "5001:5001"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:5001/api/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      start_period: 20s
+      retries: 6
+    depends_on:
+      mongo:
+        condition: service_healthy
+        required: false # only when the local-db profile is on
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: client/Dockerfile
+      # Public values, read from client/.env (--env-file) when compose builds.
+      args:
+        VITE_AUTH0_DOMAIN: ${VITE_AUTH0_DOMAIN:-}
+        VITE_AUTH0_CLIENT_ID: ${VITE_AUTH0_CLIENT_ID:-}
+        VITE_AUTH0_AUDIENCE: ${VITE_AUTH0_AUDIENCE:-}
+        VITE_SUPPORT_CONTACT: ${VITE_SUPPORT_CONTACT:-}
+    image: nivaran-web:local
+    environment:
+      AUTH0_DOMAIN: ${VITE_AUTH0_DOMAIN:-} # fills the CSP in nginx.conf
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Off by default. A single-node replica set, so MongoDB transactions work offline.
+  mongo:
+    image: mongo:8
+    profiles: ["local-db"]
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    volumes:
+      - mongo-data:/data/db
+    # Also the one-time init: the first check runs rs.initiate(); later ones see the set and report ok.
+    healthcheck:
+      test:
+        - CMD
+        - mongosh
+        - --quiet
+        - --eval
+        - "try { rs.status().ok } catch (e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'mongo:27017' }] }).ok }"
+      interval: 5s
+      timeout: 10s
+      start_period: 10s
+      retries: 12
+
+volumes:
+  mongo-data:

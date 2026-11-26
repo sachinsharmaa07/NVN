@@ -139,6 +139,8 @@ Run these from the repository root.
 | `npm run format`       | Formats the code with Prettier                                      |
 | `npm run format:check` | Checks formatting without changing files (used in CI)               |
 | `npm run check`        | Lint, format check, tests and build: what CI runs. Run this before you push |
+| `npm run docker:up`    | Builds and starts the Docker images (see "Run with Docker")         |
+| `npm run docker:smoke` | Starts the images, checks `/` and `/api/health`, stops them         |
 
 To run one workspace on its own, add `-w server` or `-w client`, for example
 `npm run test -w server`.
@@ -202,6 +204,38 @@ database, Cloudinary keys or internet: `VITE_E2E=1` swaps sign-in for a fake ver
 production bundle (`vite build --mode e2e` into `dist-e2e/`, served by `vite preview`). Any other build
 with `VITE_E2E` set stops with an error, so the fake sign-in can never ship. In CI the `e2e`
 job runs after `check` and uploads `playwright-report` when it fails.
+
+## Run with Docker
+
+Images and compose for local runs and CI (ADR 0004). No deployment. Needs Docker Desktop (or Docker Engine with
+Compose v2.24+). Run from the repository root:
+
+```bash
+npm run docker:up      # build both images and start them (detached)
+npm run docker:logs    # follow the logs
+npm run docker:down    # stop and remove the containers
+npm run docker:build   # build only
+npm run docker:smoke   # up, wait for healthy, curl / and /api/health through nginx, down; non-zero on failure
+```
+
+- App: http://localhost:8080 (nginx serves the build and proxies `/api/` to the API). API direct:
+  http://localhost:5001/api/health.
+- The API runs with `NODE_ENV=production`, so `server/.env` must hold everything production requires:
+  `MONGODB_URI`, `AUTH0_DOMAIN`, `AUTH0_AUDIENCE`, `AUTH0_M2M_CLIENT_ID`, `AUTH0_M2M_CLIENT_SECRET`,
+  `HMAC_SECRET` and the three `CLOUDINARY_*` values. Compose sets `CLIENT_URL=http://localhost:8080`,
+  `TRUST_PROXY=1` and `PORT=5001`. Compose reads `server/.env` stricter than dotenv: every comment line must
+  start with `#`.
+- The web image takes `VITE_AUTH0_DOMAIN`, `VITE_AUTH0_CLIENT_ID` and `VITE_AUTH0_AUDIENCE` from `client/.env`
+  at build time (public values); `VITE_API_URL` is always empty (same origin). Rebuild after changing them.
+- **Auth0:** add `http://localhost:8080` to the SPA application's Allowed Callback URLs, Allowed Logout URLs and
+  Allowed Web Origins, or sign-in from the container fails.
+- **Local MongoDB (optional, offline):** set
+  `MONGODB_URI=mongodb://mongo:27017/nivaran?replicaSet=rs0` in `server/.env` and run with the `local-db`
+  profile, e.g. `COMPOSE_PROFILES=local-db npm run docker:up`. It is a one-node replica set (transactions
+  work), data in the `nivaran_mongo-data` volume. Production never builds indexes at start-up, so build them once:
+  `docker compose exec api node scripts/migrateM1Indexes.js --apply` and the same for `migrateM2Indexes.js`
+  (seed and import scripts run the same way: `node scripts/<name>.js`).
+- Image sizes (unpacked on disk): API about 175 MB, web about 59 MB.
 
 ## Troubleshooting
 
