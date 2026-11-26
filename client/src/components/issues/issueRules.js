@@ -1,3 +1,6 @@
+import { CATEGORIES } from "@/components/report/categories";
+import { t } from "@/i18n/t";
+
 // Client copy of server/src/utils/issueStateMachine.js, DISPLAY ONLY: it decides which buttons to offer.
 // The server checks every transition again (400 INVALID_TRANSITION / 403), so a stale copy can't grant anything.
 const WORKERS = ["staff", "dept_head", "city_admin"];
@@ -25,3 +28,6 @@ export function nextStatuses(issue, role) {
 
 export const NOTE_MIN = 3; // server: note 3 to 500
 export const REOPEN_MIN = 10;
+
+export const categoryLabel = (value) =>
+  t(CATEGORIES.find((c) => c.value === value)?.label ?? value);

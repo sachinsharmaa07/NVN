@@ -12,6 +12,7 @@ import {
   NotFound,
   Profile,
   Report,
+  StaffQueue,
   StyleGuide,
   Suspended,
 } from "./lazyPages";
@@ -45,6 +46,7 @@ export const routes = [
       { path: "admin/users", element: <AdminUsers /> },
       { path: "issues", element: <Issues /> },
       { path: "issues/:ticketId", element: <IssueDetail /> },
+      { path: "staff", element: <StaffQueue /> },
       { path: "community", element: <Community /> },
       // Development only: /dev/styleguide (StyleGuide is null in production builds).
       ...(StyleGuide ? [{ path: "dev/styleguide", element: <StyleGuide /> }] : []),
