@@ -9,7 +9,8 @@ line by line. Every library is one more thing to learn, upgrade and debug, so ea
 
 ## Decision
 **Runtime and languages:** Node 22 LTS, Express 5 (ES modules), React + Vite in JavaScript (no
-TypeScript). MongoDB Atlas only (`MONGODB_URI` for dev, `MONGODB_URI_TEST` for tests); no Docker.
+TypeScript). MongoDB Atlas only (`MONGODB_URI` for dev, `MONGODB_URI_TEST` for tests); no Docker
+(superseded 26 Nov 2026 by ADR 0004: Docker for local runs and CI).
 Two apps (`client/`, `server/`) in npm workspaces with root scripts (`dev`, `check`, ...) and one lockfile
 (changed 24 Nov 2026 by the Phase 0 brief; see "Phase 0 brief changes" below).
 
