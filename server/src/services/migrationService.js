@@ -7,6 +7,7 @@ import { Department } from "../models/Department.js";
 import { CategoryMapping } from "../models/CategoryMapping.js";
 import { Pincode } from "../models/Pincode.js";
 import { Waitlist } from "../models/Waitlist.js";
+import { SlaPolicy } from "../models/SlaPolicy.js";
 import { User } from "../models/User.js";
 import { SCOPE_RULES } from "../utils/permissions.js";
 
@@ -119,13 +120,13 @@ export async function migrateUsersV2({ apply = false } = {}) {
 }
 
 /**
- * M1: builds the declared indexes of Pincode, Waitlist, City, Department and CategoryMapping (production runs with
+ * M1: builds the declared indexes of Pincode, Waitlist, City, Department, CategoryMapping and SlaPolicy (production runs with
  * autoIndex off) and gives cities without a `status` the default "onboarding". Dry run unless
  * `apply`: reports index names that are missing and how many cities would change. Never drops.
  */
 export async function migrateM1Indexes({ apply = false } = {}) {
   const report = { applied: false, missingIndexes: {}, citiesWithoutStatus: 0 };
-  for (const model of [Pincode, Waitlist, City, Department, CategoryMapping]) {
+  for (const model of [Pincode, Waitlist, City, Department, CategoryMapping, SlaPolicy]) {
     // diffIndexes lists what createIndexes would build; a missing collection has none yet.
     const { toCreate } = await model.diffIndexes();
     if (toCreate.length) report.missingIndexes[model.modelName] = toCreate.map(indexName);
@@ -134,7 +135,7 @@ export async function migrateM1Indexes({ apply = false } = {}) {
   report.citiesWithoutStatus = await City.collection.countDocuments(noStatus);
   if (!apply) return report;
 
-  for (const model of [Pincode, Waitlist, City, Department, CategoryMapping])
+  for (const model of [Pincode, Waitlist, City, Department, CategoryMapping, SlaPolicy])
     await model.createIndexes();
   await City.collection.updateMany(noStatus, { $set: { status: "onboarding" } });
   report.applied = true;
