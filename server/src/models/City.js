@@ -10,7 +10,8 @@ export const CITY_STATUSES = Object.freeze(["active", "onboarding"]);
 const citySchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true, maxlength: 100 },
-    code: { type: String, required: true, unique: true, match: /^[A-Z0-9]{2,10}$/ },
+    // Hand-made (LDH) or a district city from the import (PB-KAPURTHALA, decision O2).
+    code: { type: String, required: true, unique: true, match: /^[A-Z0-9][A-Z0-9-]{1,39}$/ },
     stateCode: { type: String, required: true, enum: INDIA_STATE_CODES },
     // onboarding: set up by admins, not yet taking reports; active: live for residents.
     status: { type: String, enum: CITY_STATUSES, default: "onboarding" },

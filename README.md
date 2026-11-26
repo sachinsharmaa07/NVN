@@ -154,13 +154,14 @@ print secrets.
 | `npm run migrate:users-v1 -w server` | Moves the `users` collection to the Phase 1 shape (`verified` renamed to `emailVerified`, `status` set to `active`), swaps old indexes for new ones, and lists rows that break the scope rules without changing them. Run it after any deploy that changes indexes (production has autoIndex off). On a database without `auth0Ids`, run `migrate:users-v2` first | `0` done, `1` error |
 | `npm run migrate:users-v2 -w server` | Copies each user's `auth0Id` into `auth0Ids` and builds the new indexes (unique `auth0Ids`, unique email among verified rows). Dry run by default; add `-- --apply` to write. Stops without writing if two users share a verified email | `0` done, `1` error, `2` duplicate verified emails |
 | `npm run migrate:m1-indexes -w server` | Builds the M1 indexes (pincodes, waitlists, cities, departments) and sets `status: "onboarding"` on cities that have none. Dry run by default; add `-- --apply` to write. Never drops an index | `0` done, `1` error |
-| `npm run import:pincodes -w server` | Loads `data/pincodes.csv` into `pincodes` (streamed, upserts in batches of 500, offices become `localities`). Dry run prints counts; add `-- --apply` to write and `--city PHG` to create the Phagwara pilot city and mark 144401 to 144411 served. `--file <path>` for another CSV. A second `--apply` changes 0 rows | `0` done, `1` error |
-| `npm run import:boundaries -w server` | Sets `boundary`, `boundarySource` and `centroid` from `data/boundaries/phagwara.geojson` (each feature needs `properties.pincode`). Validates rings (closed, 4+ points, `[lon, lat]` inside India). Reports invalid features, polygons with no pincode row, and served pincodes with no polygon. Run `import:pincodes` first. Dry run by default; `-- --apply` writes | `0` done, `1` error |
+| `npm run import:pincodes -w server` | Loads `data/pincodes.tsv` (GeoNames) into `pincodes` and creates one city per (state, district), code like `PB-KAPURTHALA`, status `active`. Per pincode: unique place names as `localities`, mean position as `centroid`, `radiusM` = farthest place + 1.5 km (3 to 25 km), `isServed: true`. Streams the file, writes in batches of 500, about 1 s for 19k pincodes on a local database. Dry run prints counts; add `-- --apply` to write. `--city PB-KAPURTHALA` imports one district city only. `--format csv` reads the data.gov.in CSV (`data/pincodes.csv`) instead; it has no coordinates, so it never marks pincodes served. `--file <path>` for another file. A second `--apply` changes 0 rows | `0` done, `1` error |
+| `npm run import:boundaries -w server` | Optional. Sets `boundary`, `boundarySource` and `centroid` from a GeoJSON FeatureCollection (default `data/boundaries/phagwara.geojson`; each feature needs `properties.pincode`). A pincode with a polygon gets exact pin checks; the rest use the radius circle. Validates rings (closed, 4+ points, `[lon, lat]` inside India). Reports invalid features, polygons with no pincode row, and served pincodes with no polygon. Run `import:pincodes` first. Dry run by default; `-- --apply` writes | `0` done, `1` error |
 
-**Pincode data (not in git).** Download the "All India Pincode Directory" CSV from data.gov.in
-(<https://www.data.gov.in/catalog/all-india-pincode-directory>), save it as `data/pincodes.csv` (it is over 10 MB,
-so `.gitignore` excludes it), then run `import:pincodes` and `import:boundaries`. The Phagwara polygons in
-`data/boundaries/phagwara.geojson` are hand-drawn (decision M1-3) and can be committed.
+**Pincode data (not in git).** Download `IN.zip` from GeoNames (<https://download.geonames.org/export/zip/>),
+unzip it and save `IN.txt` as `data/pincodes.tsv` (about 12 MB, tab-separated, no header; `.gitignore` excludes it).
+GeoNames data is CC BY 4.0: credit "GeoNames" wherever pincode data is shown. Then run, in order:
+`import:pincodes -- --apply`, optionally `import:boundaries -- --apply`, then `seed:departments -- --apply`.
+Hand-drawn polygons in `data/boundaries/*.geojson` (`boundarySource: "manual"`) can be committed.
 
 ## Running the tests
 

@@ -71,7 +71,7 @@ flowchart LR
     P0["Phase 0: scaffold, CI, health, error shape"]
     VF["Visual foundation: tokens, shell, landing, motion"]
     P1["Phase 1: Auth0 sign-in, roles in MongoDB,<br/>admin users, audit log, MFA flag"]
-    M1["M1: City, Department, Pincode, Waitlist models,<br/>pincode and boundary import"]
+    M1["M1: City, Department, Pincode, Waitlist models,<br/>national pincode import, boundary import"]
   end
   subgraph Partial["PARTIAL"]
     CH["Chat bubble: opens a placeholder panel"]
@@ -101,7 +101,7 @@ flowchart LR
 | One-off scripts: bootstrap super admin, sync MFA flags, migrate users v1 and v2 | **BUILT** | `server/scripts/` |
 | Design tokens (light and dark), shell, landing page, profile, admin users, suspended, forbidden pages | **BUILT** | `client/src/styles/globals.css`, `layouts/`, `pages/` |
 | `City` (with `status`), `Department`, `Pincode`, `Waitlist` models, M1 index migration | **BUILT** | `server/src/models/`, `scripts/migrateM1Indexes.js` (M1 step 3) |
-| Pincode CSV import and pilot boundary import (dry run, `--apply`, idempotent) | **BUILT** | `scripts/importPincodes.js`, `scripts/importBoundaries.js`, `services/pincodeImportService.js`, `services/boundaryImportService.js`, `utils/geo.js` (M1 step 4). Tested on fixtures; the real `data/` files are not loaded yet |
+| National pincode import (GeoNames, one city per district, centroid and `radiusM`) and optional boundary import (dry run, `--apply`, idempotent) | **BUILT** | `scripts/importPincodes.js`, `scripts/importBoundaries.js`, `services/pincodeDirectory.js`, `services/pincodeImportService.js`, `services/boundaryImportService.js`, `utils/geo.js`, `utils/india.js`. Timed on the real file: 19,238 pincodes and 637 cities in about 1 s on a local database. Not yet run against Atlas |
 | Chat bubble | **PARTIAL** | `components/chat/ChatBubble.jsx` opens a "coming soon" sheet. No API. |
 | `/report`, `/issues`, `/community` | **PARTIAL** | Empty-state shells with the final navigation wiring. |
 | Resend or email notifications | **DESIGNED** | Mentioned for escalations; no code. |
@@ -819,7 +819,7 @@ erDiagram
   CITY {
     ObjectId _id PK
     string name
-    string code UK "A-Z0-9, 2-10"
+    string code UK "LDH or PB-KAPURTHALA (district city)"
     string stateCode "enum of Indian state codes"
     string status "active or onboarding"
     date createdAt
@@ -830,12 +830,13 @@ erDiagram
     string pin UK "6 digits, first 1-9"
     string district
     string state
-    ObjectId cityId FK "null until served"
+    ObjectId cityId FK "district city"
     string_array localities "unique office names"
     Point centroid "lon, lat"
     Polygon boundary "Polygon or MultiPolygon, optional"
+    int radiusM "3000 to 25000, circle when no boundary"
     string boundarySource "aikosh, manual, none"
-    boolean isServed "true needs cityId"
+    boolean isServed "true needs cityId and a shape"
     date createdAt
     date updatedAt
   }
@@ -887,7 +888,7 @@ Production builds these with `npm run migrate:m1-indexes -w server -- --apply` (
 | Scope fields required or forbidden per role | `User` pre-validate hook, fed by `SCOPE_RULES` |
 | Suspension fields present **iff** status is `suspended` | `User` pre-validate hook |
 | No foreign keys, so deleting a City or Department that is still referenced (users, departments, pincodes) throws | `City` and `Department` `pre('delete*')` hooks |
-| `boundarySource` is `none` exactly when there is no boundary; a served pincode has a `cityId` | `Pincode` pre-validate hook |
+| `boundarySource` is `none` exactly when there is no boundary; a served pincode has a `cityId` and a boundary or a centroid with `radiusM` | `Pincode` pre-validate hook |
 | Boundary rings closed, 4+ points, `[lon, lat]` inside India | `utils/geo.js` `geometryProblems`, used by the model and the import |
 | `role`, `status`, scope can change only through load, mutate, `save()` | `User` write-guard hooks (`scopeWrite: true` is the explicit escape) |
 | AuditLog never changes | `AuditLog` hooks that throw on every update and delete form |

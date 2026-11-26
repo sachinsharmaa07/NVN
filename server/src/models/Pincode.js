@@ -1,7 +1,7 @@
 // One row per Indian pincode, loaded by scripts/importPincodes.js and scripts/importBoundaries.js.
 import mongoose from "mongoose";
 import { PINCODE_RE } from "../utils/india.js";
-import { geometryProblems, isIndiaPoint } from "../utils/geo.js";
+import { RADIUS_MAX_M, RADIUS_MIN_M, geometryProblems, isIndiaPoint } from "../utils/geo.js";
 
 export const BOUNDARY_SOURCES = Object.freeze(["aikosh", "manual", "none"]);
 
@@ -51,18 +51,24 @@ const pincodeSchema = new mongoose.Schema(
         message: (props) => geometryProblems(props.value).join("; "),
       },
     },
+    // Decision M1-7: circle around the centroid used when there is no boundary.
+    radiusM: { type: Number, min: RADIUS_MIN_M, max: RADIUS_MAX_M },
     boundarySource: { type: String, enum: BOUNDARY_SOURCES, default: "none" },
     isServed: { type: Boolean, default: false },
   },
   { timestamps: true },
 );
 
-// Rules across fields: a source only with a boundary, and a served pincode always has its city.
+// Rules across fields: a source only with a boundary; a served pincode has its city and a shape.
 pincodeSchema.pre("validate", function () {
   if ((this.boundarySource === "none") !== (this.boundary == null)) {
     this.invalidate("boundarySource", 'boundarySource is "none" exactly when there is no boundary');
   }
   if (this.isServed && !this.cityId) this.invalidate("cityId", "a served pincode needs a cityId");
+  // A served pincode must be checkable: a polygon, or a centre and radius.
+  if (this.isServed && !this.boundary && !(this.centroid && this.radiusM)) {
+    this.invalidate("radiusM", "a served pincode needs a boundary or a centroid and radiusM");
+  }
 });
 
 // `pin` is unique by its option. 2dsphere v2+ skips rows without a boundary, so it is sparse-safe.

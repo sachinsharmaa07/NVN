@@ -48,6 +48,14 @@ describe("Pincode model", () => {
     expect(await errorsOf({ boundary: polygon })).toHaveProperty("boundarySource");
   });
 
+  it("refuses a served pincode with no shape to check a pin against", async () => {
+    const cityId = new mongoose.Types.ObjectId();
+    expect(await errorsOf({ cityId, isServed: true })).toHaveProperty("radiusM");
+    const centroid = { type: "Point", coordinates: [75.77, 31.23] };
+    expect(await errorsOf({ cityId, isServed: true, centroid, radiusM: 3000 })).toEqual({});
+    expect(await errorsOf({ radiusM: 2999 })).toHaveProperty("radiusM");
+  });
+
   it("refuses a served pincode without a city", async () => {
     expect(await errorsOf({ isServed: true })).toHaveProperty("cityId");
   });
