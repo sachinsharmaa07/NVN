@@ -43,10 +43,7 @@ Moved out of `CLAUDE.md` on 25 Nov 2026 so that file stays short. Same rules, sa
   (`utils/geo.js`), i18n `t()`.
 
 ## Skills
-backend `think-before-coding`; schema `data-modeling-discipline` + `query-discipline` + `schema-reviewer`;
-auth `auth-and-authorization`; security `security-discipline` + `security-reviewer`; errors/logs
-`error-handling-as-design` + `observability-by-default`; UI `frontend-design` then `design-critique` +
-`accessibility-review`; tests `testing-with-discernment`; review `engineering:code-review`; bugs `engineering:debug`.
+The allowed skills are listed in the root `CLAUDE.md` ("Skills (use only these)"). Load no others unless asked.
 
 ## graphify
 Knowledge graph in `graphify-out/` (skill: `/graphify`). Before the first grep or source read for a codebase question, run
