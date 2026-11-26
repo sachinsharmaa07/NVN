@@ -79,7 +79,7 @@ Sachin's Phase 0 brief replaced some boring-tech cuts above; Sachin chose "follo
 | Global express-rate-limit from Phase 0 | Basic abuse protection on every route; tighter limits per route later |
 | eslint-plugin-react, -jsx-a11y, -n | React, accessibility and Node rules in lint |
 | Vitest + Testing Library + jsdom in the client | Component tests (Home loading, ok, error) |
-| Server port 5000 | Brief's choice. macOS AirPlay Receiver also uses 5000; set `PORT` if it clashes |
+| Server port 5001 | macOS AirPlay Receiver holds 5000; set `PORT` to override |
 | Build tooling: @vitejs/plugin-react, @tailwindcss/vite, @eslint/js, globals, eslint-plugin-react-hooks, -react-refresh | Needed by Vite, Tailwind v4 and ESLint; no runtime code |
 
 `motion` and `@number-flow/react` were added with the visual foundation (24 Nov 2026, Sachin's request): motion for page transitions and scroll reveals, NumberFlow for KPI tiles and the Landing stats row. No smooth-scroll library (see UI.md §4).
