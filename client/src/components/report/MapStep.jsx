@@ -11,12 +11,11 @@ import { insideArea } from "@/lib/geo";
 // Leaflet (about 40 KB gzip plus CSS) only downloads when someone reaches this step.
 const PinMap = lazy(() => import("@/components/report/PinMap"));
 
-/** Where the pin starts: the saved one if still inside, else the centre if that's inside, else none. */
-function startPoint(area, saved) {
-  if (saved && insideArea(area, saved)) return saved;
-  const centre = area.centroid?.coordinates;
-  return centre && insideArea(area, centre) ? centre : null;
-}
+/**
+ * Where the pin starts: the saved one if still inside, else nowhere. No default at the centre: a
+ * resident who just presses Next would file the issue at the wrong spot.
+ */
+const startPoint = (area, saved) => (saved && insideArea(area, saved) ? saved : null);
 
 /**
  * Report step 2. The pin can only sit inside the pincode; a refused move snaps back and is announced.
