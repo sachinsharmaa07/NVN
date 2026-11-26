@@ -1284,33 +1284,51 @@ sequenceDiagram
   Note over SPA: AppLayout redirects every route to /suspended
 ```
 
-### 11.3 Report an issue (DESIGNED)
+### 11.3 Report an issue: map pin to counterfoil (DESIGNED, M1 steps 8 to 11)
+
+Step 1 (pincode lookup) is in 4.5. Duplicate grouping is not in M1.
 
 ```mermaid
 sequenceDiagram
   autonumber
-  actor U as Citizen
+  actor U as Resident
   participant C as React app
   participant API
   participant DB as MongoDB
   participant CL as Cloudinary
 
-  U->>C: types pincode 144401
-  C->>C: regex ^[1-9][0-9]{5}$
-  C->>API: GET /api/pincodes/144401
-  API->>DB: find pincode
-  alt missing
-    API->>API: fallback api.postalpincode.in, cache, rate-limited
+  Note over C: step 2, map (Leaflet lazy-loaded)
+  U->>C: drops or drags the pin
+  C->>C: inside polygon, or within radiusM of centroid?
+  alt outside
+    C-->>U: snap back, aria-live "outside {pincode}"
   end
-  API-->>C: localities, boundary, cityId, isServed
-  U->>C: drops the pin
-  C->>C: in-house point-in-polygon, else show outside message
-  C->>API: POST signed-upload params
-  C->>CL: upload photo directly
-  C->>API: POST /api/issues with Idempotency-Key
-  API->>DB: $geoIntersects re-check (422 OUTSIDE_PINCODE if not inside)
-  API->>DB: transaction: $near duplicate search, attach or create, counter $inc
-  API-->>C: 201 ticketId NIV-2026-000123, expected by
+  C->>API: POST /api/pincodes/:pin/check-point {lat, lng}
+  API->>DB: locatePoint ($geoIntersects or radius)
+  API-->>C: {inside, precision exact|approx}
+  Note over C: step 3, photos and details
+  loop each photo (max 3)
+    C->>C: canvas resize to 1600 px (drops EXIF)
+    C->>API: POST /api/uploads/sign
+    API-->>C: folder, timestamp, transformation, signature
+    C->>CL: multipart upload (progress, retry)
+    CL-->>C: public_id
+  end
+  U->>C: Submit (one Idempotency-Key per draft)
+  C->>API: POST /api/issues {pincode, lat, lng, category, title, description, photos}
+  API->>DB: same reporter + key? return the first issue (200)
+  API->>DB: pincode served? locatePoint (422 OUTSIDE_PINCODE)
+  API->>CL: Admin API GET each public_id (bytes, format, folder)
+  alt bad photo
+    API->>CL: DELETE asset
+    API-->>C: 400 INVALID_PHOTO
+  end
+  API->>DB: transaction: Counter $inc, CategoryMapping, SlaPolicy, insert Issue, AuditLog issue.created
+  API-->>C: 201 {ticketId, department or triage, expectedBy}
+  C-->>U: counterfoil: ticket ID, department, expected by (IST), Copy
+  alt 422 OUTSIDE_PINCODE
+    C-->>U: back to step 2 with the message
+  end
 ```
 
 ### 11.4 Chatbot (DESIGNED)
