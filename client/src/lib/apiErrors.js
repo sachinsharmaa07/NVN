@@ -22,6 +22,7 @@ const KEYS = {
   WAITLIST_NOT_CONFIGURED: "errors.common.unavailable",
   UPLOADS_NOT_CONFIGURED: "errors.common.unavailable",
   INVALID_PHOTO: "errors.report.invalidPhoto",
+  INVALID_TRANSITION: "errors.issue.invalidTransition",
   UPSTREAM_UNAVAILABLE: "errors.common.unavailable",
 };
 
