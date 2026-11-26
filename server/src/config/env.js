@@ -64,6 +64,8 @@ const envSchema = z.object({
       )
       .pipe(z.array(z.union([z.ipv4(), z.ipv6()])).min(1)),
   ),
+  // SLA job tick (M2 step 7) in ms; 0 turns it off. Never runs when NODE_ENV is test.
+  SLA_JOB_INTERVAL_MS: optional(z.coerce.number().int().min(0).max(86_400_000)).default(300_000),
   // Email of the first super admin; only scripts/bootstrapSuperAdmin.js reads it.
   SUPER_ADMIN_EMAIL: optional(
     z.preprocess((v) => (typeof v === "string" ? v.trim().toLowerCase() : v), z.email()),
