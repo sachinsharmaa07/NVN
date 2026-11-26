@@ -1,4 +1,4 @@
-// One-off, safe to rerun: builds the M1 indexes (pincodes, waitlists, cities, departments) and
+// One-off, safe to rerun: builds the M1 indexes (pincodes, waitlists, cities, departments, category mappings) and
 // gives cities without a status the default "onboarding".
 // npm run migrate:m1-indexes -w server            dry run: reports, changes nothing
 // npm run migrate:m1-indexes -w server -- --apply  writes

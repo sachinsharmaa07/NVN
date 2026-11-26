@@ -71,14 +71,14 @@ flowchart LR
     P0["Phase 0: scaffold, CI, health, error shape"]
     VF["Visual foundation: tokens, shell, landing, motion"]
     P1["Phase 1: Auth0 sign-in, roles in MongoDB,<br/>admin users, audit log, MFA flag"]
-    M1["M1: City, Department, Pincode, Waitlist models,<br/>national pincode import, boundary import"]
+    M1["M1: City, Department, Pincode, Waitlist, CategoryMapping,<br/>national pincode import, boundary import,<br/>department seed, check-point API"]
   end
   subgraph Partial["PARTIAL"]
     CH["Chat bubble: opens a placeholder panel"]
     RP["Report, Issues, Community pages: empty-state shells"]
   end
   subgraph Designed["DESIGNED only"]
-    P2["M1: pincode API, waitlist API"]
+    P2["M1: pincode lookup API, waitlist API"]
     P3["Phase 3: report wizard, map, grouping, ticket IDs"]
     P4["Phase 4: SLA, priority, state machine, staff queue"]
     P5["Phase 5: chatbot with Gemini"]
@@ -103,6 +103,7 @@ flowchart LR
 | `City` (with `status`), `Department`, `Pincode`, `Waitlist` models, M1 index migration | **BUILT** | `server/src/models/`, `scripts/migrateM1Indexes.js` (M1 step 3) |
 | National pincode import (GeoNames, one city per district, centroid and `radiusM`) and optional boundary import (dry run, `--apply`, idempotent) | **BUILT** | `scripts/importPincodes.js`, `scripts/importBoundaries.js`, `services/pincodeDirectory.js`, `services/pincodeImportService.js`, `services/boundaryImportService.js`, `utils/geo.js`, `utils/india.js`. Timed on the real file: 19,238 pincodes and 637 cities in about 1 s on a local database. Not yet run against Atlas |
 | `POST /api/pincodes/:pin/check-point` (polygon "exact", else radius circle "approx") | **BUILT** | `routes/pincodeRoutes.js`, `services/pincodeService.js` (`locatePoint`, reused by `POST /api/issues` later), `docs/API.md` |
+| Default departments and category map per city (`CategoryMapping`, seed script) | **BUILT** | `models/CategoryMapping.js`, `utils/categories.js`, `scripts/seedDepartments.js`, `services/departmentSeedService.js`. On the real data: 637 cities, 3,185 departments, 3,822 mappings in 0.2 s locally |
 | Chat bubble | **PARTIAL** | `components/chat/ChatBubble.jsx` opens a "coming soon" sheet. No API. |
 | `/report`, `/issues`, `/community` | **PARTIAL** | Empty-state shells with the final navigation wiring. |
 | Resend or email notifications | **DESIGNED** | Mentioned for escalations; no code. |
@@ -777,6 +778,8 @@ erDiagram
   USER |o--o| USER : "suspendedBy"
   CITY |o--o{ PINCODE : "serves (cityId)"
   PINCODE ||--o{ WAITLIST : "waited on (pin)"
+  CITY ||--o{ CATEGORY_MAPPING : "routes categories"
+  DEPARTMENT |o--o{ CATEGORY_MAPPING : "handles (null = triage)"
 
   USER {
     ObjectId _id PK
@@ -841,6 +844,15 @@ erDiagram
     date createdAt
     date updatedAt
   }
+  CATEGORY_MAPPING {
+    ObjectId _id PK
+    ObjectId cityId FK
+    string category "pothole ... other"
+    ObjectId departmentId FK "null iff queue triage"
+    string queue "department or triage; other = triage"
+    date createdAt
+    date updatedAt
+  }
   WAITLIST {
     ObjectId _id PK
     string pin "6 digits"
@@ -879,6 +891,7 @@ erDiagram
 | `pincodes` | `{ boundary: "2dsphere" }` (skips rows without a boundary) | Point-in-boundary checks |
 | `pincodes` | `{ cityId: 1, isServed: 1 }` | A city's served pincodes |
 | `waitlists` | `{ pin: 1, emailHash: 1 }` unique | One sign-up per person per pincode |
+| `categorymappings` | `{ cityId: 1, category: 1 }` unique | One answer per city and category; routing lookup |
 
 Production builds these with `npm run migrate:m1-indexes -w server -- --apply` (autoIndex is off there).
 
@@ -888,7 +901,8 @@ Production builds these with `npm run migrate:m1-indexes -w server -- --apply` (
 | --- | --- |
 | Scope fields required or forbidden per role | `User` pre-validate hook, fed by `SCOPE_RULES` |
 | Suspension fields present **iff** status is `suspended` | `User` pre-validate hook |
-| No foreign keys, so deleting a City or Department that is still referenced (users, departments, pincodes) throws | `City` and `Department` `pre('delete*')` hooks |
+| No foreign keys, so deleting a City or Department that is still referenced (users, departments, pincodes, category mappings) throws | `City` and `Department` `pre('delete*')` hooks |
+| `queue` is `triage` exactly when `departmentId` is null; `other` is always triage | `CategoryMapping` pre-validate hook |
 | `boundarySource` is `none` exactly when there is no boundary; a served pincode has a `cityId` and a boundary or a centroid with `radiusM` | `Pincode` pre-validate hook |
 | Boundary rings closed, 4+ points, `[lon, lat]` inside India | `utils/geo.js` `geometryProblems`, used by the model and the import |
 | `role`, `status`, scope can change only through load, mutate, `save()` | `User` write-guard hooks (`scopeWrite: true` is the explicit escape) |
