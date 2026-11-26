@@ -15,5 +15,7 @@
   "errors.common.unknown": "Something didn't work. Try again in a moment.",
   "errors.auth.mfaBlocked": "We couldn't finish two-step verification. Sign out, then sign in again and follow the steps. If it keeps happening, contact {contact}.",
   "errors.pincode.notFound": "We don't know this pincode. Check the 6 digits and try again.",
-  "errors.pincode.notServed": "Nivaran doesn't cover this pincode yet."
+  "errors.pincode.notServed": "Nivaran doesn't cover this pincode yet.",
+  "errors.pincode.invalid": "A pincode is 6 digits and doesn't start with 0.",
+  "errors.common.unavailable": "This isn't available right now. Try again later."
 }

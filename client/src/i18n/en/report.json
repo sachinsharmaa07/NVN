@@ -1,0 +1,20 @@
+{
+  "report.wizard.stepOf": "Step {step} of {total}: {title}",
+  "report.wizard.step1": "Your pincode",
+  "report.wizard.step2": "Place the pin",
+  "report.wizard.step3": "Photo and details",
+  "report.wizard.next": "Next",
+  "report.wizard.back": "Back",
+  "report.pincode.resultLabel": "Pincode check",
+  "report.pincode.place": "{city}, {state}",
+  "report.pincode.localities": "Covers {list}",
+  "report.pincode.localitiesMore": "Covers {list} and {count} more",
+  "report.pincode.notServed": "We don't cover {pincode} yet. Leave your email and we'll count you in when we do.",
+  "report.pincode.unknown": "We couldn't find {pincode}. Check the 6 digits, or leave your email and we'll add it.",
+  "report.pincode.waitlistLabel": "Your email",
+  "report.pincode.waitlistHint": "We keep only a scrambled form of it, to count requests for this pincode.",
+  "report.pincode.waitlistSubmit": "Join the waitlist",
+  "report.pincode.waitlistSending": "Joining…",
+  "report.pincode.waitlistDone": "You're on the waitlist for {pincode}. You can close this page.",
+  "report.pincode.waitlistEmailError": "Enter an email like name@example.com."
+}
