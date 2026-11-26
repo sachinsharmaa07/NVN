@@ -1,7 +1,8 @@
 import { NavLink } from "react-router";
 import { t } from "@/i18n/t";
 import { cn } from "@/lib/utils";
-import { navItems } from "./navItems";
+import { useCan } from "@/hooks/useCan";
+import { navItemsFor } from "./navItems";
 import { focusRing } from "./navStyles";
 
 /*
@@ -11,6 +12,8 @@ import { focusRing } from "./navStyles";
  * NavLink adds aria-current="page" to the item for the page you are on.
  */
 export function BottomBar() {
+  const can = useCan();
+  const navItems = navItemsFor(can("issue:read_scope"));
   return (
     <nav
       aria-label={t("shell.nav.label")}
