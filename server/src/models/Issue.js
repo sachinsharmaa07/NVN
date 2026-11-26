@@ -108,6 +108,7 @@ issueSchema.index({ cityId: 1, queue: 1, status: 1, createdAt: -1 }); // staff q
 // M2 staff queue, sorted by due date: by department (staff, dept_head) or by city (city_admin).
 issueSchema.index({ departmentId: 1, expectedBy: 1, createdAt: 1, _id: 1 });
 issueSchema.index({ cityId: 1, expectedBy: 1, createdAt: 1, _id: 1 });
+issueSchema.index({ expectedBy: 1, createdAt: 1, _id: 1 }); // super_admin, national
 // M2 SLA job: at risk, breached, escalation, auto-close. Stats: open by category.
 issueSchema.index({ slaState: 1, atRiskAt: 1 });
 issueSchema.index({ slaState: 1, expectedBy: 1 });

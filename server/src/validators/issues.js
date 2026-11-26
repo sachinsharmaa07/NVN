@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { CATEGORIES } from "../utils/categories.js";
 import { PINCODE_RE } from "../utils/india.js";
-import { MAX_PHOTOS, TICKET_RE } from "../models/Issue.js";
+import { ISSUE_STATUSES, MAX_PHOTOS, SLA_STATES, TICKET_RE } from "../models/Issue.js";
+import { QUEUES } from "../models/CategoryMapping.js";
 import { checkPointBody } from "./pincodes.js";
 
 // POST /api/issues. Photos are Cloudinary public_ids; photoCheckService decides whether they're ours.
@@ -27,3 +28,14 @@ const page = {
 
 // GET /api/issues/mine
 export const mineQuery = z.object(page).strict();
+
+// GET /api/staff/issues
+export const staffQueueQuery = z
+  .object({
+    ...page,
+    status: z.enum(ISSUE_STATUSES).optional(),
+    sla: z.enum(SLA_STATES).optional(),
+    category: z.enum(CATEGORIES).optional(),
+    queue: z.enum(QUEUES).optional(),
+  })
+  .strict();

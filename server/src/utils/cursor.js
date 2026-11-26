@@ -63,3 +63,34 @@ export function decodeNameCursor(text) {
   }
   return { name: payload.n, _id: payload.i };
 }
+
+/** Staff queue order (expectedBy asc, createdAt asc, _id asc): row -> opaque string, and back. */
+export const encodeQueueCursor = ({ expectedBy, createdAt, _id }) =>
+  Buffer.from(
+    JSON.stringify({
+      e: new Date(expectedBy).getTime(),
+      t: new Date(createdAt).getTime(),
+      i: String(_id),
+    }),
+  ).toString("base64url");
+
+export function decodeQueueCursor(text) {
+  let p;
+  try {
+    p = JSON.parse(Buffer.from(text, "base64url").toString("utf8"));
+  } catch {
+    throw bad();
+  }
+  const dateOf = (ms) => (Number.isSafeInteger(ms) ? new Date(ms) : new Date(NaN));
+  const expectedBy = dateOf(p?.e);
+  const createdAt = dateOf(p?.t);
+  if (
+    Number.isNaN(expectedBy.getTime()) ||
+    Number.isNaN(createdAt.getTime()) ||
+    typeof p?.i !== "string" ||
+    !OBJECT_ID_RE.test(p.i)
+  ) {
+    throw bad();
+  }
+  return { expectedBy, createdAt, _id: p.i };
+}

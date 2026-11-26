@@ -55,3 +55,18 @@ describe("cursor", () => {
     expect(pageOf([], 2)).toEqual({ items: [], nextCursor: null });
   });
 });
+
+describe("queue cursor", () => {
+  it("round-trips and refuses junk", async () => {
+    const { encodeQueueCursor, decodeQueueCursor } = await import("../../src/utils/cursor.js");
+    const row = {
+      expectedBy: new Date("2026-12-01T00:00:00Z"),
+      createdAt: new Date("2026-11-20T00:00:00Z"),
+      _id: "a".repeat(24),
+    };
+    expect(decodeQueueCursor(encodeQueueCursor(row))).toEqual(row);
+    for (const junk of ["!!", Buffer.from('{"e":"x","t":1,"i":"a"}').toString("base64url")]) {
+      expect(() => decodeQueueCursor(junk)).toThrow(/cursor/);
+    }
+  });
+});
