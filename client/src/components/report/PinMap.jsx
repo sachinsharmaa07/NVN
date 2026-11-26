@@ -71,6 +71,13 @@ export default function PinMap({ area, pin, onPin, onOutside, label }) {
       return true;
     };
     map.on("click", (e) => place(e.latlng.lng, e.latlng.lat));
+    // Keyboard: Enter on the focused map drops the pin at its centre (arrows pan, as Leaflet does).
+    map.on("keydown", (e) => {
+      // Only on the map itself: Enter on the focused pin bubbles here too and must not move it.
+      if (e.originalEvent.key !== "Enter" || e.originalEvent.target !== el.current) return;
+      const { lng, lat } = map.getCenter();
+      place(lng, lat);
+    });
     mapRef.current = { map, place };
     return () => {
       map.remove();

@@ -37,12 +37,13 @@ const next = () => screen.getByRole("button", { name: "Next" });
 afterEach(() => vi.unstubAllGlobals());
 
 describe("Report step 2: map", () => {
-  it("starts at the centre, labels the approximate area, and Next confirms with the server", async () => {
+  it("starts without a pin, labels the approximate area, and Next confirms with the server", async () => {
     const { onNext } = setup({
       "/check-point": [200, { inside: true, precision: "approx" }],
     });
     expect(await screen.findByText(/Approximate area/)).toBeInTheDocument();
-    expect(await screen.findByText("75.38,31.38")).toBeInTheDocument();
+    expect(await screen.findByText("no pin")).toBeInTheDocument();
+    expect(next()).toBeDisabled();
     fireEvent.click(screen.getByText("drop inside"));
     fireEvent.click(next());
     await waitFor(() =>
@@ -56,7 +57,8 @@ describe("Report step 2: map", () => {
     const status = screen.getByRole("status");
     expect(status).toHaveTextContent("This spot is outside pincode 144601");
     expect(status).toHaveAttribute("aria-live", "polite");
-    expect(screen.getByText("75.38,31.38")).toBeInTheDocument();
+    expect(screen.getByText("no pin")).toBeInTheDocument();
+    expect(next()).toBeDisabled();
   });
 
   it("when the server says outside, Next does not move on", async () => {
@@ -65,6 +67,12 @@ describe("Report step 2: map", () => {
     fireEvent.click(next());
     expect(await screen.findByText(/outside pincode 144601/)).toBeInTheDocument();
     expect(onNext).not.toHaveBeenCalled();
+  });
+
+  it("keeps a saved pin that is still inside", async () => {
+    setup({}, { saved: [75.385, 31.381] });
+    expect(await screen.findByText("75.385,31.381")).toBeInTheDocument();
+    expect(next()).toBeEnabled();
   });
 
   it("shows the notice it was sent back with (submit answered 422)", async () => {
@@ -102,6 +110,6 @@ describe("Report step 2: map", () => {
     });
     expect(await screen.findByText("no pin")).toBeInTheDocument();
     expect(next()).toBeDisabled();
-    expect(screen.getByText("Tap the map to drop the pin.")).toBeInTheDocument();
+    expect(screen.getByText(/^Tap the map to drop the pin/)).toBeInTheDocument();
   });
 });
