@@ -15,3 +15,9 @@ export function expectedBy(submittedAt, hours, pausedMs = 0) {
   if (!(pausedMs >= 0) || !Number.isFinite(pausedMs)) throw new TypeError("pausedMs must be >= 0");
   return new Date(start + hours * HOUR_MS + pausedMs);
 }
+
+export const AT_RISK_SHARE = 0.75; // conventions: at_risk once 75% of the allowed time is used
+
+/** When an issue turns at_risk: 75% of the way from `start` to `due`. */
+export const atRiskAt = (start, due) =>
+  new Date(start.getTime() + AT_RISK_SHARE * (due.getTime() - start.getTime()));

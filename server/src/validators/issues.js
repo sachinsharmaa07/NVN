@@ -19,3 +19,11 @@ export const createIssueBody = checkPointBody
 export const idempotencyKey = z.uuid();
 
 export const ticketParams = z.object({ ticketId: z.string().regex(TICKET_RE) }).strict();
+
+const page = {
+  cursor: z.string().max(300).optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+};
+
+// GET /api/issues/mine
+export const mineQuery = z.object(page).strict();

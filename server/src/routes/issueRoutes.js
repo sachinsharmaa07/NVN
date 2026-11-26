@@ -9,9 +9,9 @@ import {
   requireVerifiedEmail,
 } from "../middleware/access.js";
 import { userRateLimit } from "../middleware/userRateLimit.js";
-import { create, getOne } from "../controllers/issueController.js";
+import { create, getOne, mine } from "../controllers/issueController.js";
 import { none } from "../validators/me.js";
-import { createIssueBody, ticketParams } from "../validators/issues.js";
+import { createIssueBody, mineQuery, ticketParams } from "../validators/issues.js";
 
 export const issueRoutes = Router();
 
@@ -33,6 +33,18 @@ issueRoutes.post(
   createLimit,
   validate({ body: createIssueBody, query: none }),
   create,
+);
+
+// Before "/:ticketId", so "mine" is never read as a ticket id.
+issueRoutes.get(
+  "/mine",
+  noStore,
+  authenticate,
+  loadUser,
+  requireActive,
+  requirePermission("issue:read_own"),
+  validate({ query: mineQuery }),
+  mine,
 );
 
 issueRoutes.get(
