@@ -133,7 +133,7 @@ Run these from the repository root.
 | `npm run dev`          | Starts the server and the client together, with coloured prefixes   |
 | `npm run build`        | Builds the client for production into `client/dist/`               |
 | `npm test`             | Runs the unit and API tests of both workspaces (Vitest)             |
-| `npm run test:e2e`     | Runs Playwright end-to-end tests (added in a later phase)           |
+| `npm run test:e2e`     | Runs the Playwright end-to-end tests (see "Running the tests")      |
 | `npm run lint`         | Lints the whole repo with ESLint                                    |
 | `npm run format`       | Formats the code with Prettier                                      |
 | `npm run format:check` | Checks formatting without changing files (used in CI)               |
@@ -185,6 +185,21 @@ must be a **replica set** (a plain `mongod` fails). Two ways to get one:
 If neither works, the DB tests **fail** with the reason rather than skip, so a green run means the
 auth cases really ran. In CI the value comes from the `MONGODB_URI_TEST` repository secret; give it
 its own Atlas database user with access to `nivaran_test` only.
+
+### End-to-end tests (Playwright)
+
+```sh
+(cd client && npx playwright install chromium)   # once: downloads the browser (about 100 MB)
+npm run test:e2e                                 # starts its own Vite on port 5199, runs both projects
+(cd client && npx playwright test --ui)          # watch the steps in a browser window
+(cd client && npx playwright show-report)        # the HTML report of the last run
+```
+
+The suite drives the report flow on a 360 px phone and a 1280 px laptop. It needs no Auth0 account,
+database, Cloudinary keys or internet: `VITE_E2E=1` swaps sign-in for a fake verified citizen, and
+`client/e2e/fixtures.js` answers every API, upload and map-tile request (ADR 0003). A production
+build with `VITE_E2E` set stops with an error, so the fake sign-in can never ship. In CI the `e2e`
+job runs after `check` and uploads `playwright-report` when it fails.
 
 ## Folder tree
 
