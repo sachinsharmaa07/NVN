@@ -13,15 +13,10 @@ function Table({ className, ...props }) {
     </div>
   );
 }
-// Sticky header: stays under the 64px top bar while the page scrolls (z-sticky, UI.md §3).
+// Not sticky: inside the overflow-x-auto wrapper, `sticky top-16` pinned the header 64px down over the
+// first rows (the wrapper, not the page, is its scroll container), which also blocked clicks on them.
 function TableHeader({ className, ...props }) {
-  return (
-    <thead
-      data-slot="table-header"
-      className={cn("sticky top-16 z-sticky bg-background [&_tr]:border-b", className)}
-      {...props}
-    />
-  );
+  return <thead data-slot="table-header" className={cn("[&_tr]:border-b", className)} {...props} />;
 }
 function TableBody({ className, ...props }) {
   return (

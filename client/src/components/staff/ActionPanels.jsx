@@ -107,7 +107,9 @@ export function StatusPanel({ issue, onDone }) {
           </label>
         ))}
       </fieldset>
-      {status === "resolved" && <PhotoPicker uploads={uploads} />}
+      {status === "resolved" && (
+        <PhotoPicker uploads={uploads} label={t("staff.status.afterPhoto")} />
+      )}
       <NoteField
         id="status-note"
         label={status === "rejected" ? t("staff.status.reasonRequired") : t("staff.status.note")}
