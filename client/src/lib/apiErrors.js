@@ -16,6 +16,8 @@ const KEYS = {
   CONFLICT: "errors.common.conflict",
   AUTH_PROVIDER_UNAVAILABLE: "errors.auth.providerUnavailable",
   AUTH_NOT_CONFIGURED: "errors.auth.providerUnavailable",
+  PINCODE_NOT_FOUND: "errors.pincode.notFound",
+  PINCODE_NOT_SERVED: "errors.pincode.notServed",
 };
 
 // Where an unknown code ends up: our own generic line, never the server's text.
