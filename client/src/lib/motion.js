@@ -67,19 +67,6 @@ export const springs = {
   gentle: { type: "spring", visualDuration: durations.slow, bounce: 0.1 },
 };
 
-/*
- * Spread onto a motion element to reveal it once when 20% of it scrolls into view:
- *   <motion.section {...revealProps}>...</motion.section>
- * For reduced motion, pass the variants through useMotionSafe:
- *   const variants = useMotionSafe(fadeUp); <motion.div {...revealProps} variants={variants} />
- */
-export const revealProps = {
-  initial: "hidden",
-  whileInView: "visible",
-  viewport: { once: true, amount: 0.2 },
-  variants: fadeUp,
-};
-
 // Transform keys that move or resize something. Reduced motion removes them, so content
 // simply appears where it will end up.
 const TRANSFORM_KEYS = ["x", "y", "z", "scale", "scaleX", "scaleY", "rotate", "skewX", "skewY"];

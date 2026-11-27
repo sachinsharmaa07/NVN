@@ -40,6 +40,27 @@ async function shoot(page, api, route, { width, theme, file }) {
   await page.waitForLoadState("networkidle");
   await page.evaluate(() => document.fonts.ready);
   await route.act?.(page);
+  // A full-page capture neither advances scroll timelines nor fires in-view observers, so content
+  // below the fold would show at its reveal start (invisible). Scroll through once so motion's
+  // whileInView reveals run (they run once and stay), wait for them, and turn the CSS reveal off.
+  await page.evaluate(async () => {
+    const frame = () =>
+      new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
+    for (let y = 0; y < document.documentElement.scrollHeight; y += window.innerHeight / 2) {
+      window.scrollTo({ top: y, behavior: "instant" });
+      await frame();
+    }
+    window.scrollTo({ top: 0, behavior: "instant" });
+  });
+  // Only animations with an end: a spinner or a looping effect never finishes.
+  await page.waitForFunction(() =>
+    document
+      .getAnimations()
+      .filter((a) => a.timeline === document.timeline)
+      .filter((a) => a.effect?.getComputedTiming().endTime !== Infinity)
+      .every((a) => a.playState !== "running"),
+  );
+  await page.addStyleTag({ content: ".reveal-on-scroll { animation: none !important; }" });
   await page.screenshot({ path: `test-results/visual/${file}.png`, fullPage: true });
 }
 

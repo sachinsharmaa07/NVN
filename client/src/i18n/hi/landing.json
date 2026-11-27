@@ -9,7 +9,6 @@
   "landing.pincode.errorShort": "यह {count} अंक हैं। पिनकोड में 6 अंक होते हैं।",
   "landing.pincode.errorLeadingZero": "पिनकोड 0 से शुरू नहीं होते। पहला अंक जाँचें और फिर से कोशिश करें।",
   "landing.how.title": "यह कैसे काम करता है",
-  "landing.how.stepNumber": "{total} में से चरण {number}",
   "landing.how.pincodeTitle": "अपना पिनकोड लिखें",
   "landing.how.pincodeBody": "हम देखते हैं कि आपका क्षेत्र शामिल है या नहीं, और उसके अंदर के इलाके दिखाते हैं।",
   "landing.how.pinTitle": "नक्शे पर पिन लगाएँ",
@@ -59,5 +58,7 @@
   "landing.footer.linksLabel": "निवारण के बारे में",
   "landing.footer.about": "परिचय",
   "landing.footer.privacy": "गोपनीयता",
-  "landing.footer.copyright": "© {year} निवारण। भारतीय शहरों के लिए नागरिक शिकायत सेवा।"
+  "landing.footer.copyright": "© {year} निवारण। भारतीय शहरों के लिए नागरिक शिकायत सेवा।",
+  "landing.stats.none": "पहली रिपोर्टें आते ही यहाँ गिनती दिखेगी।",
+  "landing.pincode.reportIn": "{pincode} में रिपोर्ट करें"
 }

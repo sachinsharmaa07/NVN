@@ -12,6 +12,12 @@ describe("BrandMark", () => {
     expect(container.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
   });
 
+  it("has a small size for the Landing footer", () => {
+    const { container } = render(<BrandMark size="sm" />);
+    expect(container.querySelector("svg")).toHaveClass("size-4");
+    expect(screen.getByText("Nivaran")).toHaveClass("text-base");
+  });
+
   it("shows the Hindi wordmark in Hindi", () => {
     setLanguage("hi");
     render(<BrandMark />);

@@ -9,7 +9,6 @@
   "landing.pincode.errorShort": "That's {count} digits. A pincode has 6.",
   "landing.pincode.errorLeadingZero": "Pincodes don't start with 0. Check the first digit and try again.",
   "landing.how.title": "How it works",
-  "landing.how.stepNumber": "Step {number} of {total}",
   "landing.how.pincodeTitle": "Enter your pincode",
   "landing.how.pincodeBody": "We check that your area is covered and show the localities inside it.",
   "landing.how.pinTitle": "Drop a pin on the map",
@@ -59,5 +58,7 @@
   "landing.footer.linksLabel": "About Nivaran",
   "landing.footer.about": "About",
   "landing.footer.privacy": "Privacy",
-  "landing.footer.copyright": "© {year} Nivaran. Civic issue reporting for Indian cities."
+  "landing.footer.copyright": "© {year} Nivaran. Civic issue reporting for Indian cities.",
+  "landing.stats.none": "Counts appear here once the first reports are in.",
+  "landing.pincode.reportIn": "Report in {pincode}"
 }
