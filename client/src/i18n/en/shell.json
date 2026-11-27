@@ -13,8 +13,6 @@
   "shell.page.loading": "Loading page",
   "shell.common.goHome": "Go to home",
   "shell.chat.open": "Open help chat",
-  "shell.chat.title": "Help chat is coming soon",
-  "shell.chat.body": "Soon you can ask things here, like which department fixes streetlights or when your ticket is due. For now, you can report an issue in three steps and follow it in My issues.",
   "shell.report.title": "Report an issue",
   "shell.report.description": "Three steps: your pincode, a pin on the map, then a photo and a few details.",
   "shell.issues.title": "My issues",

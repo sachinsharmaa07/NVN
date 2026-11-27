@@ -12,6 +12,7 @@ export const IssueDetail = lazy(() => import("@/pages/IssueDetail"));
 export const StaffQueue = lazy(() => import("@/pages/staff/StaffQueue"));
 export const Community = lazy(() => import("@/pages/Community"));
 export const CommunityPost = lazy(() => import("@/pages/CommunityPost"));
+export const Moderation = lazy(() => import("@/pages/Moderation"));
 export const Profile = lazy(() => import("@/pages/Profile"));
 export const Suspended = lazy(() => import("@/pages/Suspended"));
 export const Forbidden = lazy(() => import("@/pages/Forbidden"));

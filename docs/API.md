@@ -335,6 +335,7 @@ Flagging your own is `400`. 30 per hour.
 ```bash
 curl -s "http://localhost:5001/api/moderation/queue?type=post" -H "Authorization: Bearer $TOKEN"
 # 200 {"items":[{"id":"...","title":"...","status":"hidden","flagCount":3,...}],"nextCursor":null}
+# comment rows also carry "postId", so the queue can link to the thread
 ```
 
 ### POST /api/moderation/:type/:id

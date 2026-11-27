@@ -1,5 +1,5 @@
 // M3 community end to end against the fake backend in fixtures.js (ADR 0003).
-import { COMMENTS, ME, PIN, POST, expect, test } from "./fixtures.js";
+import { COMMENTS, ME, MOD_ME, PIN, POST, expect, test } from "./fixtures.js";
 
 // Set SHOTS=<folder> to save full-page screenshots for a design review.
 const shot = (page, name) =>
@@ -62,4 +62,48 @@ test("b) resident opens a post, reads the thread, comments and reports it", asyn
     targetId: POST.id,
     reason: "spam",
   });
+});
+
+test("c) moderator restores a hidden post from the queue", async ({ page, api }) => {
+  api.answers.me = MOD_ME;
+  await page.goto("/");
+  await page.getByRole("button", { name: "Your account" }).click();
+  await page.getByRole("menuitem", { name: "Moderation" }).click();
+  await expect(page).toHaveURL("/moderation");
+  await expect(page.getByRole("heading", { name: "Cheap repairs, call now" })).toBeVisible();
+  await shot(page, "moderation");
+  api.answers.queue = [200, { items: [], nextCursor: null }];
+  await page.getByRole("button", { name: "Restore" }).click();
+  await expect(page.getByText("Restored. It's visible again.")).toBeVisible();
+  await expect(page.getByText("Nothing waiting for review")).toBeVisible();
+  expect(sentBody(api, "/api/moderation/post/")).toEqual({ action: "restore" });
+});
+
+test("d) help chat answers a ticket from the records", async ({ page, api }) => {
+  api.answers.chat = [
+    200,
+    {
+      kind: "ticket",
+      tickets: [
+        {
+          ticketId: "NIV-2026-000042",
+          title: "Deep pothole",
+          status: "in_progress",
+          expectedBy: "2026-12-03T11:30:00.000Z",
+          updatedAt: "2026-11-26T06:30:00.000Z",
+          department: "Roads",
+        },
+      ],
+      unknown: [],
+    },
+  ];
+  await page.goto("/issues");
+  await page.getByRole("button", { name: "Open help chat" }).click();
+  await page.getByLabel("Your question").fill("Where is NIV-2026-000042?");
+  await page.getByLabel("Your question").press("Enter");
+  await expect(page.getByText("Department: Roads")).toBeVisible();
+  // The question box stays on screen after an answer (the log scrolls, not the sheet).
+  await expect(page.getByLabel("Your question")).toBeInViewport({ ratio: 1 });
+  await shot(page, "chat");
+  expect(sentBody(api, "/api/chat")).toEqual({ message: "Where is NIV-2026-000042?" });
 });

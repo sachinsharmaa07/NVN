@@ -1,4 +1,4 @@
-import { TriangleAlertIcon, UserRoundIcon, UsersIcon } from "lucide-react";
+import { ShieldCheckIcon, TriangleAlertIcon, UserRoundIcon, UsersIcon } from "lucide-react";
 import { Link, useLocation } from "react-router";
 import { AccountAvatar } from "@/components/auth/AccountAvatar";
 import { Button } from "@/components/ui/button";
@@ -124,6 +124,14 @@ export function AccountMenu() {
             <Link to="/admin/users">
               <UsersIcon aria-hidden="true" />
               {t("auth.account.adminUsers")}
+            </Link>
+          </DropdownMenuItem>
+        )}
+        {can("post:moderate") && (
+          <DropdownMenuItem asChild>
+            <Link to="/moderation">
+              <ShieldCheckIcon aria-hidden="true" />
+              {t("auth.account.moderation")}
             </Link>
           </DropdownMenuItem>
         )}

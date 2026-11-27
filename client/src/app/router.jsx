@@ -8,6 +8,7 @@ import {
   CommunityPost,
   Forbidden,
   IssueDetail,
+  Moderation,
   Issues,
   Landing,
   NotFound,
@@ -50,6 +51,7 @@ export const routes = [
       { path: "staff", element: <StaffQueue /> },
       { path: "community", element: <Community /> },
       { path: "community/:id", element: <CommunityPost /> },
+      { path: "moderation", element: <Moderation /> },
       // Development only: /dev/styleguide (StyleGuide is null in production builds).
       ...(StyleGuide ? [{ path: "dev/styleguide", element: <StyleGuide /> }] : []),
       { path: "*", element: <NotFound /> },

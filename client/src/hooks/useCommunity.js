@@ -123,3 +123,51 @@ export function useDeleteContent(kind, { postId, pincode } = {}) {
     onError: () => toast.error(t("errors.common.network")),
   });
 }
+
+export const queueKey = (type) => ["moderation", "queue", type];
+
+/** Hidden posts or comments in the moderator's city, newest first. */
+export function useModerationQueue(type) {
+  const api = useApi();
+  return useInfiniteQuery({
+    queryKey: queueKey(type),
+    initialPageParam: "",
+    queryFn: ({ pageParam, signal }) =>
+      api(withCursor(`/api/moderation/queue?type=${type}&limit=20`, pageParam), { signal }),
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+  });
+}
+
+/**
+ * Restore or delete one item. Optimistic (UI.md §7 lists "moderation hide"): the row leaves the queue at
+ * once and comes back with an error toast if the server refuses.
+ */
+export function useModerate(type) {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  const key = queueKey(type);
+  return useMutation({
+    mutationFn: ({ id, action, reason }) =>
+      api(`/api/moderation/${type}/${id}`, { method: "POST", body: { action, reason } }),
+    onMutate: async ({ id }) => {
+      await queryClient.cancelQueries({ queryKey: key });
+      const before = queryClient.getQueryData(key);
+      queryClient.setQueryData(key, (data) =>
+        data
+          ? {
+              ...data,
+              pages: data.pages.map((p) => ({ ...p, items: p.items.filter((i) => i.id !== id) })),
+            }
+          : data,
+      );
+      return { before };
+    },
+    onSuccess: (result, { action }) =>
+      toast.success(t(action === "restore" ? "moderation.restored" : "moderation.deleted")),
+    onError: (error, vars, context) => {
+      queryClient.setQueryData(key, context?.before);
+      toast.error(t("moderation.failed"));
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: key }),
+  });
+}
