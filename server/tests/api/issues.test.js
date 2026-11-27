@@ -34,7 +34,12 @@ let world;
 beforeEach(async () => {
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(NOW);
-  const city = await City.create({ name: "Kapurthala", code: "PB-KAPURTHALA", stateCode: "PB" });
+  const city = await City.create({
+    name: "Kapurthala",
+    code: "PB-KAPURTHALA",
+    stateCode: "PB",
+    status: "active",
+  });
   const roads = await Department.create({ cityId: city._id, name: "Roads", code: "ROADS" });
   await CategoryMapping.create([
     { cityId: city._id, category: "pothole", departmentId: roads._id, queue: "department" },
@@ -171,6 +176,14 @@ describe("POST /api/issues", () => {
     expect(res.body.error.code).toBe("OUTSIDE_PINCODE");
     expect(await Issue.countDocuments()).toBe(0);
     expect(await Counter.countDocuments()).toBe(0);
+  });
+
+  it("a pincode whose city is onboarding is 422 PINCODE_NOT_SERVED and stores nothing", async () => {
+    await City.updateOne({ _id: world.city._id }, { status: "onboarding" });
+    const res = await submit(body());
+    expect(res.status).toBe(422);
+    expect(res.body.error.code).toBe("PINCODE_NOT_SERVED");
+    expect(await Issue.countDocuments()).toBe(0);
   });
 
   it("an unserved pincode is 422 PINCODE_NOT_SERVED; an unknown one 404", async () => {

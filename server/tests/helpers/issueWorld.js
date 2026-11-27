@@ -14,8 +14,8 @@ export const PHOTO = "nivaran/test/reports/after1";
 
 export async function seedIssueWorld() {
   const [city, city2] = await City.create([
-    { name: "Kapurthala", code: "PB-KAPURTHALA", stateCode: "PB" },
-    { name: "Pune", code: "MH-PUNE", stateCode: "MH" },
+    { name: "Kapurthala", code: "PB-KAPURTHALA", stateCode: "PB", status: "active" },
+    { name: "Pune", code: "MH-PUNE", stateCode: "MH", status: "active" },
   ]);
   const [roads, water, roads2] = await Department.create([
     { cityId: city._id, name: "Roads", code: "ROADS" },

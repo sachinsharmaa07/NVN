@@ -19,7 +19,7 @@ export async function setHold(actor, ticketId, hold, { reason, version }, ctx = 
   if (hold) {
     set = { slaPausedAt: now, holdReason: reason };
   } else {
-    // The clock didn't run while on hold: push both deadlines back by the time held.
+    // The clock didn't run while on hold: push every deadline back by the time held (shift keeps null).
     const pausedMs = now.getTime() - issue.slaPausedAt.getTime();
     const shift = (d) => (d ? new Date(d.getTime() + pausedMs) : d);
     set = {
@@ -27,6 +27,7 @@ export async function setHold(actor, ticketId, hold, { reason, version }, ctx = 
       holdReason: null,
       expectedBy: shift(issue.expectedBy),
       atRiskAt: shift(issue.atRiskAt),
+      respondBy: shift(issue.respondBy),
     };
   }
   return commit(

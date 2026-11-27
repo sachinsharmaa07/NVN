@@ -1,10 +1,14 @@
 // Pincode reads for the report flow. checkPoint is the one place that decides "is this pin inside the
 // pincode", so POST /api/issues must call locatePoint too, never its own copy.
 import mongoose from "mongoose";
+import { City } from "../models/City.js";
 import { Pincode } from "../models/Pincode.js";
 import { AppError } from "../utils/AppError.js";
 import { distanceM } from "../utils/geo.js";
 import { PINCODE_RE } from "../utils/india.js";
+
+/** Pure: a pincode takes reports only when it is served and its city is active (an onboarding city is paused). */
+export const servesReports = (isServed, city) => Boolean(isServed && city?.status === "active");
 
 /**
  * Decision M1-7. `pincode`: a row with _id, boundary, centroid, radiusM. `point`: { lat, lng }.
@@ -24,12 +28,14 @@ export async function locatePoint(pincode, { lat, lng }) {
   return { inside, precision: "approx" };
 }
 
-/** A served pincode row with what locatePoint and routing need. 404 unknown, 422 not served yet. */
+/** A served pincode row with what locatePoint and routing need. 404 unknown, 422 not served or city onboarding. */
 export async function servedPincode(pin) {
   const row = await Pincode.findOne({ pin }, "isServed boundary centroid radiusM cityId").lean();
   if (!row) throw new AppError("PINCODE_NOT_FOUND", 404, "We don't know this pincode.");
   // A served pincode always has a city (decision O2); without one nothing could route the issue.
-  if (!row.isServed || !row.cityId) {
+  // cityId stays an id (createIssue routes on it), so the city's status is a separate _id lookup.
+  const city = row.isServed && row.cityId && (await City.findById(row.cityId, "status").lean());
+  if (!servesReports(row.isServed, city)) {
     throw new AppError("PINCODE_NOT_SERVED", 422, "Nivaran doesn't cover this pincode yet.");
   }
   return row;
@@ -50,7 +56,7 @@ export async function lookupPincode(pin) {
   }
   const row = await Pincode.findOne({ pin })
     .select("pin district state cityId localities centroid radiusM boundary isServed")
-    .populate("cityId", "name")
+    .populate("cityId", "name status")
     .lean();
   if (!row) throw new AppError("PINCODE_NOT_FOUND", 404, "We don't know this pincode.");
   return {
@@ -63,6 +69,6 @@ export async function lookupPincode(pin) {
     radiusM: row.radiusM ?? null,
     boundary: row.boundary ?? null,
     precision: row.boundary ? "exact" : "approx",
-    served: row.isServed,
+    served: servesReports(row.isServed, row.cityId),
   };
 }

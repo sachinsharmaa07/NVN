@@ -9,6 +9,7 @@ vi.mock("../../src/middleware/auth.js", async (orig) =>
 );
 
 const { createApp } = await import("../../src/app.js");
+const { City } = await import("../../src/models/City.js");
 const { Pincode } = await import("../../src/models/Pincode.js");
 const { Post } = await import("../../src/models/Post.js");
 const { Comment } = await import("../../src/models/Comment.js");
@@ -70,6 +71,14 @@ describe("posts", () => {
     const far = await seedUser("citizen", {}, { defaultPincode: "110001" });
     const unserved = await as(app, far).post("/api/community/posts").send(POST);
     expect(unserved.body.error.code).toBe("PINCODE_NOT_SERVED");
+  });
+
+  it("refuses a post when the home pincode's city is onboarding, and stores nothing", async () => {
+    await City.updateOne({ _id: w.city._id }, { status: "onboarding" });
+    const res = await as(app, resident).post("/api/community/posts").send(POST);
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("PINCODE_NOT_SERVED");
+    expect(await Post.countDocuments()).toBe(0);
   });
 
   it("refuses extra keys and short text", async () => {

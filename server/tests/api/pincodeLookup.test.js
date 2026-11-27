@@ -11,7 +11,12 @@ useTestDb();
 const app = createApp();
 
 beforeEach(async () => {
-  const city = await City.create({ name: "Kapurthala", code: "PB-KAPURTHALA", stateCode: "PB" });
+  const city = await City.create({
+    name: "Kapurthala",
+    code: "PB-KAPURTHALA",
+    stateCode: "PB",
+    status: "active",
+  });
   await Pincode.create([
     {
       pin: "144601",
@@ -26,6 +31,20 @@ beforeEach(async () => {
     { pin: "110001", district: "New Delhi", state: "Delhi" },
   ]);
 });
+
+/** A served pincode whose city is still onboarding (or paused): not open for reports. */
+const seedOnboarding = async () => {
+  const city = await City.create({ name: "Phagwara", code: "PB-PHAGWARA", stateCode: "PB" });
+  await Pincode.create({
+    pin: "144401",
+    district: "Kapurthala",
+    state: "Punjab",
+    cityId: city._id,
+    isServed: true,
+    centroid: { type: "Point", coordinates: [75.77, 31.22] },
+    radiusM: 3000,
+  });
+};
 
 describe("GET /api/pincodes/:pin", () => {
   it("a served pincode returns everything step 1 and the map need, cacheable for a day", async () => {
@@ -44,6 +63,13 @@ describe("GET /api/pincodes/:pin", () => {
       precision: "approx",
       served: true,
     });
+  });
+
+  it("a served pincode in an onboarding city is served: false", async () => {
+    await seedOnboarding();
+    const res = await request(app).get("/api/pincodes/144401");
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ pin: "144401", cityName: "Phagwara", served: false });
   });
 
   it("a known unserved pincode is 200 with served: false", async () => {

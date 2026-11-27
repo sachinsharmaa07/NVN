@@ -15,7 +15,12 @@ const check = (pin, body) => request(app).post(`/api/pincodes/${pin}/check-point
 const fixture = (name) => fileURLToPath(new URL(`../fixtures/${name}`, import.meta.url));
 
 beforeEach(async () => {
-  const city = await City.create({ name: "Kapurthala", code: "PB-KAPURTHALA", stateCode: "PB" });
+  const city = await City.create({
+    name: "Kapurthala",
+    code: "PB-KAPURTHALA",
+    stateCode: "PB",
+    status: "active",
+  });
   const base = { district: "Kapurthala", state: "Punjab", cityId: city._id, isServed: true };
   const centroid = (lng, lat) => ({ type: "Point", coordinates: [lng, lat] });
   await Pincode.create([
@@ -58,6 +63,14 @@ describe("check-point with a polygon: exact", () => {
 });
 
 describe("check-point errors", () => {
+  it("a served pincode in an onboarding city is 422 PINCODE_NOT_SERVED", async () => {
+    const city = await City.create({ name: "Phagwara", code: "PB-PHAGWARA", stateCode: "PB" });
+    await Pincode.updateOne({ pin: "144401" }, { cityId: city._id });
+    const res = await check("144401", { lat: 31.22, lng: 75.77 });
+    expect(res.status).toBe(422);
+    expect(res.body.error.code).toBe("PINCODE_NOT_SERVED");
+  });
+
   it.each([
     ["unknown pincode", "999999", { lat: 31, lng: 75 }, 404, "PINCODE_NOT_FOUND"],
     ["pincode not served", "110001", { lat: 28.6, lng: 77.2 }, 422, "PINCODE_NOT_SERVED"],

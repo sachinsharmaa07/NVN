@@ -4,6 +4,7 @@ import { Post } from "../models/Post.js";
 import { AppError } from "../utils/AppError.js";
 import { decodeCursor, pageOf } from "../utils/cursor.js";
 import { inTransaction, notFound, sameId, trusted } from "./adminUserSupport.js";
+import { servesReports } from "./pincodeService.js";
 import { authorNames, loadVisible, moveContent, postView } from "./communityShared.js";
 
 /** GET /api/community/posts?pincode: published posts, newest first (index { pincode, status, createdAt, _id }). */
@@ -25,7 +26,7 @@ export async function listFeed(actor, { pincode, cursor, limit }) {
   return { items: items.map((p) => postView(p, actor, names)), nextCursor };
 }
 
-/** POST /api/community/posts: into the author's default pincode, which must be served (it has a city). */
+/** POST /api/community/posts: into the author's default pincode, which must be served by an active city. */
 export async function createPost(actor, { title, body }) {
   if (!actor.defaultPincode) {
     throw new AppError(
@@ -34,13 +35,15 @@ export async function createPost(actor, { title, body }) {
       "Set your home pincode in your profile before posting.",
     );
   }
-  const pin = await Pincode.findOne({ pin: actor.defaultPincode }, { cityId: 1 }).lean();
-  if (!pin?.cityId) {
+  const pin = await Pincode.findOne({ pin: actor.defaultPincode }, { isServed: 1, cityId: 1 })
+    .populate("cityId", "status")
+    .lean();
+  if (!servesReports(pin?.isServed, pin?.cityId)) {
     throw new AppError("PINCODE_NOT_SERVED", 400, "Your pincode isn't covered yet.");
   }
   const post = await Post.create({
     pincode: actor.defaultPincode,
-    cityId: pin.cityId,
+    cityId: pin.cityId._id,
     authorId: actor.id,
     title,
     body,
