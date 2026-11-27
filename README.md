@@ -159,12 +159,15 @@ print secrets.
 | `npm run migrate:m1-indexes -w server` | Builds the M1 indexes (pincodes, waitlists, cities, departments, category mappings) and sets `status: "onboarding"` on cities that have none. Dry run by default; add `-- --apply` to write. Never drops an index | `0` done, `1` error |
 | `npm run import:pincodes -w server` | Loads `data/pincodes.tsv` (GeoNames) into `pincodes` and creates one city per (state, district), code like `PB-KAPURTHALA`, status `active`. Per pincode: unique place names as `localities`, mean position as `centroid`, `radiusM` = farthest place + 1.5 km (3 to 25 km), `isServed: true`. Streams the file, writes in batches of 500, about 1 s for 19k pincodes on a local database. Dry run prints counts; add `-- --apply` to write. `--city PB-KAPURTHALA` imports one district city only. `--format csv` reads the data.gov.in CSV (`data/pincodes.csv`) instead; it has no coordinates, so it never marks pincodes served. `--file <path>` for another file. A second `--apply` changes 0 rows | `0` done, `1` error |
 | `npm run import:boundaries -w server` | Optional. Sets `boundary`, `boundarySource` and `centroid` from a GeoJSON FeatureCollection (default `data/boundaries/phagwara.geojson`; each feature needs `properties.pincode`). A pincode with a polygon gets exact pin checks; the rest use the radius circle. Validates rings (closed, 4+ points, `[lon, lat]` inside India). Reports invalid features, polygons with no pincode row, and served pincodes with no polygon. Run `import:pincodes` first. Dry run by default; `-- --apply` writes | `0` done, `1` error |
+| `npm run setup:data -w server` | A fresh database in one command: M1 and M2 indexes, `import:pincodes`, `seed:departments` and `seed:sla`, all with `--apply`. Needs `data/pincodes.tsv` (below). Every step is safe to rerun | `0` done, `1` the first step that failed |
 | `npm run seed:departments -w server` | Gives every city the default departments (Roads, Sanitation, Electrical, Water, Drainage) and the category map (pothole to Roads, garbage to Sanitation, streetlight to Electrical, water_leak to Water, drainage to Drainage, other to triage). Inserts only what is missing, so it never overwrites a renamed department or an admin's mapping; a rerun creates 0. Run `import:pincodes` first. Dry run by default; `-- --apply` writes; `--city PB-KAPURTHALA` for one city | `0` done, `1` error |
 
 **Pincode data (not in git).** Download `IN.zip` from GeoNames (<https://download.geonames.org/export/zip/>),
 unzip it and save `IN.txt` as `data/pincodes.tsv` (about 12 MB, tab-separated, no header; `.gitignore` excludes it).
 GeoNames data is CC BY 4.0: credit "GeoNames" wherever pincode data is shown. Then run, in order:
 `import:pincodes -- --apply`, optionally `import:boundaries -- --apply`, then `seed:departments -- --apply`.
+Or run everything a fresh database needs in one go (indexes, pincodes, departments, SLA defaults; every
+step is safe to rerun): `npm run setup:data -w server`.
 Hand-drawn polygons in `data/boundaries/*.geojson` (`boundarySource: "manual"`) can be committed.
 
 ## Running the tests
