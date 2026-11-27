@@ -22,9 +22,9 @@
   "shell.issues.emptyTitle": "You haven't reported anything yet",
   "shell.issues.emptyHint": "Spot a pothole, broken light or garbage pile? Report it in three steps.",
   "shell.community.title": "Community",
-  "shell.community.description": "Updates from people in your area about issues they reported.",
+  "shell.community.description": "Notices from neighbours in your pincode about what was reported and what changed.",
   "shell.community.emptyTitle": "No posts yet",
-  "shell.community.emptyHint": "The community feed opens soon. You'll be able to post updates about issues you reported.",
+  "shell.community.emptyHint": "Share an update about an issue you reported, so neighbours know what is being fixed.",
   "shell.notFound.title": "Page not found",
   "shell.notFound.emptyTitle": "Nothing at this address",
   "shell.notFound.emptyHint": "The link may be old or have a typo. Check the address, or go back to the home page."
