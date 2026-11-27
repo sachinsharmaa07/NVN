@@ -18,11 +18,21 @@ const app = createApp();
 const ID = (name) => `nivaran/test/reports/${name}`;
 let w;
 let cloudinary;
+let assets; // publicId -> tags, what Cloudinary holds
 beforeEach(async () => {
   w = await seedIssueWorld();
-  cloudinary = vi.fn(async () => new Response(JSON.stringify({ deleted: {} }), { status: 200 }));
+  const mine = [`u_${w.citizen._id}`];
+  assets = new Map(["abc123", "def-456", "draft", "fine"].map((n) => [ID(n), mine]));
+  cloudinary = vi.fn(async (url, init) => {
+    if (init.method === "DELETE")
+      return new Response(JSON.stringify({ deleted: {} }), { status: 200 });
+    const id = decodeURIComponent(url.split("/resources/image/upload/")[1]);
+    if (!assets.has(id)) return new Response("{}", { status: 404 });
+    return new Response(JSON.stringify({ public_id: id, tags: assets.get(id) }), { status: 200 });
+  });
   vi.stubGlobal("fetch", cloudinary);
 });
+const deletes = () => cloudinary.mock.calls.filter(([, init]) => init.method === "DELETE");
 afterEach(() => vi.unstubAllGlobals());
 
 const discard = (body, user = w.citizen) =>
@@ -37,8 +47,8 @@ describe("POST /api/uploads/discard", () => {
     const res = await discard({ publicIds: [ID("abc123"), ID("def-456")] });
     expect(res.status).toBe(204);
     expect(res.headers["cache-control"]).toBe("no-store");
-    expect(cloudinary).toHaveBeenCalledTimes(1);
-    const [url, init] = cloudinary.mock.calls[0];
+    expect(deletes()).toHaveLength(1);
+    const [url, init] = deletes()[0];
     expect(url).toBe(
       "https://api.cloudinary.com/v1_1/nivaran-test/resources/image/upload" +
         `?public_ids[]=${encodeURIComponent(ID("abc123"))}&public_ids[]=${encodeURIComponent(ID("def-456"))}`,
@@ -69,6 +79,25 @@ describe("POST /api/uploads/discard", () => {
       expect(code(res)).toBe("CONFLICT");
     }
     expect(cloudinary).not.toHaveBeenCalled();
+  });
+
+  it("is the same 404 for someone else's photo or an untagged one, and deletes nothing", async () => {
+    assets.set(ID("theirs"), [`u_${w.reporter._id}`]);
+    assets.set(ID("old"), []); // uploaded before uploads were tagged
+    for (const name of ["theirs", "old"]) {
+      const res = await discard({ publicIds: [ID("draft"), ID(name)] });
+      expect(res.status).toBe(404);
+      expect(res.body.error.code).toBe("NOT_FOUND");
+    }
+    expect(deletes()).toHaveLength(0);
+  });
+
+  it("skips ids that are already gone, and makes no delete call when nothing is left", async () => {
+    expect((await discard({ publicIds: [ID("gone")] })).status).toBe(204);
+    expect(deletes()).toHaveLength(0);
+    expect((await discard({ publicIds: [ID("gone"), ID("draft")] })).status).toBe(204);
+    expect(deletes()[0][0]).toContain(`public_ids[]=${encodeURIComponent(ID("draft"))}`);
+    expect(deletes()[0][0]).not.toContain("gone");
   });
 
   it("is 503 when Cloudinary is unreachable or refuses", async () => {

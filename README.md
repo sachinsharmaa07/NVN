@@ -342,11 +342,11 @@ All routes are under `/api`. Signed-in routes need `Authorization: Bearer <token
 
 | Method and path | Who | Purpose |
 | --- | --- | --- |
-| `GET /health` · `GET /stats` | public | Status and DB state · public totals (cached 5 min) |
-| `GET /pincodes/:pin` · `POST /pincodes/:pin/check-point` | public | Is a pincode covered · is a point inside it |
+| `GET /health` · `GET /stats` | public | Status and DB state · public totals, verified fixes, SLA-met rate (cached 5 min) |
+| `GET /pincodes/:pin` · `POST /pincodes/:pin/check-point` | public | Is a pincode covered (its city must be active) · is a point inside it |
 | `POST /waitlist` | public | Join the waitlist for an uncovered pincode |
 | `GET /me` · `PATCH /me` | signed in | Profile (created on first sign-in) · name, language, home pincode |
-| `POST /uploads/sign` | verified | Signed Cloudinary upload |
+| `POST /uploads/sign` · `POST /uploads/discard` | verified | Signed Cloudinary upload · delete an abandoned draft's photos |
 | `POST /issues` | verified | Submit a report (`Idempotency-Key` header) |
 | `GET /issues/mine` · `GET /issues/:ticketId` | reporter | My tickets · one ticket with its timeline |
 | `POST /issues/:ticketId/confirm` · `/reopen` | reporter | Confirm the fix · reopen with a note |
@@ -362,7 +362,9 @@ All routes are under `/api`. Signed-in routes need `Authorization: Bearer <token
 | `GET /admin/users` · `PATCH /admin/users/:id/role` · `/status` | city admin and above | Users, roles, suspension |
 | `GET /admin/city-settings` · `PUT /admin/city-settings/:category` | city admin | Department and SLA hours per category |
 | `GET /admin/audit` | city admin (own city), super admin | Audit log: who changed what, cursor pages |
-| `POST /admin/cities` · `PATCH /admin/cities/:id` | super admin | Add a city (with its departments) · rename, open or pause it |
+| `GET /admin/cities` · `POST /admin/cities` · `PATCH /admin/cities/:id` | super admin | List with status · add a city (with its departments) · rename, open or pause it |
+| `POST /admin/departments` · `PATCH /admin/departments/:id` | city admin (own city), super admin | Add a custom department · rename it |
+| `GET /admin/waitlist` | super admin | Most-requested uncovered pincodes |
 | `GET /cities` · `GET /departments` | admins | Pickers |
 
 ## Security and privacy
@@ -413,6 +415,7 @@ All routes are under `/api`. Signed-in routes need `Authorization: Bearer <token
 | Community and moderation, help chat, city settings, Hindi | ✅ Done |
 | Docker images and CI | ✅ Done |
 | Email notifications (Gmail SMTP), respond-by tracking, audit log and city onboarding APIs | ✅ Done |
+| State officer escalation, closure and SLA-met stats, custom departments, waitlist demand, photo discard | ✅ Done |
 | Cloud deployment, monitoring, load and accessibility audits | ⏳ Next |
 
 ## Troubleshooting

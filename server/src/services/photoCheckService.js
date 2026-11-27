@@ -6,8 +6,8 @@ import { config } from "../config/env.js";
 import { logger } from "../config/logger.js";
 import { Issue } from "../models/Issue.js";
 import { AppError } from "../utils/AppError.js";
-import { trusted } from "./adminUserSupport.js";
-import { UPLOAD_RULES, reportsFolder } from "./uploadService.js";
+import { notFound, trusted } from "./adminUserSupport.js";
+import { UPLOAD_RULES, reportsFolder, uploaderTag } from "./uploadService.js";
 
 export const CHECK_TIMEOUT_MS = 5000;
 const log = logger.child({ component: "photoCheck" });
@@ -109,12 +109,13 @@ export async function verifyPhotos(publicIds, { fetchImpl = defaultFetch } = {})
 }
 
 /**
- * POST /api/uploads/discard: deletes photos of an abandoned draft. Idempotent (a gone id is fine). Refuses with
- * 409 and deletes nothing when any id is already on an issue, as a report photo or an after photo.
- * shortcut: uploads go browser -> Cloudinary, so we can't prove who uploaded an unused id; draft ids are random
- * and only the uploader's browser sees them. Upgrade: sign uploads with a per-user tag and check it here.
+ * POST /api/uploads/discard: deletes the actor's own photos of an abandoned draft. Idempotent (a gone id is fine).
+ * Deletes nothing when any id is on an issue (409) or was not uploaded by the actor (404, the same as missing):
+ * every signed upload carries the uploader's tag, which the browser can't change.
+ * Known limit: a discard racing a submit of the same ids can delete a photo the new issue then points at; only
+ * the uploader can cause it, so it is accepted.
  */
-export async function discardPhotos(publicIds, { fetchImpl = defaultFetch } = {}) {
+export async function discardPhotos(actor, publicIds, { fetchImpl = defaultFetch } = {}) {
   const { base, call } = cloudinaryAdmin(publicIds, fetchImpl);
   const used = trusted({ $in: publicIds });
   if (
@@ -122,7 +123,24 @@ export async function discardPhotos(publicIds, { fetchImpl = defaultFetch } = {}
   ) {
     throw new AppError("CONFLICT", 409, "A photo that's part of a report can't be removed.");
   }
-  const query = publicIds.map((id) => `public_ids[]=${encodeURIComponent(id)}`).join("&");
+  const owned = await Promise.all(
+    publicIds.map(async (id) => {
+      const res = await call(`${base}/${id}`, "GET");
+      if (res.status === 404) return null; // already gone: nothing to do
+      if (!res.ok) {
+        refused(res.status);
+        throw unavailable();
+      }
+      const asset = await res.json().catch(() => null);
+      if (!asset) throw unavailable();
+      // Untagged (uploaded before the tag) or someone else's: the same 404 as a missing resource.
+      if (!asset.tags?.includes(uploaderTag(actor.id))) throw notFound();
+      return id;
+    }),
+  );
+  const toDelete = owned.filter(Boolean);
+  if (!toDelete.length) return;
+  const query = toDelete.map((id) => `public_ids[]=${encodeURIComponent(id)}`).join("&");
   const res = await call(`${base}?${query}`, "DELETE");
   if (!res.ok) {
     refused(res.status);

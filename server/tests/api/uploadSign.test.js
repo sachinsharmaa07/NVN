@@ -27,10 +27,11 @@ describe("cloudinarySignature", () => {
 });
 
 describe("POST /api/uploads/sign", () => {
-  it("a verified citizen gets a signature for the env folder, formats, and the 5 MB rule", async () => {
+  it("a verified citizen gets a signature for the env folder, formats, their tag and the 5 MB rule", async () => {
+    const citizen = await seedUser("citizen");
     const res = await request(app)
       .post("/api/uploads/sign")
-      .set(bearer(tokenFor(await seedUser("citizen"))));
+      .set(bearer(tokenFor(citizen)));
     expect(res.status).toBe(200);
     expect(res.headers["cache-control"]).toBe("no-store");
     const { signature, apiKey, uploadUrl, maxBytes, ...signed } = res.body;
@@ -38,6 +39,7 @@ describe("POST /api/uploads/sign", () => {
       folder: "nivaran/test/reports",
       allowed_formats: "jpg,png,webp,heic",
       transformation: "c_limit,w_1600,h_1600",
+      tags: `u_${citizen._id}`, // signed, so the browser can't claim someone else's tag
     });
     expect(signature).toBe(cloudinarySignature(signed, "test-secret-value"));
     expect(uploadUrl).toBe("https://api.cloudinary.com/v1_1/nivaran-test/image/upload");
