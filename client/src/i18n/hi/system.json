@@ -65,5 +65,12 @@
   "system.styleGuide.stripTwo": "पिन लगाएँ",
   "system.styleGuide.stripTwoBody": "इसे वहाँ रखें जहाँ समस्या है।",
   "system.styleGuide.stripThree": "विवरण जोड़ें",
-  "system.styleGuide.stripThreeBody": "एक फ़ोटो और छोटा विवरण।"
+  "system.styleGuide.stripThreeBody": "एक फ़ोटो और छोटा विवरण।",
+  "system.ledger.loadMore": "और दिखाएँ",
+  "system.filters.button": "फ़िल्टर",
+  "system.filters.buttonCount": "फ़िल्टर ({count})",
+  "system.filters.title": "फ़िल्टर",
+  "system.filters.description": "चुनें कि सूची में क्या दिखे।",
+  "system.filters.apply": "फ़िल्टर लगाएँ",
+  "system.filters.clear": "फ़िल्टर हटाएँ"
 }

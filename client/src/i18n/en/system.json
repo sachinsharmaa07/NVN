@@ -121,5 +121,12 @@
   "system.styleGuide.stripTwo": "Drop a pin",
   "system.styleGuide.stripTwoBody": "Place it where the problem is.",
   "system.styleGuide.stripThree": "Add details",
-  "system.styleGuide.stripThreeBody": "A photo and a short description."
+  "system.styleGuide.stripThreeBody": "A photo and a short description.",
+  "system.ledger.loadMore": "Load more",
+  "system.filters.button": "Filters",
+  "system.filters.buttonCount": "Filters ({count})",
+  "system.filters.title": "Filters",
+  "system.filters.description": "Choose what the list shows.",
+  "system.filters.apply": "Apply filters",
+  "system.filters.clear": "Clear filters"
 }

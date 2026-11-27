@@ -33,6 +33,19 @@ const ROUTES = [
   { name: "notfound", path: "/nope" },
   { name: "staff", path: "/staff", setup: (api) => (api.answers.me = STAFF_ME) },
   { name: "staff-head", path: "/staff", setup: (api) => (api.answers.me = HEAD_ME) },
+  {
+    name: "staff-drawer",
+    path: "/staff",
+    setup: (api) => (api.answers.me = STAFF_ME),
+    // Open the first issue: the Sheet on a laptop, the bottom Drawer on a phone.
+    act: async (page) => {
+      await page
+        .getByRole("button", { name: /Deep pothole/ })
+        .first()
+        .click();
+      await expect(page.getByRole("dialog")).toBeVisible();
+    },
+  },
   { name: "moderation", path: "/moderation", setup: (api) => (api.answers.me = MOD_ME) },
   { name: "admin-users", path: "/admin/users", setup: (api) => (api.answers.me = ADMIN_ME) },
   {

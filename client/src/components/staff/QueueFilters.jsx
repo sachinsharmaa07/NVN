@@ -1,77 +1,51 @@
 import { CATEGORIES } from "@/components/report/categories";
+import { FilterBar } from "@/components/system/FilterBar";
 import { SLA_META, STATUS_META } from "@/components/system/statusMeta";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { useCan } from "@/hooks/useCan";
 import { t } from "@/i18n/t";
+import { QUEUE_FILTER_KEYS } from "./queueFilterKeys";
 
-const ALL = "all"; // Radix Select cannot hold an empty value
-
-const STATUS_OPTIONS = Object.entries(STATUS_META).map(([value, m]) => [value, m.labelKey]);
-const SLA_OPTIONS = ["on_track", "at_risk", "breached"].map((v) => [v, SLA_META[v].labelKey]);
-const CATEGORY_OPTIONS = CATEGORIES.map((c) => [c.value, c.label]);
-
-/** Status, SLA and category filters. Values live in the URL (`filters`, `onChange`) like Admin > Users. */
+/**
+ * Status, SLA, category and (for people who assign work: dept_head and up) Department / Triage queue.
+ * Values live in the URL; the page passes them in (`filters`) and gets `onChange(patch)` back.
+ */
 export function QueueFilters({ filters, onChange }) {
-  const filtered = filters.status || filters.sla || filters.category;
-  return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
-      <Filter
-        id="queue-status"
-        label={t("staff.filter.status")}
-        allLabel={t("staff.filter.open")}
-        value={filters.status}
-        options={STATUS_OPTIONS}
-        onChange={(status) => onChange({ status })}
-      />
-      <Filter
-        id="queue-sla"
-        label={t("staff.filter.sla")}
-        allLabel={t("staff.filter.any")}
-        value={filters.sla}
-        options={SLA_OPTIONS}
-        onChange={(sla) => onChange({ sla })}
-      />
-      <Filter
-        id="queue-category"
-        label={t("staff.filter.category")}
-        allLabel={t("staff.filter.any")}
-        value={filters.category}
-        options={CATEGORY_OPTIONS}
-        onChange={(category) => onChange({ category })}
-      />
-      {filtered && (
-        <Button variant="ghost" onClick={() => onChange({ status: "", sla: "", category: "" })}>
-          {t("staff.filter.clear")}
-        </Button>
-      )}
-    </div>
-  );
-}
+  const can = useCan();
+  const defs = [
+    {
+      key: "status",
+      label: t("staff.filter.status"),
+      allLabel: t("staff.filter.open"),
+      options: Object.entries(STATUS_META).map(([v, meta]) => [v, t(meta.labelKey)]),
+    },
+    {
+      key: "sla",
+      label: t("staff.filter.sla"),
+      allLabel: t("staff.filter.any"),
+      options: ["on_track", "at_risk", "breached"].map((v) => [v, t(SLA_META[v].labelKey)]),
+    },
+    {
+      key: "category",
+      label: t("staff.filter.category"),
+      allLabel: t("staff.filter.any"),
+      options: CATEGORIES.map((c) => [c.value, t(c.label)]),
+    },
+    can("issue:assign") && {
+      key: "queue",
+      label: t("staff.filter.queue"),
+      allLabel: t("staff.filter.any"),
+      options: [
+        ["department", t("staff.filter.queueDepartment")],
+        ["triage", t("staff.filter.queueTriage")],
+      ],
+    },
+  ].filter(Boolean);
 
-function Filter({ id, label, allLabel, value, options, onChange }) {
   return (
-    <div className="grid gap-2 sm:w-52">
-      <Label htmlFor={id}>{label}</Label>
-      <Select value={value || ALL} onValueChange={(v) => onChange(v === ALL ? "" : v)}>
-        <SelectTrigger id={id}>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={ALL}>{allLabel}</SelectItem>
-          {options.map(([v, key]) => (
-            <SelectItem key={v} value={v}>
-              {t(key)}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
+    <FilterBar
+      filters={defs.map((d) => ({ ...d, value: filters[d.key] }))}
+      onChange={(key, value) => onChange({ [key]: value })}
+      onClear={() => onChange(Object.fromEntries(QUEUE_FILTER_KEYS.map((k) => [k, ""])))}
+    />
   );
 }
