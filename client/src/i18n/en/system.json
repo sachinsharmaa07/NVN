@@ -82,5 +82,18 @@
   "system.styleGuide.statOpen": "Open issues",
   "system.styleGuide.statResolved": "Resolved this week",
   "system.styleGuide.statSlaMet": "Fixed by the expected date",
-  "system.styleGuide.statHint": "Sample numbers"
+  "system.styleGuide.statHint": "Sample numbers",
+  "system.styleGuide.type": "Type roles",
+  "system.styleGuide.roleDisplay": "Display",
+  "system.styleGuide.roleH1": "Heading 1",
+  "system.styleGuide.roleH2": "Heading 2",
+  "system.styleGuide.roleH3": "Heading 3",
+  "system.styleGuide.typeSample": "Report a problem in your pincode",
+  "system.styleGuide.brand": "Brand mark",
+  "system.styleGuide.edge": "Edge highlight",
+  "system.styleGuide.edgeHint": "Dark theme only: a faint top edge on raised surfaces.",
+  "system.styleGuide.edgeSample": "Menu surface",
+  "system.styleGuide.reveal": "Reveal on scroll",
+  "system.styleGuide.revealHint": "Each block fades up as it scrolls into view.",
+  "system.styleGuide.revealSample": "Block {n}"
 }

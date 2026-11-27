@@ -26,5 +26,18 @@
   "system.ticket.copyFailed": "टिकट नंबर कॉपी नहीं हो सका। उसे चुनकर हाथ से कॉपी करें।",
   "system.timeline.label": "स्थिति का इतिहास",
   "system.timeline.now": "अभी",
-  "system.timeline.upcoming": "अभी नहीं पहुँची"
+  "system.timeline.upcoming": "अभी नहीं पहुँची",
+  "system.styleGuide.type": "टाइप भूमिकाएँ",
+  "system.styleGuide.roleDisplay": "डिस्प्ले",
+  "system.styleGuide.roleH1": "शीर्षक 1",
+  "system.styleGuide.roleH2": "शीर्षक 2",
+  "system.styleGuide.roleH3": "शीर्षक 3",
+  "system.styleGuide.typeSample": "अपने पिनकोड में समस्या दर्ज करें",
+  "system.styleGuide.brand": "ब्रांड चिह्न",
+  "system.styleGuide.edge": "किनारे की चमक",
+  "system.styleGuide.edgeHint": "सिर्फ़ डार्क थीम में: ऊपर उठी सतहों के ऊपरी किनारे पर हल्की रेखा।",
+  "system.styleGuide.edgeSample": "मेन्यू सतह",
+  "system.styleGuide.reveal": "स्क्रॉल पर दिखना",
+  "system.styleGuide.revealHint": "हर ब्लॉक स्क्रॉल होकर दिखने पर धीरे से ऊपर आता है।",
+  "system.styleGuide.revealSample": "ब्लॉक {n}"
 }

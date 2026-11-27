@@ -16,6 +16,7 @@ export function BottomBar() {
   const navItems = navItemsFor(can("issue:read_scope"));
   return (
     <nav
+      data-slot="bottom-bar"
       aria-label={t("shell.nav.label")}
       className="fixed inset-x-0 bottom-0 z-bottombar border-t bg-background shadow-md lg:hidden"
       // env() can't be written with Tailwind's spacing scale, so this one value is inline.
