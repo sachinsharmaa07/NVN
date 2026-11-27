@@ -79,5 +79,6 @@ export const as = (app, user, claims) => {
     get: (url) => request(app).get(url).set(auth),
     post: (url) => request(app).post(url).set(auth),
     patch: (url) => request(app).patch(url).set(auth),
+    delete: (url) => request(app).delete(url).set(auth),
   };
 };

@@ -16,6 +16,13 @@ const ALLOWED_KEYS = {
   "issue.assign": ["ticketId", "status", "queue", "departmentId"],
   "issue.hold": ["ticketId", "slaPausedAt", "expectedBy"],
   "issue.resume": ["ticketId", "slaPausedAt", "expectedBy"],
+  // M3 moderation: never the post or comment text.
+  "post.hide": ["status", "flagCount"],
+  "post.restore": ["status", "flagCount"],
+  "post.delete": ["status"],
+  "comment.hide": ["status", "flagCount"],
+  "comment.restore": ["status", "flagCount"],
+  "comment.delete": ["status"],
 };
 const targetOf = (action) => action.split(".")[0];
 

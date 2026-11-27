@@ -1476,7 +1476,7 @@ Idempotent: every write is guarded by the field it sets, so a rerun or an overla
 One server instance only (ADR 0001); a second instance would still not double-notify, only do wasted work.
 Disabled in tests; `runSlaTick(now)` is exported for direct calls.
 
-### 12.5 Community moderation (DESIGNED)
+### 12.5 Community moderation (BUILT, M3: `server/src/utils/postStateMachine.js`)
 
 ```mermaid
 stateDiagram-v2
