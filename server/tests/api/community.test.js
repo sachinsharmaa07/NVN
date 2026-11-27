@@ -11,6 +11,7 @@ vi.mock("../../src/middleware/auth.js", async (orig) =>
 const { createApp } = await import("../../src/app.js");
 const { Pincode } = await import("../../src/models/Pincode.js");
 const { Post } = await import("../../src/models/Post.js");
+const { Comment } = await import("../../src/models/Comment.js");
 const { AuditLog } = await import("../../src/models/AuditLog.js");
 
 useTestDb();
@@ -166,6 +167,18 @@ describe("moderation", () => {
     expect(q.status).toBe(200);
     expect(q.body.items.map((i) => i.id)).toEqual([p.id]);
     expect((await as(app, w.admin2).get("/api/moderation/queue")).body.items).toEqual([]);
+  });
+
+  it("lists hidden comments with the post they belong to", async () => {
+    const p = await newPost();
+    const c = await as(app, w.citizen)
+      .post(`/api/community/posts/${p.id}/comments`)
+      .send({ body: "Call me on my number" });
+    await Comment.updateOne({ _id: c.body.id }, { status: "hidden", flagCount: 3 });
+    const q = await as(app, w.admin).get("/api/moderation/queue?type=comment");
+    expect(q.body.items).toEqual([
+      expect.objectContaining({ id: c.body.id, postId: p.id, status: "hidden", flagCount: 3 }),
+    ]);
   });
 
   it("restores with flags cleared, deletes with a reason, and audits both", async () => {

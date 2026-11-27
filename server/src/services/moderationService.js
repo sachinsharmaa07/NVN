@@ -36,7 +36,11 @@ export async function listQueue(actor, { type, status, cursor, limit }) {
   const names = await authorNames(items);
   const view = type === "post" ? postView : commentView;
   return {
-    items: items.map((row) => ({ ...view(row, actor, names), flagCount: row.flagCount })),
+    items: items.map((row) => ({
+      ...view(row, actor, names),
+      flagCount: row.flagCount,
+      ...(type === "comment" && { postId: String(row.postId) }), // so the queue can link to the thread
+    })),
     nextCursor,
   };
 }

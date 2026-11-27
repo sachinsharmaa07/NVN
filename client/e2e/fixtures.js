@@ -162,6 +162,16 @@ export const POST = {
   commentCount: 2,
   createdAt: "2026-11-26T06:30:00.000Z",
 };
+export const MOD_ME = {
+  ...ME,
+  id: "6750e2e0e2e0e2e0e2e0e2e7",
+  email: "nisha@example.com",
+  name: "Nisha Kaur",
+  role: "moderator",
+  level: 2,
+  permissions: [...ME.permissions, "post:create", "post:moderate"],
+  cityId: "6750e2e0e2e0e2e0e2e0c001",
+};
 export const COMMENTS = [
   {
     id: "c1",
@@ -219,6 +229,11 @@ export const test = base.extend({
         newPost: [201, { ...POST, mine: true }],
         newComment: [201, { id: "c3", parentId: null, body: "", author: "Asha", mine: true }],
         flags: [200, { flagged: true }],
+        queue: listOf([
+          { ...POST, status: "hidden", flagCount: 3, title: "Cheap repairs, call now" },
+        ]),
+        moderate: [200, { id: POST.id, status: "published", flagCount: 0 }],
+        chat: [200, { kind: "list", tickets: [] }],
         stats: [
           200,
           { totalReports: 0, resolved: 0, medianResolutionHours: null, openByCategory: {} },
@@ -266,6 +281,11 @@ export const test = base.extend({
       await page.route(/\/api\/community\/posts\/\w+\/comments(\?.*)?$/, (route) =>
         reply(route, route.request().method() === "POST" ? answers.newComment : answers.comments),
       );
+      await page.route(/\/api\/moderation\/queue(\?.*)?$/, (route) => reply(route, answers.queue));
+      await page.route(/\/api\/moderation\/(post|comment)\/\w+$/, (route) =>
+        reply(route, answers.moderate),
+      );
+      await page.route("**/api/chat", (route) => reply(route, answers.chat));
       await page.route("**/api/community/flags", (route) => reply(route, answers.flags));
       await page.route("**/api/stats", (route) => reply(route, answers.stats));
       await page.route(/\/api\/departments\?cityId=\w+$/, (route) =>
