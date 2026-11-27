@@ -14,8 +14,10 @@ const COLUMNS = {
  * Numbered steps in a strip with 1px rules (02-lld §2): the report wizard's step bar (with `current`)
  * and Landing's "How it works" (without). Stacked with rules between below 768px, one row from 768px.
  * Screen readers hear each item as number, title, body; the current one is announced as the current step.
+ * `collapsed`: below 768px only the current step shows (the wizard on a phone, where three stacked rows
+ * would push the form below the fold); the page must still say "Step n of N" for screen readers.
  */
-export function FormStrip({ steps, current, as: List = "ol", className }) {
+export function FormStrip({ steps, current, collapsed = false, as: List = "ol", className }) {
   return (
     <List
       data-slot="form-strip"
@@ -31,7 +33,10 @@ export function FormStrip({ steps, current, as: List = "ol", className }) {
           <li
             key={step.title}
             aria-current={isCurrent ? "step" : undefined}
-            className="flex flex-col gap-2 p-4 md:p-6"
+            className={cn(
+              "flex flex-col gap-2 p-4 md:p-6",
+              collapsed && !isCurrent && "max-md:hidden",
+            )}
           >
             <span
               className={cn(

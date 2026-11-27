@@ -339,6 +339,8 @@ export const test = base.extend({
       );
       await page.route("**/api/waitlist", (route) => json(route, [200, { joined: true }]));
       await page.route("**/api/uploads/sign", (route) => json(route, [200, SIGNED]));
+      // POST /api/uploads/discard answers 204 with no body (docs/API.md).
+      await page.route("**/api/uploads/discard", (route) => route.fulfill({ status: 204 }));
       await page.route(SIGNED.uploadUrl, (route) =>
         json(route, [
           200,

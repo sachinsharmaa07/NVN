@@ -6,7 +6,9 @@ import { DetailsStep } from "@/components/report/DetailsStep";
 import { MapStep } from "@/components/report/MapStep";
 import { PincodeStep } from "@/components/report/PincodeStep";
 import { clearDraft, readDraft, saveDraft } from "@/components/report/reportDraft";
+import { StartOver } from "@/components/report/StartOver";
 import { usePhotoUploads } from "@/components/report/usePhotoUploads";
+import { FormStrip } from "@/components/system/FormStrip";
 import { PageHeader } from "@/components/system/PageHeader";
 import { useApi } from "@/hooks/useApi";
 import { t } from "@/i18n/t";
@@ -38,6 +40,8 @@ export function Report() {
   // Set when a submit comes back 422 OUTSIDE_PINCODE, shown once the map step opens again.
   const [mapNotice, setMapNotice] = useState("");
   const [issue, setIssue] = useState(null);
+  // Bumped by Start over, so step 1 remounts empty even when it is already showing.
+  const [resets, setResets] = useState(0);
   // Set synchronously on the first click: a double click lands before React re-renders Submit as disabled.
   const inFlight = useRef(false);
 
@@ -70,9 +74,30 @@ export function Report() {
       ? `${send.error.message} ${t("report.review.draftSaved")}`
       : "";
 
+  function startOver() {
+    clearDraft();
+    uploads.clear();
+    send.reset();
+    setMapNotice("");
+    setResets((n) => n + 1);
+    setSearchParams({ step: "1" });
+  }
+
+  const steps = STEP_TITLES.map((key) => ({ title: t(key) }));
   return (
-    <div className="mx-auto flex w-full max-w-160 flex-col gap-8 px-4 py-8 md:px-6 md:py-12 lg:px-8">
-      <PageHeader title={t("shell.report.title")} description={t("shell.report.description")} />
+    // pb-16 below 1024px: with content-reserve, keeps the last field clear of the fixed Back/Next bar,
+    // even when it shows its hint line (measured at 360 on all three steps).
+    <div className="mx-auto flex w-full max-w-160 flex-col gap-8 px-4 pt-8 pb-16 md:px-6 md:pt-12 lg:px-8 lg:pb-12">
+      <PageHeader
+        title={t("shell.report.title")}
+        description={t("shell.report.description")}
+        actions={issue ? null : <StartOver publicIds={uploads.publicIds} onReset={startOver} />}
+      />
+      {!issue && (
+        <nav aria-label={t("report.wizard.stepsLabel")}>
+          <FormStrip steps={steps} current={step - 1} collapsed />
+        </nav>
+      )}
       {issue ? (
         <Counterfoil
           issue={issue}
@@ -84,11 +109,13 @@ export function Report() {
         />
       ) : (
         <>
-          <p className="text-sm font-medium text-muted-foreground">
+          {/* The strip shows the step; screen readers hear the change here. */}
+          <h2 aria-live="polite" className="sr-only">
             {t("report.wizard.stepOf", { step, total: 3, title: t(STEP_TITLES[step - 1]) })}
-          </p>
+          </h2>
           {step === 1 && (
             <PincodeStep
+              key={resets}
               initialPin={initialPin}
               onNext={(pin) => {
                 saveDraft({ pincode: pin });

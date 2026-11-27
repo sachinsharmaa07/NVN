@@ -74,5 +74,14 @@
   "report.done.expectedBy": "Expected by",
   "report.done.track": "Track this issue",
   "report.done.another": "Report another issue",
-  "report.review.draftSaved": "Your draft is saved."
+  "report.review.draftSaved": "Your draft is saved.",
+  "report.wizard.stepsLabel": "Report steps",
+  "report.wizard.hintPincode": "Enter all 6 digits to continue.",
+  "report.wizard.hintPin": "Place the pin inside the shaded area to continue.",
+  "report.wizard.hintPhotos": "Wait for your photos to finish uploading.",
+  "report.startOver.trigger": "Start over",
+  "report.startOver.title": "Start this report again?",
+  "report.startOver.body": "Your pincode, pin and photos will be cleared.",
+  "report.startOver.confirm": "Start over",
+  "report.startOver.keep": "Keep my report"
 }

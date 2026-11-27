@@ -57,6 +57,12 @@ export function usePhotoUploads() {
     setPhotos((ps) => ps.filter((p) => p.id !== id));
   }
 
+  /** Start over: forget every photo (the caller has already asked the server to discard them). */
+  function clear() {
+    blobs.current.clear();
+    setPhotos([]);
+  }
+
   /** The server refused the photo at `index` of the submitted list (it deleted the asset). */
   function refuse(index) {
     const target = photos.filter((p) => p.status === "done")[index];
@@ -77,6 +83,7 @@ export function usePhotoUploads() {
     add,
     retry: upload,
     remove,
+    clear,
     refuse,
     ready,
     publicIds,

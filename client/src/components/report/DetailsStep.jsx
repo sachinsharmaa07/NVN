@@ -3,8 +3,8 @@ import { CategoryCards } from "@/components/report/CategoryCards";
 import { CATEGORIES } from "@/components/report/categories";
 import { PhotoPicker } from "@/components/report/PhotoPicker";
 import { saveDraft } from "@/components/report/reportDraft";
+import { WizardFooter } from "@/components/report/WizardFooter";
 import { FieldError } from "@/components/system/FieldError";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -130,14 +130,14 @@ export function DetailsStep({ draft, uploads, submit, onBack, onSubmit }) {
       <p role="alert" className="text-sm text-destructive empty:hidden">
         {submit.error}
       </p>
-      <div className="flex justify-between gap-3">
-        <Button type="button" variant="outline" size="lg" onClick={onBack}>
-          {t("report.wizard.back")}
-        </Button>
-        <Button type="submit" size="lg" disabled={submit.pending || !uploads.ready}>
-          {t(submit.pending ? "report.review.submitting" : "report.review.submit")}
-        </Button>
-      </div>
+      <WizardFooter
+        onBack={onBack}
+        nextType="submit"
+        nextLabel={t(submit.pending ? "report.review.submitting" : "report.review.submit")}
+        nextDisabled={!uploads.ready}
+        disabledHint={t("report.wizard.hintPhotos")}
+        submitting={submit.pending}
+      />
     </form>
   );
 }

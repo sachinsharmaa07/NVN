@@ -1,6 +1,7 @@
 // Visual QA harness: full-page shots of every route at three widths in light and dark, plus a reduced-motion
 // pass, against the fake backend. Opt-in only: `SHOTS=1 npx playwright test visual --project=desktop`.
 import { ADMIN_ME, HEAD_ME, MOD_ME, POST, RESOLVED, STAFF_ME, expect, test } from "./fixtures.js";
+import { fillDetails, toDetailsStep, toMapStep } from "./steps.js";
 
 // Must match THEME_STORAGE_KEY in src/components/theme/themeContext.js.
 const THEME_KEY = "nivaran-theme";
@@ -11,6 +12,19 @@ const THEMES = ["light", "dark"];
 const ROUTES = [
   { name: "landing", path: "/" },
   { name: "report", path: "/report" },
+  // The wizard's later steps and its receipt, reached the way a person gets there.
+  { name: "report-pin", path: "/report", act: toMapStep },
+  { name: "report-details", path: "/report", act: toDetailsStep },
+  {
+    name: "report-done",
+    path: "/report",
+    act: async (page) => {
+      await toDetailsStep(page);
+      await fillDetails(page);
+      await page.getByRole("button", { name: "Submit report" }).click();
+      await expect(page.getByRole("heading", { name: "Report submitted" })).toBeVisible();
+    },
+  },
   { name: "issues", path: "/issues" },
   { name: "issue", path: `/issues/${RESOLVED.ticketId}` },
   { name: "community", path: "/community" },

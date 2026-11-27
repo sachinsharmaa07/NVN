@@ -1,6 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { LocateFixedIcon } from "lucide-react";
 import { lazy, Suspense, useState } from "react";
+import { WizardFooter } from "@/components/report/WizardFooter";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApi } from "@/hooks/useApi";
@@ -107,14 +108,13 @@ function PinPicker({ area, pincode, saved, notice, onBack, onNext }) {
       <p aria-live="polite" role="status" className="min-h-6 text-sm">
         {message}
       </p>
-      <div className="flex justify-between">
-        <Button variant="outline" size="lg" onClick={onBack}>
-          {t("report.wizard.back")}
-        </Button>
-        <Button size="lg" disabled={!pin || check.isPending} onClick={() => check.mutate(pin)}>
-          {t("report.wizard.next")}
-        </Button>
-      </div>
+      <WizardFooter
+        onBack={onBack}
+        onNext={() => check.mutate(pin)}
+        nextDisabled={!pin}
+        disabledHint={t("report.wizard.hintPin")}
+        submitting={check.isPending}
+      />
     </div>
   );
 }

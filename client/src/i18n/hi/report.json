@@ -74,5 +74,14 @@
   "report.done.expectedBy": "अपेक्षित तारीख",
   "report.done.track": "इस शिकायत पर नज़र रखें",
   "report.done.another": "एक और शिकायत दर्ज करें",
-  "report.review.draftSaved": "आपका ड्राफ़्ट सहेजा गया है।"
+  "report.review.draftSaved": "आपका ड्राफ़्ट सहेजा गया है।",
+  "report.wizard.stepsLabel": "रिपोर्ट के चरण",
+  "report.wizard.hintPincode": "आगे बढ़ने के लिए सभी 6 अंक डालें।",
+  "report.wizard.hintPin": "आगे बढ़ने के लिए पिन को छायांकित क्षेत्र के अंदर रखें।",
+  "report.wizard.hintPhotos": "अपनी फ़ोटो अपलोड होने तक रुकें।",
+  "report.startOver.trigger": "फिर से शुरू करें",
+  "report.startOver.title": "यह रिपोर्ट फिर से शुरू करें?",
+  "report.startOver.body": "आपका पिनकोड, पिन और फ़ोटो हटा दिए जाएँगे।",
+  "report.startOver.confirm": "फिर से शुरू करें",
+  "report.startOver.keep": "मेरी रिपोर्ट रखें"
 }

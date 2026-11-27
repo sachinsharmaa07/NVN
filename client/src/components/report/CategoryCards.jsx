@@ -1,7 +1,11 @@
+import { CheckIcon } from "lucide-react";
 import { CATEGORIES } from "@/components/report/categories";
 import { t } from "@/i18n/t";
 
-/** Radio cards: real radio inputs (arrow keys move between them), the card is their label. */
+/**
+ * Radio cards: real radio inputs (arrow keys move between them), the card is their label.
+ * Selected shows three ways (border, fill, a check that fades in `fast`), never by colour alone; no scale.
+ */
 export function CategoryCards({ value, onChange, errorId, invalid }) {
   return (
     <fieldset
@@ -14,7 +18,7 @@ export function CategoryCards({ value, onChange, errorId, invalid }) {
         {CATEGORIES.map(({ value: category, Icon, label }) => (
           <label
             key={category}
-            className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border bg-card p-3 has-checked:border-primary has-checked:bg-accent has-focus-visible:ring-[3px] has-focus-visible:ring-ring/50"
+            className="group flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border bg-card p-3 has-checked:border-primary has-checked:bg-accent has-focus-visible:ring-[3px] has-focus-visible:ring-ring/50"
           >
             <input
               type="radio"
@@ -26,6 +30,10 @@ export function CategoryCards({ value, onChange, errorId, invalid }) {
             />
             <Icon aria-hidden="true" className="size-5 shrink-0 text-primary" />
             <span className="text-sm font-medium">{t(label)}</span>
+            <CheckIcon
+              aria-hidden="true"
+              className="ml-auto size-4 shrink-0 text-primary opacity-0 transition-opacity duration-fast ease-standard group-has-checked:opacity-100"
+            />
           </label>
         ))}
       </div>

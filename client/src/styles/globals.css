@@ -376,6 +376,12 @@
   ):is(.dark *):not(.light *) {
   box-shadow: var(--shadow-edge), var(--shadow-md);
 }
+/* The report wizard's Back/Next footer is only a raised bar below 1024px (a plain row above that). */
+@media (width < 64rem) {
+  [data-slot="wizard-footer"]:is(.dark *):not(.light *) {
+    box-shadow: var(--shadow-edge), var(--shadow-md);
+  }
+}
 
 /* Hairlines (UI.md §3): on 2x screens only table row dividers and separators drop to half a pixel. */
 @media (min-resolution: 2dppx) {
