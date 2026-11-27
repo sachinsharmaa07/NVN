@@ -172,6 +172,32 @@ export const MOD_ME = {
   permissions: [...ME.permissions, "post:create", "post:moderate"],
   cityId: "6750e2e0e2e0e2e0e2e0c001",
 };
+// A city admin (level 5). The fake token says MFA, so admin pages load.
+export const ADMIN_ME = {
+  ...MOD_ME,
+  id: "6750e2e0e2e0e2e0e2e0e2e6",
+  email: "meera@example.com",
+  name: "Meera Iyer",
+  role: "city_admin",
+  level: 5,
+  permissions: [...MOD_ME.permissions, "user:read_scope", "user:promote", "user:suspend"],
+};
+export const CITY_SETTINGS = {
+  city: { id: MOD_ME.cityId, name: "Kapurthala" },
+  departments: [
+    { id: "6750e2e0e2e0e2e0e2e0d001", name: "Roads" },
+    { id: "6750e2e0e2e0e2e0e2e0d002", name: "Water" },
+  ],
+  categories: ["pothole", "garbage", "streetlight", "water_leak", "drainage", "other"].map(
+    (category, i) => ({
+      category,
+      departmentId: i < 2 ? `6750e2e0e2e0e2e0e2e0d00${i + 1}` : null,
+      respondHours: 24,
+      resolveHours: 72,
+      hoursFrom: "national",
+    }),
+  ),
+};
 export const COMMENTS = [
   {
     id: "c1",
@@ -234,6 +260,7 @@ export const test = base.extend({
         ]),
         moderate: [200, { id: POST.id, status: "published", flagCount: 0 }],
         chat: [200, { kind: "list", tickets: [] }],
+        citySettings: [200, CITY_SETTINGS],
         stats: [
           200,
           { totalReports: 0, resolved: 0, medianResolutionHours: null, openByCategory: {} },
@@ -284,6 +311,18 @@ export const test = base.extend({
       await page.route(/\/api\/moderation\/queue(\?.*)?$/, (route) => reply(route, answers.queue));
       await page.route(/\/api\/moderation\/(post|comment)\/\w+$/, (route) =>
         reply(route, answers.moderate),
+      );
+      await page.route(/\/api\/admin\/city-settings(\/\w+)?(\?.*)?$/, (route) =>
+        route.request().method() === "PUT"
+          ? json(route, [
+              200,
+              {
+                ...JSON.parse(route.request().postData()),
+                category: route.request().url().split("/").pop(),
+                hoursFrom: "city",
+              },
+            ])
+          : reply(route, answers.citySettings),
       );
       await page.route("**/api/chat", (route) => reply(route, answers.chat));
       await page.route("**/api/community/flags", (route) => reply(route, answers.flags));

@@ -1,0 +1,22 @@
+{
+  "citySettings.title": "City settings",
+  "citySettings.description": "Choose which department fixes each kind of issue in {city}, and how long it may take. Changes apply to new reports; issues already filed keep their date.",
+  "citySettings.descriptionNoCity": "Choose which department fixes each kind of issue, and how long it may take.",
+  "citySettings.department": "Department",
+  "citySettings.triage": "City triage queue (you assign by hand)",
+  "citySettings.otherNote": "\"Something else\" always goes to the triage queue.",
+  "citySettings.respondHours": "Respond within (hours)",
+  "citySettings.resolveHours": "Fix within (hours)",
+  "citySettings.hoursHint": "1 to 2160 hours. Fix-by can't be shorter than respond-by.",
+  "citySettings.fromNational": "Using the national default",
+  "citySettings.fromCity": "Set for this city",
+  "citySettings.save": "Save {category}",
+  "citySettings.saving": "Saving…",
+  "citySettings.saved": "{category} saved. New reports use it.",
+  "citySettings.hoursError": "Enter whole hours, 1 to 2160, with fix-by at least respond-by.",
+  "citySettings.failed": "That wasn't saved. Check the values and try again.",
+  "citySettings.error": "Couldn't load the settings.",
+  "citySettings.pickCity": "City",
+  "citySettings.searchCity": "Search cities",
+  "citySettings.pickCityHint": "Choose a city to see its settings."
+}

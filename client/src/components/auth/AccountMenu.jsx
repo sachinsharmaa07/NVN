@@ -1,4 +1,10 @@
-import { ShieldCheckIcon, TriangleAlertIcon, UserRoundIcon, UsersIcon } from "lucide-react";
+import {
+  Settings2Icon,
+  ShieldCheckIcon,
+  TriangleAlertIcon,
+  UserRoundIcon,
+  UsersIcon,
+} from "lucide-react";
 import { Link, useLocation } from "react-router";
 import { AccountAvatar } from "@/components/auth/AccountAvatar";
 import { Button } from "@/components/ui/button";
@@ -124,6 +130,14 @@ export function AccountMenu() {
             <Link to="/admin/users">
               <UsersIcon aria-hidden="true" />
               {t("auth.account.adminUsers")}
+            </Link>
+          </DropdownMenuItem>
+        )}
+        {auth.level >= 2 && can("user:promote") && (
+          <DropdownMenuItem asChild>
+            <Link to="/admin/city-settings">
+              <Settings2Icon aria-hidden="true" />
+              {t("auth.account.citySettings")}
             </Link>
           </DropdownMenuItem>
         )}

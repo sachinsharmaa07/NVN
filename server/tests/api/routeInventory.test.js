@@ -45,6 +45,7 @@ const { notificationRoutes } = await import("../../src/routes/notificationRoutes
 const { statsRoutes } = await import("../../src/routes/statsRoutes.js");
 const { communityRoutes, moderationRoutes } = await import("../../src/routes/communityRoutes.js");
 const { chatRoutes } = await import("../../src/routes/chatRoutes.js");
+const { citySettingsRoutes } = await import("../../src/routes/citySettingsRoutes.js");
 const { authenticate } = await import("../../src/middleware/auth.js");
 const { loadUser, requireActive, requireVerifiedEmail } =
   await import("../../src/middleware/access.js");
@@ -68,6 +69,7 @@ const MOUNTS = [
   { prefix: "/community", router: communityRoutes },
   { prefix: "/moderation", router: moderationRoutes },
   { prefix: "/chat", router: chatRoutes },
+  { prefix: "/admin/city-settings", router: citySettingsRoutes },
 ];
 
 /** Every { method, path, handlers } of a router, flattened. */

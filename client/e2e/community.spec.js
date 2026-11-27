@@ -1,5 +1,5 @@
 // M3 community end to end against the fake backend in fixtures.js (ADR 0003).
-import { COMMENTS, ME, MOD_ME, PIN, POST, expect, test } from "./fixtures.js";
+import { ADMIN_ME, COMMENTS, ME, MOD_ME, PIN, POST, expect, test } from "./fixtures.js";
 
 // Set SHOTS=<folder> to save full-page screenshots for a design review.
 const shot = (page, name) =>
@@ -106,4 +106,24 @@ test("d) help chat answers a ticket from the records", async ({ page, api }) => 
   await expect(page.getByLabel("Your question")).toBeInViewport({ ratio: 1 });
   await shot(page, "chat");
   expect(sentBody(api, "/api/chat")).toEqual({ message: "Where is NIV-2026-000042?" });
+});
+
+test("e) city admin routes potholes to Water with a shorter fix-by time", async ({ page, api }) => {
+  api.answers.me = ADMIN_ME;
+  await page.goto("/admin/city-settings");
+  await expect(page.getByRole("heading", { name: "Pothole or broken road" })).toBeVisible();
+  await shot(page, "city-settings");
+  const pothole = page
+    .locator("form")
+    .filter({ has: page.getByRole("heading", { name: "Pothole or broken road" }) });
+  await pothole.getByRole("combobox").click();
+  await page.getByRole("option", { name: "Water" }).click();
+  await pothole.getByLabel("Fix within (hours)").fill("48");
+  await pothole.getByRole("button", { name: "Save Pothole or broken road" }).click();
+  await expect(page.getByText("Pothole or broken road saved. New reports use it.")).toBeVisible();
+  expect(sentBody(api, "/api/admin/city-settings/pothole")).toEqual({
+    departmentId: "6750e2e0e2e0e2e0e2e0d002",
+    respondHours: 24,
+    resolveHours: 48,
+  });
 });
