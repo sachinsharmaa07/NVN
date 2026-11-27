@@ -1368,7 +1368,7 @@ sequenceDiagram
   API-->>R: {items: [{type status_changed, ticketId, status}], nextCursor}
 ```
 
-### 11.4 Chatbot (DESIGNED)
+### 11.4 Chatbot (BUILT, M3: `server/src/services/chatService.js`)
 
 ```mermaid
 flowchart TB
@@ -1498,7 +1498,7 @@ stateDiagram-v2
 | **Google OAuth 2.0** | Social identity, via Auth0 connection `google-oauth2` | **BUILT** | Auth0 dev keys in development, own Google OAuth client required before launch | A failed Google login stays inside Auth0's flow. |
 | **Auth0 Management API** | Set `app_metadata.mfa_required` | **BUILT** | M2M client credentials, scopes `update:users`, `update:users_app_metadata` only | Timeouts, retries, circuit breaker, then 503. A promotion writes nothing if the flag cannot be set. |
 | **MongoDB Atlas** | Data | **BUILT** | `MONGODB_URI` | `/api/health` reports DB state. Startup exits if it cannot connect in about 5 s. |
-| **Gemini API** (`@google/genai`) | Chatbot general answers, blog-assist buttons | **DESIGNED** | Server-side key, model name in env, 1000-char input, 300 output tokens, 20 messages per user per 10 min | 10 s timeout, one retry, "AI help is unavailable right now". Rest of the app unaffected. |
+| **Gemini API** (`@google/genai`) | Chatbot general answers (BUILT); blog-assist buttons (DESIGNED) | **BUILT** | Server-side key, model name in env, 1000-char input, 300 output tokens, 20 messages per user per 10 min | 8 s timeout, no retry, `kind: "fallback"` (the client shows "AI help is unavailable right now"). Ticket answers never use it. Rest of the app unaffected. |
 | **Cloudinary** | Photo storage | **DESIGNED** | Signed uploads built with `node:crypto`, size and format limits. Files never pass through our API. | Upload error shows a field-level message. |
 | **All India Pincode Directory** (data.gov.in) | Post office, district, state per pincode | **DESIGNED** | Open licence, imported by a script | Import is idempotent. |
 | **All India Pincode Boundary GeoJSON** (AIKosh) | Polygons for "only this area" | **DESIGNED** | Imported, 2dsphere index | No polygon: circle around the centroid, issue marked `areaPrecision: "approx"`. |

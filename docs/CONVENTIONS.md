@@ -39,13 +39,14 @@ Moved out of `CLAUDE.md` on 25 Nov 2026 so that file stays short. Same rules, sa
   kebab-case plural, error codes and env vars UPPER_SNAKE, i18n keys `area.screen.key`.
 
 ## Dependencies (reasons: ADR 0001). Ask before adding anything not listed.
-- server: express, mongoose, zod, pino, pino-http, helmet, cors, express-rate-limit, dotenv, express-oauth2-jwt-bearer
+- server: express, mongoose, zod, pino, pino-http, helmet, cors, express-rate-limit, dotenv, express-oauth2-jwt-bearer,
+  @google/genai (help chat, M3)
 - client: react, react-dom, react-router, @tanstack/react-query, tailwindcss, shadcn deps (radix-ui, lucide-react,
   sonner, class-variance-authority, clsx, tailwind-merge, tw-animate-css), react-hook-form + @hookform/resolvers,
   @auth0/auth0-react, @fontsource/*, motion (variants in `lib/motion.js`), @number-flow/react, leaflet (report map)
 - dev: eslint 9 + plugins, prettier, concurrently, vite, vitest, supertest, jsdom, @testing-library/*
 - dev (client): @playwright/test (e2e, ADR 0003)
-- Later, with their phase: @google/genai, @base-ui-components/react (only where Radix lacks),
+- Later, with their phase: @base-ui-components/react (only where Radix lacks),
   Magic UI accents (Home only, UI.md §6.1), marked + sanitize-html together. Drawer is Radix Dialog; no `vaul`.
 - In-house, no package: request-id, Cloudinary signing (`node:crypto`), SLA timer, point-in-polygon
   (`utils/geo.js`), i18n `t()`.

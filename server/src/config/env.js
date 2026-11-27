@@ -66,6 +66,9 @@ const envSchema = z.object({
   ),
   // SLA job tick in ms; 0 turns it off. Never runs when NODE_ENV is test.
   SLA_JOB_INTERVAL_MS: optional(z.coerce.number().int().min(0).max(86_400_000)).default(300_000),
+  // Help chat (M3). Without a key the chat still answers ticket questions; general ones get a fallback.
+  GEMINI_API_KEY: optional(z.string().min(10)),
+  GEMINI_MODEL: optional(z.string().min(3).max(80)).default("gemini-2.5-flash"),
   // Email of the first super admin; only scripts/bootstrapSuperAdmin.js reads it.
   SUPER_ADMIN_EMAIL: optional(
     z.preprocess((v) => (typeof v === "string" ? v.trim().toLowerCase() : v), z.email()),
