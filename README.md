@@ -296,12 +296,12 @@ Run from the repository root. Add `-w server` or `-w client` to target one works
 
 | Command | What it does |
 | --- | --- |
-| `setup:data` | Everything a fresh database needs, applied: M1 + M2 indexes, pincode import, departments, SLA defaults |
+| `setup:data` | Everything a fresh database needs, applied: M1 + M2 + M3 indexes, pincode import, departments, SLA defaults |
 | `import:pincodes` | Loads `data/pincodes.tsv`; one city per (state, district), e.g. `PB-KAPURTHALA` |
 | `import:boundaries` | Optional exact pincode polygons from GeoJSON (`data/boundaries/*.geojson`) |
 | `seed:departments` | Roads, Sanitation, Electrical, Water, Drainage per city, plus the category map |
 | `seed:sla` | National respond and fix hours per category |
-| `migrate:m1-indexes` · `migrate:m2-indexes` | Build indexes (production never builds them at start-up) |
+| `migrate:m1-indexes` · `migrate:m2-indexes` · `migrate:m3-indexes` | Build indexes (production never builds them at start-up). M3 refuses `--apply` while duplicate flags exist |
 | `bootstrap:super-admin` | Makes `SUPER_ADMIN_EMAIL` the first super admin (applies directly, safe to rerun) |
 | `sync:mfa-flags` | Re-syncs Auth0 MFA flags from the database (applies directly, safe to rerun) |
 | `migrate:users-v1` · `migrate:users-v2` · `migrate:users-v3` | Historical user migrations (v1 applies directly; v2 and v3 need `--apply`). v3 removes the old `auth0Id` field once it is copied. Idempotent |

@@ -18,11 +18,12 @@
     "migrate:users-v3": "node scripts/migrateUsersV3.js",
     "migrate:m1-indexes": "node scripts/migrateM1Indexes.js",
     "migrate:m2-indexes": "node scripts/migrateM2Indexes.js",
+    "migrate:m3-indexes": "node scripts/migrateM3Indexes.js",
     "import:pincodes": "node scripts/importPincodes.js",
     "import:boundaries": "node scripts/importBoundaries.js",
     "seed:departments": "node scripts/seedDepartments.js",
     "seed:sla": "node scripts/seedSlaPolicies.js",
-    "setup:data": "node scripts/migrateM1Indexes.js --apply && node scripts/migrateM2Indexes.js --apply && node scripts/importPincodes.js --apply && node scripts/seedDepartments.js --apply && node scripts/seedSlaPolicies.js --apply"
+    "setup:data": "node scripts/migrateM1Indexes.js --apply && node scripts/migrateM2Indexes.js --apply && node scripts/migrateM3Indexes.js --apply && node scripts/importPincodes.js --apply && node scripts/seedDepartments.js --apply && node scripts/seedSlaPolicies.js --apply"
   },
   "dependencies": {
     "@google/genai": "^3.6.1",

@@ -30,7 +30,7 @@ export function scopeViolations(row) {
   });
 }
 
-async function dropIndexIfPresent(collection, name) {
+export async function dropIndexIfPresent(collection, name) {
   try {
     await collection.dropIndex(name);
     return true;
@@ -40,7 +40,7 @@ async function dropIndexIfPresent(collection, name) {
   }
 }
 
-async function hasIndex(collection, name) {
+export async function hasIndex(collection, name) {
   try {
     return (await collection.indexes()).some((i) => i.name === name);
   } catch (err) {
@@ -187,7 +187,7 @@ export async function migrateM1Indexes({ apply = false } = {}) {
 const M1_MODELS = [Pincode, Waitlist, City, Department, CategoryMapping, SlaPolicy, Issue];
 
 // diffIndexes returns key objects ({ pin: 1 }); print them the way MongoDB names them (pin_1).
-const indexName = (keys) =>
+export const indexName = (keys) =>
   Object.entries(keys)
     .map(([field, dir]) => `${field}_${dir}`)
     .join("_");
