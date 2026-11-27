@@ -64,6 +64,13 @@ export function PageHeaderSection() {
         description={t("system.styleGuide.headerBody")}
         actions={<Button>{t("system.styleGuide.btnLarge")}</Button>}
       />
+      <PageHeader
+        titleAs="h4"
+        backTo="/issues"
+        backLabel={t("system.styleGuide.headerBack")}
+        title={t("system.styleGuide.headerTitle")}
+        meta={<span>{t("system.styleGuide.headerMeta")}</span>}
+      />
     </StyleGuideSection>
   );
 }
@@ -80,6 +87,14 @@ export function EmptyStateSection() {
           action={<Button>{t("system.styleGuide.btnLarge")}</Button>}
         />
       </div>
+      <Caption>{t("system.styleGuide.emptyInline")}</Caption>
+      <EmptyState
+        variant="inline"
+        titleAs="h4"
+        title={t("system.styleGuide.emptyTitle")}
+        hint={t("system.styleGuide.emptyHint")}
+        action={<Button variant="outline">{t("system.styleGuide.btnLarge")}</Button>}
+      />
     </StyleGuideSection>
   );
 }
@@ -133,6 +148,7 @@ export function StatSection() {
           format={{ style: "percent" }}
           hint={hint}
         />
+        <StatCard label={t("system.styleGuide.statEmpty")} value={0} empty />
       </div>
     </StyleGuideSection>
   );

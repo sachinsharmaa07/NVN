@@ -9,6 +9,7 @@ import {
   SkeletonSection,
 } from "./StyleGuideBasics";
 import { BrandSection, EdgeSection, RevealSection, TypeSection } from "./StyleGuideFoundations";
+import { ErrorStateSection, FormStripSection, PhotoSlotSection } from "./StyleGuideFeedback";
 import {
   CountdownSection,
   EmptyStateSection,
@@ -64,6 +65,9 @@ function ThemePanel({ theme }) {
       <SkeletonSection />
       <PageHeaderSection />
       <EmptyStateSection />
+      <ErrorStateSection />
+      <FormStripSection />
+      <PhotoSlotSection />
       <TimelineSection />
       <CountdownSection />
       <TicketSection />
