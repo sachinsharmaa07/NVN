@@ -1,6 +1,7 @@
 // Mounts every feature router under /api (app.js adds the /api prefix).
 import { Router } from "express";
 import { adminUserRoutes } from "./adminUserRoutes.js";
+import { chatRoutes } from "./chatRoutes.js";
 import { communityRoutes, moderationRoutes } from "./communityRoutes.js";
 import { geoRoutes } from "./geoRoutes.js";
 import { healthRoutes } from "./healthRoutes.js";
@@ -27,4 +28,5 @@ apiRoutes.use("/notifications", notificationRoutes);
 apiRoutes.use("/stats", statsRoutes); // public
 apiRoutes.use("/community", communityRoutes);
 apiRoutes.use("/moderation", moderationRoutes);
+apiRoutes.use("/chat", chatRoutes);
 apiRoutes.use(geoRoutes); // /cities and /departments

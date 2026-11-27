@@ -347,3 +347,21 @@ curl -s -X POST http://localhost:5001/api/moderation/post/$POST_ID -H "Authoriza
   -H "Content-Type: application/json" -d '{"action":"restore"}'
 # 200 {"id":"...","status":"published","flagCount":0}
 ```
+
+## Help chat (M3)
+
+### POST /api/chat
+
+Signed in, 20 per 10 minutes per user. Body `{"message":"..."}` (1-1000 chars). Nothing is stored.
+A ticket id (`NIV-YYYY-NNNNNN`, up to 3) is answered from the database: the reporter's own, or for staff and
+above anything in their scope. Someone else's ticket is listed in `unknown`, the same as a missing one.
+"my complaints" / "मेरी शिकायत" lists the asker's last 5. Anything else goes to Gemini (emails and phone numbers
+removed first); no key, a timeout (8 s) or an error answers `{"kind":"fallback"}`.
+
+```bash
+curl -s -X POST http://localhost:5001/api/chat -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" -d '{"message":"where is NIV-2026-000001?"}'
+# 200 {"kind":"ticket","tickets":[{"ticketId":"NIV-2026-000001","title":"Deep pothole","status":"assigned",
+#      "expectedBy":"...","updatedAt":"...","department":"Roads"}],"unknown":[]}
+# general: {"kind":"general","reply":"..."}   list: {"kind":"list","tickets":[...]}   {"kind":"fallback"}
+```
