@@ -8,6 +8,7 @@ import { QUEUES } from "./CategoryMapping.js";
 const { ObjectId } = mongoose.Schema.Types;
 
 // Decision M1-2. "On hold" is the slaPausedAt flag, not a status.
+export const CLOSURE_TYPES = Object.freeze(["citizen_confirmed", "auto_closed"]);
 export const ISSUE_STATUSES = Object.freeze([
   "submitted",
   "assigned",
@@ -93,6 +94,10 @@ const issueSchema = new mongoose.Schema(
     // Escalation steps already sent; the SLA job sets each once (idempotence).
     breachNotifiedDeptHeadAt: { type: Date, default: null },
     breachNotifiedCityAdminAt: { type: Date, default: null },
+    breachNotifiedStateOfficerAt: { type: Date, default: null }, // 48 h after the city_admin (level 3)
+    // How it closed: the reporter confirmed the fix, or the job closed it 7 days after resolved. Null while open.
+    closureType: { type: String, enum: [...CLOSURE_TYPES, null], default: null },
+    reopenCount: { type: Number, default: 0, min: 0 },
     idempotencyKey: { type: String, required: true, immutable: true, maxlength: 64 },
   },
   { timestamps: true },
@@ -116,6 +121,8 @@ issueSchema.index({ expectedBy: 1, createdAt: 1, _id: 1 }); // super_admin, nati
 issueSchema.index({ slaState: 1, atRiskAt: 1 });
 issueSchema.index({ slaState: 1, expectedBy: 1 });
 issueSchema.index({ slaState: 1, breachNotifiedDeptHeadAt: 1, breachNotifiedCityAdminAt: 1 });
+// Level 3: unclaimed first (equality on null), then the city-admin time as the range.
+issueSchema.index({ slaState: 1, breachNotifiedStateOfficerAt: 1, breachNotifiedCityAdminAt: 1 });
 issueSchema.index({ status: 1, resolvedAt: 1 });
 issueSchema.index({ status: 1, slaPausedAt: 1, respondNotifiedAt: 1, respondBy: 1 }); // SLA job: not assigned in time
 issueSchema.index({ status: 1, category: 1 });

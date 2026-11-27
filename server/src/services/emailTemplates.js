@@ -47,6 +47,10 @@ const COPY = {
       "{ticket} was escalated to you",
       "This issue is still overdue 24 hours after the department head was told.",
     ],
+    sla_escalated_state: [
+      "{ticket} was escalated to the state",
+      "This issue is still overdue 48 hours after the city admin was told.",
+    ],
     sla_respond_overdue: [
       "{ticket} is waiting to be picked up",
       "Nobody has been assigned within the respond-by time.",
@@ -70,6 +74,10 @@ const COPY = {
     sla_escalated: [
       "{ticket} आपके पास भेजा गया है",
       "विभाग प्रमुख को बताने के 24 घंटे बाद भी यह शिकायत लंबित है।",
+    ],
+    sla_escalated_state: [
+      "{ticket} राज्य स्तर पर भेजा गया है",
+      "शहर प्रशासक को बताने के 48 घंटे बाद भी यह शिकायत लंबित है।",
     ],
     sla_respond_overdue: [
       "{ticket} किसी को सौंपे जाने का इंतज़ार कर रहा है",

@@ -9,6 +9,7 @@ import { Flag } from "../../src/models/Flag.js";
 import { Issue } from "../../src/models/Issue.js";
 import { Post } from "../../src/models/Post.js";
 import { migrateM3Indexes } from "../../src/services/m3MigrationService.js";
+import { makeIssue, seedIssueWorld } from "../helpers/issueWorld.js";
 
 useTestDb();
 
@@ -59,7 +60,41 @@ describe("migrateM3Indexes", () => {
       missingIndexes: {},
       staleIndexes: [],
       duplicateFlags: 0,
+      issuesWithoutClosure: 0,
     });
+  });
+
+  it("backfills closureType and reopenCount from each issue's history, once", async () => {
+    const w = await seedIssueWorld();
+    const h = (status, role) => ({ status, at: new Date(), by: null, role });
+    const byJob = await makeIssue(w, {
+      status: "closed",
+      statusHistory: [h("submitted", "citizen"), h("resolved", "staff"), h("closed", "system")],
+    });
+    const byReporter = await makeIssue(w, {
+      status: "closed",
+      statusHistory: [
+        h("submitted", "citizen"),
+        h("resolved", "staff"),
+        h("reopened", "citizen"),
+        h("resolved", "staff"),
+        h("closed", "citizen"),
+      ],
+    });
+    const open = await makeIssue(w);
+    const fields = { closureType: "", reopenCount: "" };
+    await Issue.collection.updateMany({}, { $unset: fields }); // what pre-step-4 rows look like
+
+    expect((await migrateM3Indexes()).issuesWithoutClosure).toBe(3);
+    await migrateM3Indexes({ apply: true });
+    const get = async (i) => Issue.findById(i._id, "closureType reopenCount").lean();
+    expect(await get(byJob)).toMatchObject({ closureType: "auto_closed", reopenCount: 0 });
+    expect(await get(byReporter)).toMatchObject({
+      closureType: "citizen_confirmed",
+      reopenCount: 1,
+    });
+    expect(await get(open)).toMatchObject({ closureType: null, reopenCount: 0 });
+    expect((await migrateM3Indexes()).issuesWithoutClosure).toBe(0);
   });
 
   it("refuses --apply while duplicate flags exist, and builds nothing", async () => {

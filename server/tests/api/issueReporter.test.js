@@ -47,6 +47,7 @@ describe("POST /api/issues/:ticketId/confirm", () => {
     expect(res.body.timeline.at(-1)).toMatchObject({ status: "closed", role: "citizen" });
     expect(await AuditLog.countDocuments({ action: "issue.status_change" })).toBe(1);
     expect(await Notification.countDocuments()).toBe(0); // nobody to tell: the reporter did it
+    expect((await Issue.findById(issue._id).lean()).closureType).toBe("citizen_confirmed");
   });
 
   it("is the same 404 for anyone but the reporter, even staff in scope", async () => {
@@ -87,6 +88,31 @@ describe("POST /api/issues/:ticketId/reopen", () => {
     expect(stored.resolvedAt).toBeNull();
     expect(stored.breachNotifiedDeptHeadAt).toBeNull();
     expect(stored.atRiskAt.toISOString()).toBe(new Date(NOW.getTime() + 126 * HOUR).toISOString());
+  });
+
+  it("clears the closure and the state escalation, and counts every reopen", async () => {
+    const issue = await makeIssue(w, {
+      status: "resolved",
+      resolvedAt: new Date(NOW - HOUR),
+      closureType: "citizen_confirmed", // a stale value must not survive a reopen
+      breachNotifiedStateOfficerAt: new Date(NOW - 2 * HOUR),
+    });
+    expect(
+      (await post(w.reporter, issue, "reopen", { note: "Still broken", version: 0 })).status,
+    ).toBe(200);
+    let stored = await Issue.findById(issue._id).lean();
+    expect(stored).toMatchObject({
+      reopenCount: 1,
+      closureType: null,
+      breachNotifiedStateOfficerAt: null,
+    });
+
+    await Issue.updateOne({ _id: issue._id }, { status: "resolved", resolvedAt: NOW });
+    expect(
+      (await post(w.reporter, issue, "reopen", { note: "Broken again", version: 1 })).status,
+    ).toBe(200);
+    stored = await Issue.findById(issue._id).lean();
+    expect(stored.reopenCount).toBe(2);
   });
 
   it("needs a note; 404 for someone else; 400 unless resolved; 409 when stale", async () => {

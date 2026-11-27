@@ -11,6 +11,7 @@ export const NOTIFICATION_TYPES = Object.freeze([
   "resumed", // reporter
   "sla_breached", // dept_head (or city_admin for a triage issue)
   "sla_escalated", // city_admin, 24 h after the breach
+  "sla_escalated_state", // state_officer of the city's state, 48 h after the city_admin
   "sla_respond_overdue", // dept_head (or city_admin for triage): not assigned within respondHours
 ]);
 export const NOTIFICATION_TTL_SECONDS = 90 * 24 * 3600;

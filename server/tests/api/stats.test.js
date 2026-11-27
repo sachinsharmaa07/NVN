@@ -24,8 +24,18 @@ describe("GET /api/stats", () => {
     await makeIssue(w, { createdAt: T0 });
     await makeIssue(w, { createdAt: T0, category: "other", queue: "triage", departmentId: null });
     await makeIssue(w, { createdAt: T0, status: "resolved", resolvedAt: after(10) });
-    await makeIssue(w, { createdAt: T0, status: "closed", resolvedAt: after(20) });
-    await makeIssue(w, { createdAt: T0, status: "closed", resolvedAt: after(30) });
+    await makeIssue(w, {
+      createdAt: T0,
+      status: "closed",
+      resolvedAt: after(20),
+      closureType: "citizen_confirmed",
+    });
+    await makeIssue(w, {
+      createdAt: T0,
+      status: "closed",
+      resolvedAt: after(30),
+      closureType: "auto_closed",
+    });
     await makeIssue(w, { createdAt: T0, status: "rejected" });
 
     const res = await request(app).get("/api/stats");
@@ -34,6 +44,8 @@ describe("GET /api/stats", () => {
     expect(res.body).toEqual({
       totalReports: 6,
       resolved: 3,
+      verifiedFixes: 1,
+      slaMetRate: 100,
       medianResolutionHours: 20,
       openByCategory: {
         pothole: 1,
@@ -46,8 +58,16 @@ describe("GET /api/stats", () => {
     });
   });
 
-  it("is null for the median when nothing is resolved yet", async () => {
-    expect((await request(app).get("/api/stats")).body.medianResolutionHours).toBeNull();
+  it("is null for the median and the SLA rate when nothing is resolved yet", async () => {
+    const { body } = await request(app).get("/api/stats");
+    expect(body).toMatchObject({ medianResolutionHours: null, slaMetRate: null, verifiedFixes: 0 });
+  });
+
+  it("slaMetRate is the share of fixes resolved by their expectedBy (due at 168 h)", async () => {
+    await makeIssue(w, { createdAt: T0, status: "resolved", resolvedAt: after(100) });
+    await makeIssue(w, { createdAt: T0, status: "closed", resolvedAt: after(168) }); // on the dot
+    await makeIssue(w, { createdAt: T0, status: "closed", resolvedAt: after(200) }); // late
+    expect((await request(app).get("/api/stats")).body.slaMetRate).toBe(66.7);
   });
 
   it("serves the cached answer for 5 minutes, then recounts", async () => {

@@ -1,9 +1,11 @@
 // SLA job tick (the timer is jobs/slaJob.js): mark at_risk and breached, flag issues not assigned by respondBy,
-// notify the dept_head on a breach and the city_admin 24 h later, auto-close resolved issues after 7 days,
+// notify the dept_head on a breach, the city_admin 24 h later and the state_officer 48 h after that, auto-close
+// resolved issues after 7 days,
 // then send pending notification emails. Idempotent: every write is
 // guarded by the field it sets, so a rerun or an overlapping tick sends nothing twice.
 // One server instance runs it (ADR 0001); a second would only repeat no-op queries.
 import { logger } from "../config/logger.js";
+import { City } from "../models/City.js";
 import { Issue } from "../models/Issue.js";
 import { User } from "../models/User.js";
 import { clock } from "../utils/clock.js";
@@ -15,6 +17,7 @@ import { drainEmails } from "./emailOutboxService.js";
 
 const HOUR = 3600_000;
 export const ESCALATE_AFTER_MS = 24 * HOUR;
+export const STATE_ESCALATE_AFTER_MS = 48 * HOUR; // after the city_admin step
 export const AUTO_CLOSE_AFTER_MS = 7 * 24 * HOUR;
 const BATCH = 200; // per step per tick; the rest waits for the next tick
 const log = logger.child({ job: "sla" });
@@ -66,6 +69,26 @@ async function escalate(now) {
     const to = (i) => activeIds({ role: "city_admin", cityId: i.cityId });
     sent += await claimAndNotify(issue, { breachNotifiedCityAdminAt: now }, "sla_escalated", to);
   }
+  // Level 3. A state with no officer still gets the claim, like the steps above, so it isn't retried every tick.
+  const third = await Issue.find({
+    ...breachedOpen,
+    breachNotifiedCityAdminAt: trusted({ $lte: new Date(now - STATE_ESCALATE_AFTER_MS) }),
+    breachNotifiedStateOfficerAt: null,
+  })
+    .limit(BATCH)
+    .lean();
+  for (const issue of third) {
+    const to = async (i) => {
+      const city = await City.findById(i.cityId, "stateCode").lean();
+      return city ? activeIds({ role: "state_officer", stateCode: city.stateCode }) : [];
+    };
+    sent += await claimAndNotify(
+      issue,
+      { breachNotifiedStateOfficerAt: now },
+      "sla_escalated_state",
+      to,
+    );
+  }
   return sent;
 }
 
@@ -104,7 +127,7 @@ async function autoClose(now) {
       const after = await Issue.findOneAndUpdate(
         { _id: issue._id, status: "resolved", __v: issue.__v },
         {
-          $set: { status: "closed" },
+          $set: { status: "closed", closureType: "auto_closed" },
           $inc: { __v: 1 },
           $push: { statusHistory: { status: "closed", at: now, by: null, role: "system" } },
         },
