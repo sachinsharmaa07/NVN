@@ -1,4 +1,5 @@
-import { motion, useReducedMotion } from "motion/react";
+import { useReducedMotion } from "motion/react";
+import * as m from "motion/react-m";
 import { MapPinnedIcon, MailboxIcon, TicketIcon } from "lucide-react";
 import { t } from "@/i18n/t";
 import { fadeUp, stagger } from "@/lib/motion";
@@ -36,9 +37,9 @@ export function HowItWorks() {
       >
         {t("landing.how.title")}
       </h2>
-      <motion.ol {...reveal} className="grid gap-4 md:grid-cols-3 md:gap-6">
+      <m.ol {...reveal} className="grid gap-4 md:grid-cols-3 md:gap-6">
         {STEPS.map(({ key, Icon }, index) => (
-          <motion.li
+          <m.li
             key={key}
             variants={reduce ? undefined : fadeUp}
             className="flex flex-col gap-3 rounded-lg border bg-card p-4 md:p-6"
@@ -53,9 +54,9 @@ export function HowItWorks() {
             </div>
             <h3 className="font-display text-xl font-semibold">{t(`landing.how.${key}Title`)}</h3>
             <p className="text-muted-foreground">{t(`landing.how.${key}Body`)}</p>
-          </motion.li>
+          </m.li>
         ))}
-      </motion.ol>
+      </m.ol>
     </section>
   );
 }

@@ -1,6 +1,6 @@
 import { renderHook } from "@testing-library/react";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { fadeUp, stagger, useMotionSafe } from "./motion";
+import { fadeUp, springs, stagger, useMotionSafe } from "./motion";
 
 /*
  * jsdom has no window.matchMedia. motion reads "(prefers-reduced-motion)" once, then listens for
@@ -50,6 +50,25 @@ describe("useMotionSafe", () => {
     setReducedMotion(true);
     const { result } = renderHook(() => useMotionSafe(stagger()));
     expect(result.current.visible.transition).toEqual({ duration: 0 });
+  });
+
+  it("keeps a spring when the device allows motion", () => {
+    setReducedMotion(false);
+    const { result } = renderHook(() => useMotionSafe(springs.snappy));
+    expect(result.current).toBe(springs.snappy);
+  });
+
+  it("turns a spring into an instant transition under reduced motion", () => {
+    setReducedMotion(true);
+    const { result } = renderHook(() => useMotionSafe(springs.gentle));
+    expect(result.current).toEqual({ duration: 0 });
+  });
+});
+
+describe("springs", () => {
+  it("match the duration tokens and only gentle bounces", () => {
+    expect(springs.snappy).toEqual({ type: "spring", visualDuration: 0.2, bounce: 0 });
+    expect(springs.gentle).toEqual({ type: "spring", visualDuration: 0.32, bounce: 0.1 });
   });
 });
 

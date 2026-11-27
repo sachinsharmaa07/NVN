@@ -70,7 +70,7 @@ function ThemePanel({ theme }) {
       <PhotoSlotSection />
       <TimelineSection />
       <CountdownSection />
-      <TicketSection />
+      <TicketSection idPrefix={idPrefix} />
       <StatSection />
       <RevealSection />
     </section>

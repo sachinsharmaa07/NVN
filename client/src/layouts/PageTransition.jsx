@@ -1,49 +1,28 @@
-import { AnimatePresence, motion } from "motion/react";
-import { Suspense, useState } from "react";
-import { useLocation, useOutlet } from "react-router";
-import { page, useMotionSafe } from "@/lib/motion";
+import { Suspense, ViewTransition } from "react";
+import { Outlet, useLocation } from "react-router";
 import { PageSkeleton } from "./PageSkeleton";
 
-// The outgoing page is removed at once and invisibly: UI.md §4 says pages have no exit animation.
-// (Zero duration, not a fade; pointer-events off so it can never catch a tap.)
-const leaveAtOnce = { opacity: 0, pointerEvents: "none", transition: { duration: 0 } };
-
 /*
- * Renders the current page and fades it in, rising 8px, over 200ms when you navigate.
- * - Keyed by pathname: a new path is a new page and animates in. A query change (?step=2) is
- *   the same page and does not.
- * - initial={false}: the first page after a full load just appears. Nothing animates on load.
- * - mode="popLayout": for the instant the old page is leaving, it is taken out of the flow, so the
- *   new page never jumps down below it.
- * - Opacity and transform only, so input is never blocked and nothing reflows.
- * - Suspense shows PageSkeleton while a page's code is still downloading.
- * - Reduced motion: useMotionSafe makes it an instant swap.
+ * Page cross-fade with the browser's View Transitions (UI.md §4, 02-lld "Motion and transition contracts").
+ * React Router runs every navigation inside startTransition, so React drives document.startViewTransition.
+ * - Keyed by pathname: a new path exits and enters, and both get the `page` class, which globals.css
+ *   animates (old out in `fast`, new in and up 8px in `base`). A query change (?step=2) is the same key,
+ *   so it is an "update", and `default="none"` keeps it still. 02-lld says unkeyed; unkeyed, every
+ *   wizard step change would cross-fade the whole page.
+ * - Only `main` is inside the boundary; the shell never animates.
+ * - Reduced motion: the reduced-motion block in globals.css turns the animations off.
+ * - Suspense shows PageSkeleton only on a first load; during a navigation the old page stays until
+ *   the new page's code arrives.
  */
 export function PageTransition() {
   const { pathname } = useLocation();
-  const variants = useMotionSafe(page);
-
   return (
-    <AnimatePresence mode="popLayout" initial={false}>
-      <motion.div
-        key={pathname}
-        variants={variants}
-        initial="hidden"
-        animate="visible"
-        exit={leaveAtOnce}
-      >
+    <ViewTransition key={pathname} default="none" enter="page" exit="page">
+      <div>
         <Suspense fallback={<PageSkeleton />}>
-          <FrozenOutlet />
+          <Outlet />
         </Suspense>
-      </motion.div>
-    </AnimatePresence>
+      </div>
+    </ViewTransition>
   );
-}
-
-// Keeps the page this wrapper was created for. Without it, the leaving wrapper would re-render
-// with the new route's content for a moment, showing the new page twice.
-function FrozenOutlet() {
-  const outlet = useOutlet();
-  const [frozen] = useState(outlet);
-  return frozen;
 }

@@ -41,7 +41,7 @@ export function AppLayout() {
         {/*
           tabIndex -1 lets the skip link move focus here. Bottom padding = bottom bar height
           (64px + phone safe area) so the bar never covers the end of the page; none on desktop.
-          `relative` is the anchor for the leaving page in PageTransition.
+          PageTransition holds the view-transition boundary, so only the page area cross-fades.
         */}
         <main
           id="main"

@@ -123,12 +123,12 @@ export function CountdownSection() {
   );
 }
 
-export function TicketSection() {
+export function TicketSection({ idPrefix }) {
   return (
     <StyleGuideSection title={t("system.styleGuide.ticket")}>
       <div className="flex flex-col gap-2">
         <TicketId id="NIV-2026-000123" />
-        <TicketId id="NIV-2026-004871" size="lg" />
+        <TicketId id="NIV-2026-004871" size="lg" transitionName={`${idPrefix}-ticket`} />
       </div>
     </StyleGuideSection>
   );

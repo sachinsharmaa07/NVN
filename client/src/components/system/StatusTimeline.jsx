@@ -1,4 +1,5 @@
-import { motion, useReducedMotion } from "motion/react";
+import { useReducedMotion } from "motion/react";
+import * as m from "motion/react-m";
 import { cn } from "@/lib/utils";
 import { t } from "@/i18n/t";
 import { durations, easings } from "./motionTokens";
@@ -38,7 +39,7 @@ export function StatusTimeline({ steps, animate = true, className }) {
     : { initial: false, animate: "visible" };
 
   return (
-    <motion.ol
+    <m.ol
       aria-label={t("system.timeline.label")}
       variants={listVariants}
       {...motionProps}
@@ -52,7 +53,7 @@ export function StatusTimeline({ steps, animate = true, className }) {
           nextUpcoming={steps[index + 1]?.state === "upcoming"}
         />
       ))}
-    </motion.ol>
+    </m.ol>
   );
 }
 
@@ -63,14 +64,14 @@ function TimelineStep({ step, isLast, nextUpcoming }) {
   const current = step.state === "current";
 
   return (
-    <motion.li
+    <m.li
       variants={stepVariants}
       aria-current={current ? "step" : undefined}
       className={cn("relative flex gap-4", !isLast && "pb-6")}
     >
       {/* Connector to the next step: darker while the path is walked, light towards upcoming. */}
       {!isLast && (
-        <motion.span
+        <m.span
           aria-hidden="true"
           variants={lineVariants}
           className={cn(
@@ -109,6 +110,6 @@ function TimelineStep({ step, isLast, nextUpcoming }) {
         {step.at && <p className="text-sm text-muted-foreground tabular-nums">{step.at}</p>}
         {step.note && <p className="max-w-prose text-sm text-foreground">{step.note}</p>}
       </div>
-    </motion.li>
+    </m.li>
   );
 }

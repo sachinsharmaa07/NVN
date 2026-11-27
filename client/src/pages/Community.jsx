@@ -1,5 +1,6 @@
 import { PenLineIcon, UsersIcon } from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
+import { useReducedMotion } from "motion/react";
+import * as m from "motion/react-m";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { RequireAuth } from "@/components/auth/RequireAuth";
@@ -65,18 +66,18 @@ function Feed({ pincode, canPost }) {
     );
   } else {
     body = (
-      <motion.ul
+      <m.ul
         variants={list}
         initial={reduce ? false : "hidden"}
         animate="visible"
         className="grid gap-3 md:grid-cols-2"
       >
         {posts.map((post, i) => (
-          <motion.li key={post.id} variants={i < 8 ? item : undefined}>
+          <m.li key={post.id} variants={i < 8 ? item : undefined}>
             <PostCard post={post} />
-          </motion.li>
+          </m.li>
         ))}
-      </motion.ul>
+      </m.ul>
     );
   }
 
