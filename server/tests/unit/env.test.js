@@ -24,6 +24,8 @@ describe("parseEnv", () => {
       AUTH_CLOCK_TOLERANCE_SECONDS: 5,
       SLA_JOB_INTERVAL_MS: 300_000,
       GEMINI_MODEL: "gemini-2.5-flash",
+      SMTP_HOST: "smtp.gmail.com",
+      SMTP_PORT: 465,
     });
     expect(Object.isFrozen(result.config)).toBe(true);
   });

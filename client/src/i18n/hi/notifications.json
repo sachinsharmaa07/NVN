@@ -9,5 +9,6 @@
   "notifications.type.onHold": "{ticket} रोका गया है",
   "notifications.type.resumed": "{ticket} पर काम फिर शुरू हो गया है",
   "notifications.type.slaBreached": "{ticket} की समय-सीमा निकल गई है",
-  "notifications.type.slaEscalated": "{ticket} आपके पास भेजा गया है"
+  "notifications.type.slaEscalated": "{ticket} आपके पास भेजा गया है",
+  "notifications.type.slaRespondOverdue": "{ticket} किसी को सौंपे जाने का इंतज़ार कर रहा है"
 }

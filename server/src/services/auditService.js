@@ -1,5 +1,9 @@
-// The only door to the AuditLog. It exports record() and reads, never an update or a delete.
+// The only door to the AuditLog: record() and listAudit(), never an update or a delete.
+import mongoose from "mongoose";
 import { AuditLog } from "../models/AuditLog.js";
+import { decodeCursor, encodeCursor } from "../utils/cursor.js";
+
+const trusted = mongoose.trusted;
 
 // Which keys may appear in before/after per action: never tokens, secrets or email.
 const ROLE_KEYS = ["role", "cityId", "departmentId", "stateCode"];
@@ -25,6 +29,8 @@ const ALLOWED_KEYS = {
   "comment.delete": ["status"],
   // M3 city settings: routing and hours for one category.
   "city.category_update": ["category", "departmentId", "queue", "respondHours", "resolveHours"],
+  "city.create": ["name", "code", "stateCode", "status"],
+  "city.update": ["name", "status"],
 };
 const targetOf = (action) => action.split(".")[0];
 
@@ -57,17 +63,44 @@ export async function record(entry, { session } = {}) {
   return { id: String(row._id) };
 }
 
-const clampLimit = (limit) => Math.min(Math.max(Number(limit) || 20, 1), 50);
-
-/** Newest-first history of one user (first page only; Phase 1 has no endpoint that needs more). */
-export function listForTarget(targetId, limit = 20) {
-  return AuditLog.find({ targetType: "user", targetId })
-    .sort({ at: -1 })
-    .limit(clampLimit(limit))
+/**
+ * GET /api/admin/audit: newest first, keyset on (at, _id). A city admin sees their city's rows only;
+ * super_admin sees all. Optional filters: action, targetType, targetId. Rows carry ids, never email.
+ */
+export async function listAudit(actor, { action, targetType, targetId, cursor, limit }) {
+  const filter = {};
+  if (actor.role !== "super_admin") filter.cityId = actor.cityId;
+  if (action) filter.action = action;
+  if (targetType) filter.targetType = targetType;
+  if (targetId) filter.targetId = targetId;
+  if (cursor) {
+    const c = decodeCursor(cursor);
+    filter.$or = [
+      { at: trusted({ $lt: c.createdAt }) },
+      { at: c.createdAt, _id: trusted({ $lt: c._id }) },
+    ];
+  }
+  const rows = await AuditLog.find(filter)
+    .sort({ at: -1, _id: -1 })
+    .limit(limit + 1)
     .lean();
-}
-
-/** Newest-first global feed, first page only. */
-export function listRecent(limit = 20) {
-  return AuditLog.find().sort({ at: -1, _id: -1 }).limit(clampLimit(limit)).lean();
+  const items = rows.slice(0, limit);
+  const last = items[items.length - 1];
+  return {
+    items: items.map((r) => ({
+      id: String(r._id),
+      at: r.at,
+      action: r.action,
+      targetType: r.targetType,
+      targetId: String(r.targetId),
+      actor:
+        r.actorType === "system"
+          ? { type: "system", label: r.actorLabel }
+          : { type: "user", id: String(r.actorId), role: r.actorRole },
+      before: r.before ?? null,
+      after: r.after ?? null,
+      reason: r.reason ?? null,
+    })),
+    nextCursor: rows.length > limit ? encodeCursor({ createdAt: last.at, _id: last._id }) : null,
+  };
 }

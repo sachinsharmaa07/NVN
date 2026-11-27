@@ -27,16 +27,19 @@ async function route(cityId, category, session) {
 }
 
 /** Decision 3: the city's policy wins over the national default (cityId null); the seed is the fallback. */
-export async function resolveHours(cityId, category, session) {
+export async function slaHours(cityId, category, session) {
   const rows = await SlaPolicy.find(
     { category, cityId: mongoose.trusted({ $in: [cityId, null] }) },
-    "cityId resolveHours",
+    "cityId respondHours resolveHours",
   )
     .session(session)
     .lean();
-  const policy = rows.find((r) => r.cityId) ?? rows[0];
-  return policy?.resolveHours ?? DEFAULT_SLA_HOURS[category].resolveHours;
+  const policy = rows.find((r) => r.cityId) ?? rows[0] ?? DEFAULT_SLA_HOURS[category];
+  return { respondHours: policy.respondHours, resolveHours: policy.resolveHours };
 }
+
+export const resolveHours = async (cityId, category, session) =>
+  (await slaHours(cityId, category, session)).resolveHours;
 
 const findByKey = (reporterId, key) => Issue.findOne({ reporterId, idempotencyKey: key }).lean();
 
@@ -63,8 +66,8 @@ export async function createIssue(actor, input, key, ctx = {}) {
     inTransaction(async (session) => {
       const now = clock.now();
       const { departmentId, queue } = await route(pincode.cityId, input.category, session);
-      const hours = await resolveHours(pincode.cityId, input.category, session);
-      const due = expectedBy(now, hours);
+      const hours = await slaHours(pincode.cityId, input.category, session);
+      const due = expectedBy(now, hours.resolveHours);
       const [issue] = await Issue.create(
         [
           {
@@ -84,6 +87,7 @@ export async function createIssue(actor, input, key, ctx = {}) {
             statusHistory: [{ status: "submitted", at: now, by: actor.id, role: actor.role }],
             expectedBy: due,
             atRiskAt: atRiskAt(now, due),
+            respondBy: expectedBy(now, hours.respondHours),
             idempotencyKey: key,
           },
         ],

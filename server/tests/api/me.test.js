@@ -134,3 +134,17 @@ describe("PATCH /api/me", () => {
     expect(res.headers["cache-control"]).toBe("no-store");
   });
 });
+
+describe("refresh when the token's email belongs to someone else", () => {
+  it("still records the sign-in and keeps the old email, instead of failing every request", async () => {
+    const other = await seedUser("citizen");
+    const user = await seedUser("citizen", {}, { lastLoginAt: null });
+    // Same person changed their Auth0 email to an address another verified user already owns.
+    const token = tokenFor(user, { email: other.email });
+    const res = await request(app).get("/api/me").set(bearer(token));
+    expect(res.status).toBe(200);
+    const row = await dbRow(user);
+    expect(row.email).toBe(user.email);
+    expect(row.lastLoginAt).toBeInstanceOf(Date);
+  });
+});

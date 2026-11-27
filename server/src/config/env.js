@@ -66,6 +66,13 @@ const envSchema = z.object({
   ),
   // SLA job tick in ms; 0 turns it off. Never runs when NODE_ENV is test.
   SLA_JOB_INTERVAL_MS: optional(z.coerce.number().int().min(0).max(86_400_000)).default(300_000),
+  // Email (decision 6): SMTP, Gmail by default (an app password, not the account password). Without
+  // SMTP_USER and SMTP_PASS emails are only logged, so dev and tests send nothing.
+  SMTP_HOST: optional(z.string().min(3).max(200)).default("smtp.gmail.com"),
+  SMTP_PORT: optional(z.coerce.number().int().min(1).max(65535)).default(465),
+  SMTP_USER: optional(z.string().min(3).max(254)),
+  SMTP_PASS: optional(z.string().min(8).max(200)),
+  EMAIL_FROM: optional(z.string().min(3).max(300)),
   // Help chat (M3). Without a key the chat still answers ticket questions; general ones get a fallback.
   GEMINI_API_KEY: optional(z.string().min(10)),
   GEMINI_MODEL: optional(z.string().min(3).max(80)).default("gemini-2.5-flash"),

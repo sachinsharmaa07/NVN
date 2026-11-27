@@ -1,5 +1,5 @@
 // One-off data migrations. v1: Phase 1 (`verified` -> `emailVerified`, status default, new indexes).
-// v2: auth0Id -> auth0Ids. M1: pincode, waitlist, city and department indexes. All idempotent;
+// v2: auth0Id -> auth0Ids, v3: remove the leftover auth0Id. M1: pincode, waitlist, city and department indexes. All idempotent;
 // called only by the matching scripts/migrate*.js.
 import { AuditLog } from "../models/AuditLog.js";
 import { City } from "../models/City.js";
@@ -128,6 +128,32 @@ export async function migrateUsersV2({ apply = false } = {}) {
   if (await dropIndexIfPresent(User.collection, "auth0Id_1"))
     report.droppedIndexes.push("auth0Id_1");
   await User.createIndexes();
+  report.applied = true;
+  return report;
+}
+
+/**
+ * Removes the old `auth0Id` field that migrateUsersV2 kept for rollback, only where its value is already in
+ * `auth0Ids` (so nothing can be lost). Rows not yet copied are counted and left alone: run v2 first.
+ * Dry run unless `apply`. Idempotent. Called only by scripts/migrateUsersV3.js.
+ */
+export async function migrateUsersV3({ apply = false } = {}) {
+  // Raw driver filters: the schema no longer declares auth0Id, so Mongoose would strip it.
+  const copied = {
+    auth0Id: { $exists: true },
+    $expr: { $in: ["$auth0Id", { $ifNull: ["$auth0Ids", []] }] },
+  };
+  const notCopied = {
+    auth0Id: { $exists: true },
+    $expr: { $not: { $in: ["$auth0Id", { $ifNull: ["$auth0Ids", []] }] } },
+  };
+  const report = {
+    applied: false,
+    toRemove: await User.collection.countDocuments(copied),
+    notCopied: await User.collection.countDocuments(notCopied),
+  };
+  if (!apply) return report;
+  await User.collection.updateMany(copied, { $unset: { auth0Id: "" } });
   report.applied = true;
   return report;
 }

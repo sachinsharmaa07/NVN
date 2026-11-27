@@ -83,6 +83,9 @@ const issueSchema = new mongoose.Schema(
     slaPausedAt: { type: Date, default: null },
     holdReason: { type: String, trim: true, maxlength: NOTE_MAX, default: null },
     expectedBy: { type: Date, required: true },
+    // Respond-by (decision 3): when it must be assigned. Old issues have none, so the job skips them.
+    respondBy: { type: Date, default: null },
+    respondNotifiedAt: { type: Date, default: null },
     // 75% of the allowed time, stored so the SLA job finds due issues with an index (M2).
     atRiskAt: { type: Date, default: null },
     slaState: { type: String, enum: SLA_STATES, default: "on_track" },
@@ -114,6 +117,7 @@ issueSchema.index({ slaState: 1, atRiskAt: 1 });
 issueSchema.index({ slaState: 1, expectedBy: 1 });
 issueSchema.index({ slaState: 1, breachNotifiedDeptHeadAt: 1, breachNotifiedCityAdminAt: 1 });
 issueSchema.index({ status: 1, resolvedAt: 1 });
+issueSchema.index({ status: 1, respondBy: 1 }); // SLA job: not assigned in time
 issueSchema.index({ status: 1, category: 1 });
 // A replayed submit finds the first issue; a racing duplicate hits E11000.
 issueSchema.index({ reporterId: 1, idempotencyKey: 1 }, { unique: true });

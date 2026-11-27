@@ -24,6 +24,8 @@ export const AUDIT_ACTIONS = [
   "comment.restore",
   "comment.delete",
   "city.category_update",
+  "city.create",
+  "city.update",
 ];
 export const AUDIT_TARGETS = ["user", "issue", "post", "comment", "city"];
 
@@ -96,5 +98,6 @@ auditLogSchema.pre("save", function () {
 auditLogSchema.index({ targetType: 1, targetId: 1, at: -1 }); // history of one user
 auditLogSchema.index({ at: -1, _id: -1 }); // global feed
 auditLogSchema.index({ actorId: 1, at: -1 }); // what an admin did
+auditLogSchema.index({ cityId: 1, at: -1, _id: -1 }); // a city admin's audit feed
 
 export const AuditLog = mongoose.model("AuditLog", auditLogSchema);

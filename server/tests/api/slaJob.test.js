@@ -99,3 +99,25 @@ describe("runSlaTick", () => {
     expect(startSlaJob(1000)).toBeNull();
   });
 });
+
+describe("respond-by", () => {
+  it("tells the dept_head once when a submitted issue isn't assigned in time", async () => {
+    const late = await issueAtT0({ respondBy: at(24) });
+    await issueAtT0({ respondBy: at(24), status: "assigned" }); // picked up in time: no note
+    await issueAtT0(); // an M1 issue without respondBy: skipped
+
+    expect(await runSlaTick(at(23))).toMatchObject({ respondOverdue: 0 });
+    expect(await runSlaTick(at(24))).toMatchObject({ respondOverdue: 1 });
+    expect(await runSlaTick(at(25))).toMatchObject({ respondOverdue: 0 }); // once per deadline
+    expect(await notes({ type: "sla_respond_overdue" })).toEqual([
+      expect.objectContaining({ userId: w.head._id, ticketId: late.ticketId }),
+    ]);
+  });
+
+  it("tells the city_admin for a triage issue", async () => {
+    await issueAtT0({ respondBy: at(24), departmentId: null, queue: "triage" });
+    await runSlaTick(at(24));
+    const [note] = await notes({ type: "sla_respond_overdue" });
+    expect(note.userId).toEqual(w.admin._id);
+  });
+});

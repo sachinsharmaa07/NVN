@@ -2,6 +2,8 @@
 import { Router } from "express";
 import { adminUserRoutes } from "./adminUserRoutes.js";
 import { chatRoutes } from "./chatRoutes.js";
+import { auditRoutes } from "./auditRoutes.js";
+import { cityAdminRoutes } from "./cityAdminRoutes.js";
 import { citySettingsRoutes } from "./citySettingsRoutes.js";
 import { communityRoutes, moderationRoutes } from "./communityRoutes.js";
 import { geoRoutes } from "./geoRoutes.js";
@@ -21,6 +23,8 @@ apiRoutes.use("/health", healthRoutes);
 apiRoutes.use("/me", meRoutes);
 apiRoutes.use("/admin/users", adminUserRoutes);
 apiRoutes.use("/admin/city-settings", citySettingsRoutes);
+apiRoutes.use("/admin/audit", auditRoutes);
+apiRoutes.use("/admin/cities", cityAdminRoutes);
 apiRoutes.use("/pincodes", pincodeRoutes); // public
 apiRoutes.use("/waitlist", waitlistRoutes); // public
 apiRoutes.use("/uploads", uploadRoutes);

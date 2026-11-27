@@ -10,10 +10,11 @@ import { checkTransition, needsNote } from "../utils/issueStateMachine.js";
 import { forbidden, inTransaction, notFound } from "./adminUserSupport.js";
 import { record } from "./auditService.js";
 import { issueScope } from "./issueQueryService.js";
+import { drainSoon } from "./emailOutboxService.js";
 import { detail } from "./issueView.js";
 import { notify } from "./notificationService.js";
 import { verifyPhotos } from "./photoCheckService.js";
-import { resolveHours } from "./issueService.js";
+import { slaHours } from "./issueService.js";
 
 const conflict = () =>
   new AppError("CONFLICT", 409, "Someone else changed this issue. Reload it and try again.");
@@ -74,6 +75,7 @@ export async function commit(actor, issue, version, change, ctx) {
     if (toReporter) await notify([issue.reporterId], change.notifyType, after, { session });
     return after;
   });
+  if (change.notifyType) drainSoon(); // after the commit: mail never holds the transaction open
   return detail(saved);
 }
 
@@ -150,10 +152,13 @@ export async function reporterAction(actor, ticketId, to, { note, version }, ctx
   if (to === "reopened") {
     // Decision 3: a reopened issue gets a fresh deadline and a clean SLA record.
     const now = clock.now();
-    const due = expectedBy(now, await resolveHours(issue.cityId, issue.category));
+    const hours = await slaHours(issue.cityId, issue.category);
+    const due = expectedBy(now, hours.resolveHours);
     Object.assign(set, {
       expectedBy: due,
       atRiskAt: atRiskAt(now, due),
+      respondBy: expectedBy(now, hours.respondHours),
+      respondNotifiedAt: null,
       slaState: "on_track",
       resolvedAt: null,
       breachNotifiedDeptHeadAt: null,

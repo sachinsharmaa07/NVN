@@ -35,6 +35,7 @@ describe("migrateM2Indexes", () => {
     );
     expect(dry.missingIndexes.Notification).toEqual([
       "userId_1_createdAt_-1__id_-1",
+      "emailedAt_1_createdAt_1",
       "createdAt_1",
     ]);
     expect(dry.issuesWithoutSla).toBe(1);

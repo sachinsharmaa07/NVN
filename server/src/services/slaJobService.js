@@ -1,5 +1,6 @@
-// SLA job tick (ARCHITECTURE 12.4; the timer is jobs/slaJob.js): mark at_risk and breached, notify the dept_head on a
-// breach, the city_admin 24 h later, auto-close resolved issues after 7 days. Idempotent: every write is
+// SLA job tick (the timer is jobs/slaJob.js): mark at_risk and breached, flag issues not assigned by respondBy,
+// notify the dept_head on a breach and the city_admin 24 h later, auto-close resolved issues after 7 days,
+// then send pending notification emails. Idempotent: every write is
 // guarded by the field it sets, so a rerun or an overlapping tick sends nothing twice.
 // One server instance runs it (ADR 0001); a second would only repeat no-op queries.
 import { logger } from "../config/logger.js";
@@ -10,6 +11,7 @@ import { OPEN_STATUSES } from "../utils/issueStateMachine.js";
 import { inTransaction, trusted } from "./adminUserSupport.js";
 import { record } from "./auditService.js";
 import { notify } from "./notificationService.js";
+import { drainEmails } from "./emailOutboxService.js";
 
 const HOUR = 3600_000;
 export const ESCALATE_AFTER_MS = 24 * HOUR;
@@ -63,6 +65,28 @@ async function escalate(now) {
   for (const issue of second) {
     const to = (i) => activeIds({ role: "city_admin", cityId: i.cityId });
     sent += await claimAndNotify(issue, { breachNotifiedCityAdminAt: now }, "sla_escalated", to);
+  }
+  return sent;
+}
+
+// Decision 3, respond-by: a submitted or reopened issue nobody has assigned in time. The dept_head hears
+// (the city_admin for a triage issue), once per deadline; reopening sets a new respondBy and clears the flag.
+async function respondOverdue(now) {
+  const late = await Issue.find({
+    status: trusted({ $in: ["submitted", "reopened"] }),
+    slaPausedAt: null,
+    respondBy: trusted({ $lte: now }),
+    respondNotifiedAt: null,
+  })
+    .limit(BATCH)
+    .lean();
+  let sent = 0;
+  for (const issue of late) {
+    const to = (i) =>
+      i.departmentId
+        ? activeIds({ role: "dept_head", departmentId: i.departmentId })
+        : activeIds({ role: "city_admin", cityId: i.cityId });
+    sent += await claimAndNotify(issue, { respondNotifiedAt: now }, "sla_respond_overdue", to);
   }
   return sent;
 }
@@ -124,7 +148,9 @@ export async function runSlaTick(now = clock.now()) {
     atRisk: atRisk.modifiedCount,
     breached: breached.modifiedCount,
     notified: await escalate(now),
+    respondOverdue: await respondOverdue(now),
     autoClosed: await autoClose(now),
+    emailed: (await drainEmails({ now })).sent,
   };
   log.info({ event: "sla.tick", ...result }, "SLA tick");
   return result;

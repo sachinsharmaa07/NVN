@@ -173,29 +173,27 @@ async function refreshIfStale(record, claims, now) {
     if (avatar) set.avatarUrl = avatar; // no picture claim must not wipe a good avatar
     // `name` is the user's to edit, so it is never overwritten
   }
-  let updated;
-  try {
-    updated = await User.findOneAndUpdate(
+  const write = () =>
+    User.findOneAndUpdate(
       { _id: record._id, status: "active", $or: triggers },
       { $set: set },
       { returnDocument: "after", lean: true, runValidators: true },
     );
+  let updated;
+  try {
+    updated = await write();
   } catch (err) {
-    // Another user already holds this address verified (email_verified_unique): keep the old copy.
-    if (err?.code !== 11000) throw err;
+    // Another user already holds this address verified (email_verified_unique): keep the old email,
+    // but still save the rest, or lastLoginAt never moves and every request retries this write.
+    if (err?.code !== 11000 || !set.email) throw err;
     log.warn(
       { event: "auth.verified_email_conflict", userId: String(record._id) },
-      "Verified email already belongs to another user; not refreshed",
+      "Verified email already belongs to another user; email not refreshed",
     );
-    return record;
+    delete set.email;
+    updated = await write();
   }
-  if (
-    updated &&
-    stale &&
-    email &&
-    email !== record.email &&
-    levelOf(record.role) >= MFA_MIN_LEVEL
-  ) {
+  if (updated && updated.email !== record.email && levelOf(record.role) >= MFA_MIN_LEVEL) {
     log.warn(
       { event: "auth.email_changed", userId: String(record._id) },
       "Privileged user's email changed",

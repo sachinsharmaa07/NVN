@@ -11,6 +11,7 @@ export const NOTIFICATION_TYPES = Object.freeze([
   "resumed", // reporter
   "sla_breached", // dept_head (or city_admin for a triage issue)
   "sla_escalated", // city_admin, 24 h after the breach
+  "sla_respond_overdue", // dept_head (or city_admin for triage): not assigned within respondHours
 ]);
 export const NOTIFICATION_TTL_SECONDS = 90 * 24 * 3600;
 
@@ -22,11 +23,15 @@ const notificationSchema = new mongoose.Schema(
     type: { type: String, enum: NOTIFICATION_TYPES, required: true, immutable: true },
     status: { type: String, enum: ISSUE_STATUSES, immutable: true }, // the issue's status at that time
     readAt: { type: Date, default: null },
+    // Email outbox (decision 6): null = not sent yet. The drain sets it before sending (at most once).
+    emailedAt: { type: Date, default: null },
+    emailAttempts: { type: Number, default: 0, min: 0 },
   },
   { timestamps: { createdAt: true, updatedAt: false }, versionKey: false },
 );
 
 notificationSchema.index({ userId: 1, createdAt: -1, _id: -1 }); // my notifications, newest first
+notificationSchema.index({ emailedAt: 1, createdAt: 1 }); // the email outbox, oldest first
 notificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: NOTIFICATION_TTL_SECONDS });
 
 export const Notification = mongoose.model("Notification", notificationSchema);

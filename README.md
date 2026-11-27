@@ -44,7 +44,7 @@ expected-by date, and watch the right department work through it.
 
 | For | They can |
 | --- | --- |
-| **Residents** | Enter a 6-digit pincode, drop a pin inside its area, add up to 3 photos and get a ticket `NIV-YYYY-NNNNNN` with the department and an expected-by date. Follow every step on a timeline, confirm the fix or reopen it, get in-app notifications. |
+| **Residents** | Enter a 6-digit pincode, drop a pin inside its area, add up to 3 photos and get a ticket `NIV-YYYY-NNNNNN` with the department and an expected-by date. Follow every step on a timeline, confirm the fix or reopen it, and get notified in the app and by email (English or Hindi). |
 | **Neighbours** | Read and post notices in their pincode's community feed, comment in threads, report abusive posts. |
 | **Everyone signed in** | Ask the help chat. Ticket questions are answered straight from the database; general questions go to Gemini. |
 | **Staff and department heads** | Work an SLA-sorted queue: assign, start, resolve with an "after" photo, put on hold (pauses the clock), assign triage issues. |
@@ -105,9 +105,10 @@ flowchart LR
   G -. "deadline passed" .-> X["Notify department head, then city admin"]
 ```
 
-Each kind of problem has a fix-by time (national default, overridable per city). A background job marks
-tickets **at risk** at 75% of that time and **overdue** after it, notifies the department head, escalates to
-the city admin 24 hours later, and auto-closes resolved tickets after 7 days.
+Each kind of problem has a respond-by and a fix-by time (national default, overridable per city). A background
+job tells the department head when a new ticket isn't assigned by its respond-by time, marks tickets **at risk**
+at 75% of the fix-by time and **overdue** after it, escalates to the city admin 24 hours later, and auto-closes
+resolved tickets after 7 days.
 
 | Category | Respond within | Fix within (default) |
 | --- | --- | --- |
@@ -163,7 +164,7 @@ flowchart LR
 | Server | Node 22, Express 5 (ES modules), Mongoose, Zod 4, pino, helmet, express-rate-limit |
 | Data | MongoDB Atlas (replica set for transactions), 2dsphere geo queries |
 | Identity | Auth0: Google and passwordless email code, PKCE, refresh-token rotation, MFA for admins |
-| Services | Cloudinary (signed uploads, EXIF stripped), Gemini via `@google/genai` |
+| Services | Cloudinary (signed uploads, EXIF stripped), Gemini via `@google/genai`, email over SMTP (Gmail) via `nodemailer` |
 | Quality | ESLint 9, Prettier, Vitest + Supertest, Testing Library, Playwright, GitHub Actions |
 | Ops | Docker images (API + nginx web), Compose with optional local MongoDB |
 
@@ -218,6 +219,9 @@ every value with Zod at start-up and exits with a list of what's wrong.
 | `CLOUDINARY_CLOUD_NAME` / `_API_KEY` / `_API_SECRET` | | **yes** (key + secret) | Photo uploads |
 | `GEMINI_API_KEY` | from Google AI Studio | **yes** | Help chat general answers (optional) |
 | `GEMINI_MODEL` | `gemini-2.5-flash` | | Model name |
+| `SMTP_HOST` · `SMTP_PORT` | `smtp.gmail.com` · `465` | | Mail server (defaults are Gmail) |
+| `SMTP_USER` · `SMTP_PASS` | your Gmail · an App password | **yes** (password) | Without both, emails are only logged, never sent |
+| `EMAIL_FROM` | `Nivaran <you@gmail.com>` | | Sender shown to recipients (default: `Nivaran <SMTP_USER>`) |
 | `SUPER_ADMIN_EMAIL` | `you@example.com` | | Read only by the bootstrap script |
 | `SLA_JOB_INTERVAL_MS` | `300000` | | SLA job tick; `0` turns it off |
 | `AUTH_CLOCK_TOLERANCE_SECONDS` | `5` | | Token expiry tolerance |
@@ -300,7 +304,7 @@ Run from the repository root. Add `-w server` or `-w client` to target one works
 | `migrate:m1-indexes` · `migrate:m2-indexes` | Build indexes (production never builds them at start-up) |
 | `bootstrap:super-admin` | Makes `SUPER_ADMIN_EMAIL` the first super admin (applies directly, safe to rerun) |
 | `sync:mfa-flags` | Re-syncs Auth0 MFA flags from the database (applies directly, safe to rerun) |
-| `migrate:users-v1` · `migrate:users-v2` | Historical user migrations (v1 applies directly, v2 needs `--apply`), idempotent |
+| `migrate:users-v1` · `migrate:users-v2` · `migrate:users-v3` | Historical user migrations (v1 applies directly; v2 and v3 need `--apply`). v3 removes the old `auth0Id` field once it is copied. Idempotent |
 
 </details>
 
@@ -357,6 +361,8 @@ All routes are under `/api`. Signed-in routes need `Authorization: Bearer <token
 | `POST /chat` | signed in | Help chat |
 | `GET /admin/users` · `PATCH /admin/users/:id/role` · `/status` | city admin and above | Users, roles, suspension |
 | `GET /admin/city-settings` · `PUT /admin/city-settings/:category` | city admin | Department and SLA hours per category |
+| `GET /admin/audit` | city admin (own city), super admin | Audit log: who changed what, cursor pages |
+| `POST /admin/cities` · `PATCH /admin/cities/:id` | super admin | Add a city (with its departments) · rename, open or pause it |
 | `GET /cities` · `GET /departments` | admins | Pickers |
 
 ## Security and privacy
@@ -406,7 +412,7 @@ All routes are under `/api`. Signed-in routes need `Authorization: Bearer <token
 | Tracking, staff queue, SLA job, notifications, public stats | ✅ Done |
 | Community and moderation, help chat, city settings, Hindi | ✅ Done |
 | Docker images and CI | ✅ Done |
-| Email notifications | ⏳ Waiting on a provider choice |
+| Email notifications (Gmail SMTP), respond-by tracking, audit log and city onboarding APIs | ✅ Done |
 | Cloud deployment, monitoring, load and accessibility audits | ⏳ Next |
 
 ## Troubleshooting
