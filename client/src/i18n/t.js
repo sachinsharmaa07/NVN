@@ -10,13 +10,21 @@ export const dictionary = Object.assign({}, common, ...Object.values(areaFiles))
 const hiFiles = import.meta.glob(["./hi.json", "./hi/*.json"], { eager: true, import: "default" });
 export const dictionaries = { en: dictionary, hi: Object.assign({}, ...Object.values(hiFiles)) };
 
+// The language every t() call uses unless it names one. AppLayout sets it from the signed-in user's
+// preferredLanguage while rendering and remounts the page when it changes, so screens never mix languages.
+let current = "en";
+export const setLanguage = (lang) => {
+  current = Object.hasOwn(dictionaries, lang) ? lang : "en";
+};
+export const getLanguage = () => current;
+
 /**
  * Looks up a UI string by key and fills in {placeholders}.
  * t("report.pincode.notServed", { pincode: "144401" })
  * A key missing in `lang` falls back to English; missing in English too, it returns the key
  * itself, so gaps are visible on screen instead of blank.
  */
-export function t(key, vars, lang = "en") {
+export function t(key, vars, lang = current) {
   const template = dictionaries[lang]?.[key] ?? dictionary[key];
   if (typeof template !== "string") return key;
   if (!vars) return template;
