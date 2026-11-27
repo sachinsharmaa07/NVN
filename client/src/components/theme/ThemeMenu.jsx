@@ -1,4 +1,3 @@
-import { MonitorIcon, MoonIcon, SunIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,13 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "@/hooks/useTheme";
 import { t } from "@/i18n/t";
-
-// One entry per choice; the same icon shows on the button when that choice is active.
-const OPTIONS = [
-  { value: "system", icon: MonitorIcon, labelKey: "app.theme.system" },
-  { value: "light", icon: SunIcon, labelKey: "app.theme.light" },
-  { value: "dark", icon: MoonIcon, labelKey: "app.theme.dark" },
-];
+import { THEME_OPTIONS as OPTIONS } from "./themeOptions";
 
 /*
  * Theme switch in the top bar: match device, light or dark (saved by ThemeProvider).

@@ -1,4 +1,10 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  infiniteQueryOptions,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useApi } from "@/hooks/useApi";
 import { t } from "@/i18n/t";
@@ -6,16 +12,20 @@ import { t } from "@/i18n/t";
 export const MINE_KEY = ["issues", "mine"];
 export const detailKey = (ticketId) => ["issues", "detail", ticketId];
 
-/** My issues, newest first; "Load more" fetches the next cursor (ARCHITECTURE 18.5). */
-export function useMyIssues() {
-  const api = useApi();
-  return useInfiniteQuery({
+/** My issues query options, shared by the hook and the nav prefetch (lib/prefetch.js). */
+export const myIssuesQuery = (api) =>
+  infiniteQueryOptions({
     queryKey: MINE_KEY,
     initialPageParam: "",
     queryFn: ({ pageParam, signal }) =>
       api(`/api/issues/mine?limit=20${pageParam ? `&cursor=${pageParam}` : ""}`, { signal }),
     getNextPageParam: (last) => last.nextCursor ?? undefined,
   });
+
+/** My issues, newest first; "Load more" fetches the next cursor (ARCHITECTURE 18.5). */
+export function useMyIssues() {
+  const api = useApi();
+  return useInfiniteQuery(myIssuesQuery(api));
 }
 
 export function useIssue(ticketId) {

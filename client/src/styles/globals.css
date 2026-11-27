@@ -398,6 +398,12 @@
   }
 }
 
+/* The sticky sidebar column: the viewport minus the top bar (64px + its 1px border), so it never makes
+   a short page scroll. */
+@utility h-below-topbar {
+  height: calc(100dvh - 65px);
+}
+
 /* Image loads and skeleton-to-content swaps fade in (UI.md §4: base, enter). */
 @keyframes fade-in {
   from {

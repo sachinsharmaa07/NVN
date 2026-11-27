@@ -1,5 +1,6 @@
 import { ChevronLeft } from "lucide-react";
 import { Link } from "react-router";
+import { useNavIntent } from "@/hooks/useNavIntent";
 import { cn } from "@/lib/utils";
 
 /**
@@ -20,16 +21,7 @@ export function PageHeader({
 }) {
   return (
     <header data-slot="page-header" className={cn("flex flex-col gap-4", className)}>
-      {backTo && (
-        // step 04 adds useNavIntent here
-        <Link
-          to={backTo}
-          className="inline-flex min-h-11 w-fit items-center gap-1 text-sm font-medium text-primary hover:underline"
-        >
-          <ChevronLeft aria-hidden="true" className="size-4" />
-          {backLabel}
-        </Link>
-      )}
+      {backTo && <BackLink to={backTo} label={backLabel} />}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="flex min-w-0 flex-col gap-2">
           <Title className="font-display text-h2 font-semibold text-foreground lg:text-h1">
@@ -45,5 +37,20 @@ export function PageHeader({
         {actions && <div className="flex flex-col gap-3 lg:flex-row">{actions}</div>}
       </div>
     </header>
+  );
+}
+
+// Its own component so the prefetch hook only runs when there is a back link.
+function BackLink({ to, label }) {
+  const intent = useNavIntent(to);
+  return (
+    <Link
+      to={to}
+      {...intent}
+      className="inline-flex min-h-11 w-fit items-center gap-1 text-sm font-medium text-primary hover:underline"
+    >
+      <ChevronLeft aria-hidden="true" className="size-4" />
+      {label}
+    </Link>
   );
 }

@@ -25,5 +25,16 @@
   "shell.community.emptyHint": "अपनी दर्ज की गई शिकायत के बारे में अपडेट साझा करें, ताकि पड़ोसी जानें कि क्या ठीक हो रहा है।",
   "shell.notFound.title": "पेज नहीं मिला",
   "shell.notFound.emptyTitle": "इस पते पर कुछ नहीं है",
-  "shell.notFound.emptyHint": "लिंक पुराना हो सकता है या उसमें टाइपिंग की गलती हो सकती है। पता जाँचें, या होम पेज पर वापस जाएँ।"
+  "shell.notFound.emptyHint": "लिंक पुराना हो सकता है या उसमें टाइपिंग की गलती हो सकती है। पता जाँचें, या होम पेज पर वापस जाएँ।",
+  "shell.manage.label": "प्रबंधन",
+  "shell.manage.moderation": "मॉडरेशन",
+  "shell.manage.users": "उपयोगकर्ता",
+  "shell.manage.citySettings": "शहर की सेटिंग",
+  "shell.manage.cities": "शहर",
+  "shell.manage.waitlist": "प्रतीक्षा सूची",
+  "shell.manage.audit": "ऑडिट लॉग",
+  "shell.offline": "आप ऑफ़लाइन हैं। आपका ड्राफ़्ट इसी फ़ोन पर सहेजा गया है।",
+  "shell.routeError.title": "यह पेज लोड नहीं हुआ",
+  "shell.routeError.body": "किसी वजह से यह पेज लोड नहीं हो सका। होम पेज पर जाएँ और फिर से कोशिश करें।",
+  "shell.routeError.home": "होम पर जाएँ"
 }

@@ -4,6 +4,7 @@ import { ChatBubble } from "@/components/chat/ChatBubble";
 import { BottomBar } from "@/components/nav/BottomBar";
 import { Sidebar } from "@/components/nav/Sidebar";
 import { SkipLink } from "@/components/nav/SkipLink";
+import { OfflineBanner } from "@/components/system/OfflineBanner";
 import { TopBar } from "@/components/nav/TopBar";
 import { useAuth } from "@/hooks/useAuth";
 import { useGuestLanguage } from "@/i18n/guestLanguage";
@@ -36,17 +37,18 @@ export function AppLayout() {
     <div key={lang} className="flex min-h-dvh flex-col">
       <SkipLink />
       <TopBar />
+      <OfflineBanner />
       <div className="flex flex-1">
         <Sidebar />
         {/*
-          tabIndex -1 lets the skip link move focus here. Bottom padding = bottom bar height
-          (64px + phone safe area) so the bar never covers the end of the page; none on desktop.
+          tabIndex -1 lets the skip link move focus here. content-reserve keeps the bottom bar and the
+          chat bubble's zone free, so neither ever covers the end of the page (UI.md §5).
           PageTransition holds the view-transition boundary, so only the page area cross-fades.
         */}
         <main
           id="main"
           tabIndex={-1}
-          className="relative min-w-0 flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))] outline-none lg:pb-0"
+          className="relative min-w-0 flex-1 content-reserve outline-none"
         >
           <PageTransition />
         </main>

@@ -1,12 +1,7 @@
-import {
-  Settings2Icon,
-  ShieldCheckIcon,
-  TriangleAlertIcon,
-  UserRoundIcon,
-  UsersIcon,
-} from "lucide-react";
+import { TriangleAlertIcon, UserRoundIcon } from "lucide-react";
 import { Link, useLocation } from "react-router";
 import { AccountAvatar } from "@/components/auth/AccountAvatar";
+import { ManageMenuItems, ThemeSubmenu } from "./AccountMenuSections";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -18,7 +13,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
-import { useCan } from "@/hooks/useCan";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { useSignInPrompt } from "@/hooks/useSignInPrompt";
 import { t } from "@/i18n/t";
@@ -30,13 +24,12 @@ const SLOT = "flex size-11 items-center justify-center";
  * The account slot in the top bar. One state at a time, chosen from auth.status (docs 10.1):
  *   loading      reserved slot, round skeleton after 200ms, "Checking your sign-in" for screen readers
  *   signedOut    "Sign in" (opens the sheet)         unconfigured  nothing
- *   signedIn     avatar menu (+ Admin link for admins)
+ *   signedIn     avatar menu: Profile, Theme, Manage (what this person may open), Sign out
  *   suspended    menu with Sign out only             error  warning button: Try again / Sign out
  * Until the status is known, nothing that depends on it is shown (no Sign in flash).
  */
 export function AccountMenu() {
   const auth = useAuth();
-  const can = useCan();
   const location = useLocation();
   const { openSignIn } = useSignInPrompt();
   const showSkeleton = useDelayedFlag(auth.status === "loading");
@@ -91,8 +84,6 @@ export function AccountMenu() {
   if (auth.status !== "signedIn" || !auth.user) return null; // "unconfigured"
 
   const { user } = auth;
-  // "Admin: Users" is for level 2 and up who also hold the permission (both cosmetic checks).
-  const showAdmin = auth.level >= 2 && can("user:read_scope");
 
   return (
     <DropdownMenu>
@@ -125,30 +116,8 @@ export function AccountMenu() {
             {t("auth.account.profile")}
           </Link>
         </DropdownMenuItem>
-        {showAdmin && (
-          <DropdownMenuItem asChild>
-            <Link to="/admin/users">
-              <UsersIcon aria-hidden="true" />
-              {t("auth.account.adminUsers")}
-            </Link>
-          </DropdownMenuItem>
-        )}
-        {auth.level >= 2 && can("user:promote") && (
-          <DropdownMenuItem asChild>
-            <Link to="/admin/city-settings">
-              <Settings2Icon aria-hidden="true" />
-              {t("auth.account.citySettings")}
-            </Link>
-          </DropdownMenuItem>
-        )}
-        {can("post:moderate") && (
-          <DropdownMenuItem asChild>
-            <Link to="/moderation">
-              <ShieldCheckIcon aria-hidden="true" />
-              {t("auth.account.moderation")}
-            </Link>
-          </DropdownMenuItem>
-        )}
+        <ThemeSubmenu />
+        <ManageMenuItems />
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => auth.logout()}>
           {t("auth.account.signOut")}

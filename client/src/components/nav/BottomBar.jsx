@@ -1,7 +1,10 @@
+import * as m from "motion/react-m";
 import { NavLink } from "react-router";
 import { t } from "@/i18n/t";
+import { springs, useMotionSafe } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { useCan } from "@/hooks/useCan";
+import { useNavIntent } from "@/hooks/useNavIntent";
 import { navItemsFor } from "./navItems";
 import { focusRing } from "./navStyles";
 
@@ -34,13 +37,17 @@ export function BottomBar() {
 }
 
 // Home, My issues, Community: icon in a pill that fills in when active, label underneath.
-// Active is shown three ways (pill, colour, weight), never by colour alone.
+// Active is shown three ways (pill, colour, weight), never by colour alone. The pill is a shared
+// layout element, so it slides from the old item to the new one.
 function Item({ item }) {
   const Icon = item.icon;
+  const intent = useNavIntent(item.to);
+  const transition = useMotionSafe(springs.snappy);
   return (
     <NavLink
       to={item.to}
       end={item.end}
+      {...intent}
       className={({ isActive }) =>
         cn(
           "group flex h-full w-full flex-col items-center justify-center gap-1 rounded-md text-xs transition-colors duration-fast ease-standard",
@@ -51,10 +58,22 @@ function Item({ item }) {
         )
       }
     >
-      <span className="flex h-8 w-12 items-center justify-center rounded-full transition-colors duration-fast ease-standard group-aria-[current=page]:bg-accent group-aria-[current=page]:text-accent-foreground">
-        <Icon aria-hidden="true" className="size-5" />
-      </span>
-      {t(item.labelKey)}
+      {({ isActive }) => (
+        <>
+          <span className="relative isolate flex h-8 w-12 items-center justify-center rounded-full transition-colors duration-fast ease-standard group-aria-[current=page]:text-accent-foreground">
+            {isActive && (
+              <m.span
+                aria-hidden="true"
+                layoutId="bottombar-active"
+                transition={transition}
+                className="absolute inset-0 -z-10 rounded-full bg-accent"
+              />
+            )}
+            <Icon aria-hidden="true" className="size-5" />
+          </span>
+          {t(item.labelKey)}
+        </>
+      )}
     </NavLink>
   );
 }
@@ -63,9 +82,11 @@ function Item({ item }) {
 // from the bar's top border. It stays a normal link with a visible label (no icon-only button).
 function PrimaryItem({ item }) {
   const Icon = item.icon;
+  const intent = useNavIntent(item.to);
   return (
     <NavLink
       to={item.to}
+      {...intent}
       className={cn(
         "-mt-3 flex size-16 flex-col items-center justify-center gap-1 rounded-lg bg-primary text-xs font-semibold text-primary-foreground shadow-md ring-4 ring-background transition-colors duration-fast ease-standard hover:bg-primary/90",
         focusRing,

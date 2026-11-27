@@ -1,4 +1,9 @@
-import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  infiniteQueryOptions,
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useApi } from "@/hooks/useApi";
@@ -7,10 +12,9 @@ import { t } from "@/i18n/t";
 
 export const STAFF_KEY = ["staff", "issues"];
 
-/** The staff queue, sorted by the server (expectedBy, then createdAt). Filters are part of the key. */
-export function useStaffIssues({ status = "", sla = "", category = "" }) {
-  const api = useApi();
-  return useInfiniteQuery({
+/** Staff queue query options, shared by the hook and the nav prefetch (default filters there). */
+export const staffQueueQuery = (api, { status = "", sla = "", category = "" } = {}) =>
+  infiniteQueryOptions({
     queryKey: [...STAFF_KEY, { status, sla, category }],
     initialPageParam: "",
     queryFn: ({ pageParam, signal }) => {
@@ -23,6 +27,11 @@ export function useStaffIssues({ status = "", sla = "", category = "" }) {
     },
     getNextPageParam: (last) => last.nextCursor ?? undefined,
   });
+
+/** The staff queue, sorted by the server (expectedBy, then createdAt). Filters are part of the key. */
+export function useStaffIssues(filters) {
+  const api = useApi();
+  return useInfiniteQuery(staffQueueQuery(api, filters));
 }
 
 /**
