@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMyIssues } from "@/hooks/useIssues";
 import { t } from "@/i18n/t";
+import { plural } from "@/lib/plural";
 
 function MyIssues() {
   const query = useMyIssues();
@@ -60,7 +61,20 @@ function MyIssues() {
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 md:px-6 md:py-12 lg:px-8">
-      <PageHeader title={t("shell.issues.title")} description={t("shell.issues.description")} />
+      <PageHeader
+        title={t("shell.issues.title")}
+        description={t("shell.issues.description")}
+        // "3 issues", or "20+ issues" while more pages are still on the server.
+        meta={
+          issues.length > 0 && (
+            <span>
+              {query.hasNextPage
+                ? t("issues.mine.countMore", { count: issues.length })
+                : plural(issues.length, "issues.mine.count")}
+            </span>
+          )
+        }
+      />
       {body}
       {query.hasNextPage && (
         <div className="flex justify-center">

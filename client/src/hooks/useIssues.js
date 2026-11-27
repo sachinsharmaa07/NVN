@@ -1,5 +1,6 @@
 import {
   infiniteQueryOptions,
+  queryOptions,
   useInfiniteQuery,
   useMutation,
   useQuery,
@@ -28,12 +29,16 @@ export function useMyIssues() {
   return useInfiniteQuery(myIssuesQuery(api));
 }
 
-export function useIssue(ticketId) {
-  const api = useApi();
-  return useQuery({
+/** One ticket's query options, shared by the hook and the card prefetch (lib/prefetch.js). */
+export const issueDetailQuery = (api, ticketId) =>
+  queryOptions({
     queryKey: detailKey(ticketId),
     queryFn: ({ signal }) => api(`/api/issues/${ticketId}`, { signal }),
   });
+
+export function useIssue(ticketId) {
+  const api = useApi();
+  return useQuery(issueDetailQuery(api, ticketId));
 }
 
 /** A 409 means someone else moved the issue first: say so and fetch the latest (never optimistic). */

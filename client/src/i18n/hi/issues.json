@@ -1,12 +1,12 @@
 {
   "issues.expectedBy": "{date} तक अपेक्षित",
-  "issues.conflict": "किसी ने यह शिकायत अपडेट की है। ताज़ा जानकारी के लिए फिर से लोड करें।",
+  "issues.conflict": "यह टिकट बदल गया है। नई जानकारी दिखाई जा रही है।",
   "issues.photoAlt": "{label}, फ़ोटो {n}",
   "issues.mine.error": "आपकी शिकायतें लोड नहीं हो सकीं। फिर से कोशिश करें।",
   "issues.mine.loadMore": "और दिखाएँ",
   "issues.mine.loaded": "{count} और शिकायतें लोड हुईं",
-  "issues.detail.notFound": "यह टिकट नहीं मिला",
-  "issues.detail.notFoundHint": "टिकट नंबर जाँचें। आप केवल अपनी दर्ज की गई शिकायतों के टिकट खोल सकते हैं।",
+  "issues.detail.notFound": "हमें वह टिकट नहीं मिला",
+  "issues.detail.notFoundHint": "टिकट आईडी जाँचें, या इसे मेरी शिकायतें से खोलें।",
   "issues.detail.error": "यह टिकट लोड नहीं हो सका। फिर से कोशिश करें।",
   "issues.detail.reported": "दर्ज करने की तारीख",
   "issues.detail.paused": "रुका हुआ",
@@ -22,5 +22,11 @@
   "issues.resolve.reason": "अब भी क्या गड़बड़ है?",
   "issues.resolve.reasonShort": "कम से कम {min} अक्षर लिखें ताकि विभाग जाने कि क्या ठीक करना है।",
   "issues.resolve.closed": "टिकट बंद हो गया। पुष्टि के लिए धन्यवाद।",
-  "issues.resolve.reopened": "टिकट फिर से खुल गया। विभाग को बता दिया गया है।"
+  "issues.resolve.reopened": "टिकट फिर से खुल गया। विभाग को बता दिया गया है।",
+  "issues.detail.notFoundAction": "मेरी शिकायतें पर जाएँ",
+  "issues.detail.pausedFor": "रुका हुआ: {reason}",
+  "issues.photos.afterPending": "काम पूरा होने पर जोड़ी जाएगी",
+  "issues.mine.count.one": "{count} समस्या",
+  "issues.mine.count.other": "{count} समस्याएँ",
+  "issues.mine.countMore": "{count}+ समस्याएँ"
 }

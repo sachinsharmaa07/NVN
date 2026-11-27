@@ -1,12 +1,12 @@
 {
   "issues.expectedBy": "Expected by {date}",
-  "issues.conflict": "Someone updated this issue. Reload to see the latest.",
+  "issues.conflict": "This ticket changed. Showing the latest.",
   "issues.photoAlt": "{label}, photo {n}",
   "issues.mine.error": "Couldn't load your issues. Try again.",
   "issues.mine.loadMore": "Load more",
   "issues.mine.loaded": "{count} more issues loaded",
-  "issues.detail.notFound": "We couldn't find this ticket",
-  "issues.detail.notFoundHint": "Check the ticket ID. You can only open tickets you reported.",
+  "issues.detail.notFound": "We couldn't find that ticket",
+  "issues.detail.notFoundHint": "Check the ticket ID, or open it from My issues.",
   "issues.detail.error": "Couldn't load this ticket. Try again.",
   "issues.detail.reported": "Reported on",
   "issues.detail.paused": "Paused",
@@ -22,5 +22,11 @@
   "issues.resolve.reason": "What is still wrong?",
   "issues.resolve.reasonShort": "Write at least {min} characters so the department knows what to fix.",
   "issues.resolve.closed": "Ticket closed. Thanks for confirming.",
-  "issues.resolve.reopened": "Ticket reopened. The department has been told."
+  "issues.resolve.reopened": "Ticket reopened. The department has been told.",
+  "issues.detail.notFoundAction": "Go to My issues",
+  "issues.detail.pausedFor": "Paused: {reason}",
+  "issues.photos.afterPending": "Added when the work is done",
+  "issues.mine.count.one": "{count} issue",
+  "issues.mine.count.other": "{count} issues",
+  "issues.mine.countMore": "{count}+ issues"
 }

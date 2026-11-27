@@ -1,6 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { MINE_KEY } from "@/hooks/useIssues";
+import { MINE_KEY, detailKey } from "@/hooks/useIssues";
 import { prefetchRoute, resetPrefetch, routes } from "./prefetch";
 
 describe("prefetchRoute", () => {
@@ -48,5 +48,18 @@ describe("prefetchRoute", () => {
 
   it("ignores paths it does not know", () => {
     expect(() => prefetchRoute("/nope", { queryClient, api, signedIn: true })).not.toThrow();
+  });
+
+  it("fetches a ticket into the key its page reads, for any ticket ID", async () => {
+    api = vi.fn(() => Promise.resolve({ ticketId: "NIV-2026-000042" }));
+    prefetchRoute("/issues/NIV-2026-000042", { queryClient, api, signedIn: true });
+    await vi.waitFor(() =>
+      expect(queryClient.getQueryData(detailKey("NIV-2026-000042"))).toBeDefined(),
+    );
+    expect(api.mock.calls[0][0]).toBe("/api/issues/NIV-2026-000042");
+    expect(() =>
+      prefetchRoute("/issues/not-a-ticket", { queryClient, api, signedIn: true }),
+    ).not.toThrow();
+    expect(api).toHaveBeenCalledTimes(1);
   });
 });

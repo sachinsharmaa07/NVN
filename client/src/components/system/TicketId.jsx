@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { t } from "@/i18n/t";
 
 const SIZES = {
+  sm: "text-sm", // list cards (My issues)
   md: "text-xl",
   lg: "text-2xl sm:text-3xl md:text-4xl",
   // The counterfoil (UI.md §1: 39px). 31px below 640px, where 39px would not fit beside Copy.

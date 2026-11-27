@@ -73,9 +73,7 @@ describe("Staff queue", () => {
       return call;
     });
     expect(JSON.parse(sent[1].body)).toEqual({ status: "in_progress", version: 2 });
-    expect(
-      await screen.findByText("Someone updated this issue. Reload to see the latest."),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("This ticket changed. Showing the latest.")).toBeInTheDocument();
     await waitFor(() =>
       expect(spy.mock.calls.filter(([u]) => String(u).includes("/api/staff/issues"))).toHaveLength(
         2,

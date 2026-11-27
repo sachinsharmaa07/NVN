@@ -1,4 +1,4 @@
-import { myIssuesQuery } from "@/hooks/useIssues";
+import { issueDetailQuery, myIssuesQuery } from "@/hooks/useIssues";
 import { staffQueueQuery } from "@/hooks/useStaffIssues";
 
 /*
@@ -22,13 +22,15 @@ export const pageLoaders = {
   NotFound: () => import("@/pages/NotFound"),
 };
 
-// Pages a link can point at: their code, and for list pages the first page of their data.
-// Exported for tests, which swap `load` for a spy.
+// Pages a link can point at: their code, and for list pages the first page of their data
+// (`data(queryClient, api)`). Exported for tests, which swap `load` for a spy.
+const firstPage = (options) => (queryClient, api) =>
+  queryClient.prefetchInfiniteQuery(options(api));
 export const routes = {
   "/": { load: pageLoaders.Landing },
   "/report": { load: pageLoaders.Report },
-  "/issues": { load: pageLoaders.Issues, query: myIssuesQuery },
-  "/staff": { load: pageLoaders.StaffQueue, query: (api) => staffQueueQuery(api) },
+  "/issues": { load: pageLoaders.Issues, data: firstPage(myIssuesQuery) },
+  "/staff": { load: pageLoaders.StaffQueue, data: firstPage((api) => staffQueueQuery(api)) },
   "/community": { load: pageLoaders.Community },
   "/moderation": { load: pageLoaders.Moderation },
   "/profile": { load: pageLoaders.Profile },
@@ -36,7 +38,19 @@ export const routes = {
   "/admin/city-settings": { load: pageLoaders.CitySettings },
 };
 
-// Paths whose code was already requested this session; the browser caches the file after that.
+// A ticket page (/issues/NIV-2026-000042): one code file for all of them, data per ticket.
+const TICKET = /^\/issues\/(NIV-\d{4}-\d{6})$/;
+function ticketRoute(path) {
+  const ticketId = path.match(TICKET)?.[1];
+  if (!ticketId) return null;
+  return {
+    key: "/issues/:ticketId",
+    load: pageLoaders.IssueDetail,
+    data: (queryClient, api) => queryClient.prefetchQuery(issueDetailQuery(api, ticketId)),
+  };
+}
+
+// Page code already requested this session; the browser caches the file after that.
 const loaded = new Set();
 
 /**
@@ -45,14 +59,15 @@ const loaded = new Set();
  * staleTime stops repeat hovers from refetching.
  */
 export function prefetchRoute(path, { queryClient, api, signedIn }) {
-  const route = routes[path];
+  const route = routes[path] ?? ticketRoute(path);
   if (!route) return;
-  if (!loaded.has(path)) {
-    loaded.add(path);
+  const key = route.key ?? path;
+  if (!loaded.has(key)) {
+    loaded.add(key);
     // A failed download (offline) may be tried again on the next hover.
-    route.load().catch(() => loaded.delete(path));
+    route.load().catch(() => loaded.delete(key));
   }
-  if (route.query && signedIn) queryClient.prefetchInfiniteQuery(route.query(api));
+  if (route.data && signedIn) route.data(queryClient, api);
 }
 
 // Tests only: forget what was loaded.
