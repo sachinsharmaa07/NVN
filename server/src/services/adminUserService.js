@@ -205,10 +205,12 @@ const GEO_CAP = 500; // departments per city stay a small list; cities are pagin
  * GET /api/cities?stateCode=&q=&cursor=&limit=. A city_admin sees only their own city, a super_admin all.
  * Name order, keyset on (name, _id), backed by { name, _id } or { stateCode, name, _id }.
  */
-export async function listCities(actor, { stateCode, q, cursor, limit = 20 }) {
+export async function listCities(actor, { stateCode, status, q, cursor, limit = 20 }) {
   assertActorScope(actor, "user:promote");
   const filter = actor.role === "super_admin" ? {} : { _id: actor.cityId };
   if (stateCode) filter.stateCode = stateCode;
+  // shortcut: status is checked after the name index (~700 cities); index it past a few thousand.
+  if (status) filter.status = status;
   // shortcut: case-insensitive prefix scans the whole name index (fine for ~700 cities); add a
   // lowercased name field if the list grows past a few thousand.
   const nameConds = [];
@@ -227,7 +229,7 @@ export async function listCities(actor, { stateCode, q, cursor, limit = 20 }) {
   }
   if (nameConds.length) filter.$and = nameConds;
   const rows = await City.find(filter)
-    .select("name code stateCode")
+    .select("name code stateCode status")
     .sort({ name: 1, _id: 1 })
     .limit(limit + 1)
     .lean();
@@ -239,6 +241,7 @@ export async function listCities(actor, { stateCode, q, cursor, limit = 20 }) {
       name: c.name,
       code: c.code,
       stateCode: c.stateCode,
+      status: c.status,
     })),
     nextCursor,
   };

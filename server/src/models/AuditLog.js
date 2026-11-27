@@ -26,8 +26,10 @@ export const AUDIT_ACTIONS = [
   "city.category_update",
   "city.create",
   "city.update",
+  "department.create",
+  "department.update",
 ];
-export const AUDIT_TARGETS = ["user", "issue", "post", "comment", "city"];
+export const AUDIT_TARGETS = ["user", "issue", "post", "comment", "city", "department"];
 
 const MAX_SNAPSHOT_BYTES = 4096;
 const smallEnough = (v) => v == null || JSON.stringify(v).length <= MAX_SNAPSHOT_BYTES;
