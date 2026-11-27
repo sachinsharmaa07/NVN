@@ -17,8 +17,14 @@ export const AUDIT_ACTIONS = [
   "issue.assign",
   "issue.hold",
   "issue.resume",
+  "post.hide",
+  "post.restore",
+  "post.delete",
+  "comment.hide",
+  "comment.restore",
+  "comment.delete",
 ];
-export const AUDIT_TARGETS = ["user", "issue"];
+export const AUDIT_TARGETS = ["user", "issue", "post", "comment"];
 
 const MAX_SNAPSHOT_BYTES = 4096;
 const smallEnough = (v) => v == null || JSON.stringify(v).length <= MAX_SNAPSHOT_BYTES;

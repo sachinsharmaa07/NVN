@@ -286,3 +286,64 @@ another city is `404 NOT_FOUND`. Anyone else `403 FORBIDDEN`.
 curl -s "http://localhost:5001/api/departments?cityId=$CITY_ID" -H "Authorization: Bearer $TOKEN"
 # 200 {"items":[{"id":"...","name":"Roads","code":"ROADS"},{"id":"...","name":"Water","code":"WATER"}]}
 ```
+
+## Community (M3)
+
+Plain text, newest first, cursor pages (`limit` 1-50, default 20). Reads need sign-in; writes a verified email
+and `post:create`. Hidden content is visible only to its author and the city's moderators; deleted is `404`.
+
+### GET /api/community/posts?pincode=&cursor=&limit=
+
+```bash
+curl -s "http://localhost:5001/api/community/posts?pincode=144601" -H "Authorization: Bearer $TOKEN"
+# 200 {"items":[{"id":"...","pincode":"144601","title":"Streetlights out on Mall Road","body":"...",
+#      "author":"Asha","mine":false,"status":"published","commentCount":2,"createdAt":"..."}],"nextCursor":null}
+```
+
+### POST /api/community/posts
+
+Into the author's `defaultPincode` (profile). 5 per day per user. No home pincode: `400 PINCODE_REQUIRED`;
+a pincode without a city: `400 PINCODE_NOT_SERVED`.
+
+```bash
+curl -s -X POST http://localhost:5001/api/community/posts -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" -d '{"title":"Streetlights out on Mall Road","body":"Three lights near the market are dark."}'
+# 201 {"id":"...","pincode":"144601",...,"mine":true,"status":"published","commentCount":0}
+```
+
+### GET /api/community/posts/:id, DELETE /api/community/posts/:id
+
+`DELETE` is the author's own soft delete (`200 {"id":"...","status":"deleted"}`); anyone else gets `404`.
+
+### GET /api/community/posts/:id/comments, POST /api/community/posts/:id/comments
+
+Oldest first. Body `{"body":"...","parentId":"<top-level comment id>"}` (`parentId` optional, one level of
+replies; a reply to a reply is `400`). 30 per hour. `DELETE /api/community/comments/:id` deletes your own.
+
+### POST /api/community/flags
+
+`{"targetType":"post"|"comment","targetId":"...","reason":"spam"|"abuse"|"personal_info"|"off_topic"|"other"}`.
+Always `200 {"flagged":true}`; a repeat changes nothing. The third flag hides the content (audited as system).
+Flagging your own is `400`. 30 per hour.
+
+## Moderation (M3)
+
+`post:moderate` (moderator, city_admin with MFA, super_admin). Own city only; another city is `404`.
+
+### GET /api/moderation/queue?type=post|comment&status=hidden|published&cursor=&limit=
+
+```bash
+curl -s "http://localhost:5001/api/moderation/queue?type=post" -H "Authorization: Bearer $TOKEN"
+# 200 {"items":[{"id":"...","title":"...","status":"hidden","flagCount":3,...}],"nextCursor":null}
+```
+
+### POST /api/moderation/:type/:id
+
+`{"action":"hide"|"restore"|"delete","reason":"..."}`; `reason` (3-500) is required to hide or delete.
+Restore clears `flagCount`. Every action writes an AuditLog row (never the text) in the same transaction.
+
+```bash
+curl -s -X POST http://localhost:5001/api/moderation/post/$POST_ID -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" -d '{"action":"restore"}'
+# 200 {"id":"...","status":"published","flagCount":0}
+```
