@@ -150,6 +150,37 @@ export const NOTIFICATION = {
 };
 const listOf = (items) => [200, { items, nextCursor: null }];
 
+// M3 community. The resident (ME with a home pincode) reads and posts in 144601.
+export const POST = {
+  id: "64b000000000000000000001",
+  pincode: PIN,
+  title: "Streetlights back on Mall Road",
+  body: "All three lights near the vegetable market work again since Tuesday. Thanks to whoever reported them.",
+  author: "Meera",
+  mine: false,
+  status: "published",
+  commentCount: 2,
+  createdAt: "2026-11-26T06:30:00.000Z",
+};
+export const COMMENTS = [
+  {
+    id: "c1",
+    parentId: null,
+    body: "The one near the temple is still flickering.",
+    author: "Ravi",
+    mine: false,
+    createdAt: "2026-11-26T08:00:00.000Z",
+  },
+  {
+    id: "c2",
+    parentId: "c1",
+    body: "Reported it this morning, ticket NIV-2026-000042.",
+    author: "Meera",
+    mine: false,
+    createdAt: "2026-11-26T09:15:00.000Z",
+  },
+];
+
 const notFound = { error: { code: "PINCODE_NOT_FOUND", message: "We don't know this pincode." } };
 // A transparent 1x1 PNG for every map tile.
 const TILE = Buffer.from(
@@ -182,6 +213,12 @@ export const test = base.extend({
         notifications: [200, { items: [], nextCursor: null, unread: 0 }],
         read: [200, { updated: 0 }],
         departments: [200, { items: DEPARTMENTS }],
+        feed: listOf([POST]),
+        post: [200, POST],
+        comments: listOf(COMMENTS),
+        newPost: [201, { ...POST, mine: true }],
+        newComment: [201, { id: "c3", parentId: null, body: "", author: "Asha", mine: true }],
+        flags: [200, { flagged: true }],
         stats: [
           200,
           { totalReports: 0, resolved: 0, medianResolutionHours: null, openByCategory: {} },
@@ -222,6 +259,14 @@ export const test = base.extend({
         reply(route, answers.notifications),
       );
       await page.route("**/api/notifications/read", (route) => reply(route, answers.read));
+      await page.route(/\/api\/community\/posts(\?.*)?$/, (route) =>
+        reply(route, route.request().method() === "POST" ? answers.newPost : answers.feed),
+      );
+      await page.route(/\/api\/community\/posts\/\w+$/, (route) => reply(route, answers.post));
+      await page.route(/\/api\/community\/posts\/\w+\/comments(\?.*)?$/, (route) =>
+        reply(route, route.request().method() === "POST" ? answers.newComment : answers.comments),
+      );
+      await page.route("**/api/community/flags", (route) => reply(route, answers.flags));
       await page.route("**/api/stats", (route) => reply(route, answers.stats));
       await page.route(/\/api\/departments\?cityId=\w+$/, (route) =>
         reply(route, answers.departments),

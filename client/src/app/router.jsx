@@ -5,6 +5,7 @@ import { SuspendedLayout } from "@/layouts/SuspendedLayout";
 import {
   AdminUsers,
   Community,
+  CommunityPost,
   Forbidden,
   IssueDetail,
   Issues,
@@ -48,6 +49,7 @@ export const routes = [
       { path: "issues/:ticketId", element: <IssueDetail /> },
       { path: "staff", element: <StaffQueue /> },
       { path: "community", element: <Community /> },
+      { path: "community/:id", element: <CommunityPost /> },
       // Development only: /dev/styleguide (StyleGuide is null in production builds).
       ...(StyleGuide ? [{ path: "dev/styleguide", element: <StyleGuide /> }] : []),
       { path: "*", element: <NotFound /> },
