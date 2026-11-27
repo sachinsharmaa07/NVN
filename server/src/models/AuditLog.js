@@ -23,8 +23,9 @@ export const AUDIT_ACTIONS = [
   "comment.hide",
   "comment.restore",
   "comment.delete",
+  "city.category_update",
 ];
-export const AUDIT_TARGETS = ["user", "issue", "post", "comment"];
+export const AUDIT_TARGETS = ["user", "issue", "post", "comment", "city"];
 
 const MAX_SNAPSHOT_BYTES = 4096;
 const smallEnough = (v) => v == null || JSON.stringify(v).length <= MAX_SNAPSHOT_BYTES;

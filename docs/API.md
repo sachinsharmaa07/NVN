@@ -366,3 +366,30 @@ curl -s -X POST http://localhost:5001/api/chat -H "Authorization: Bearer $TOKEN"
 #      "expectedBy":"...","updatedAt":"...","department":"Roads"}],"unknown":[]}
 # general: {"kind":"general","reply":"..."}   list: {"kind":"list","tickets":[...]}   {"kind":"fallback"}
 ```
+
+## City settings (M3)
+
+`user:promote` (city_admin with MFA: own city; super_admin: any city by `cityId`), 60 reads and 10 writes per
+minute. Another city, or a department of another city, is `404 NOT_FOUND`. Changes apply to new reports only.
+
+### GET /api/admin/city-settings?cityId=
+
+```bash
+curl -s "http://localhost:5001/api/admin/city-settings" -H "Authorization: Bearer $TOKEN"
+# 200 {"city":{"id":"...","name":"Kapurthala"},"departments":[{"id":"...","name":"Roads"}],
+#      "categories":[{"category":"pothole","departmentId":"...","respondHours":24,"resolveHours":168,
+#      "hoursFrom":"national"}, ...6 rows]}
+```
+
+### PUT /api/admin/city-settings/:category
+
+Body `{"departmentId":"..."|null,"respondHours":24,"resolveHours":96,"cityId":"..."}` (`cityId` for
+super_admin only). `null` sends the category to the city triage queue; `other` must be `null`.
+Hours are whole numbers 1-2160 with `resolveHours >= respondHours`, else `400`. Upserts the city's mapping and
+SLA policy and writes `city.category_update` to the AuditLog in one transaction.
+
+```bash
+curl -s -X PUT http://localhost:5001/api/admin/city-settings/pothole -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" -d '{"departmentId":"'$WATER_ID'","respondHours":12,"resolveHours":96}'
+# 200 {"category":"pothole","departmentId":"...","respondHours":12,"resolveHours":96,"hoursFrom":"city"}
+```

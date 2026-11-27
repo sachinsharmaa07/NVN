@@ -23,6 +23,8 @@ const ALLOWED_KEYS = {
   "comment.hide": ["status", "flagCount"],
   "comment.restore": ["status", "flagCount"],
   "comment.delete": ["status"],
+  // M3 city settings: routing and hours for one category.
+  "city.category_update": ["category", "departmentId", "queue", "respondHours", "resolveHours"],
 };
 const targetOf = (action) => action.split(".")[0];
 

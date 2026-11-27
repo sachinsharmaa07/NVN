@@ -4,6 +4,7 @@ import { AppLayout } from "@/layouts/AppLayout";
 import { SuspendedLayout } from "@/layouts/SuspendedLayout";
 import {
   AdminUsers,
+  CitySettings,
   Community,
   CommunityPost,
   Forbidden,
@@ -46,6 +47,7 @@ export const routes = [
       { path: "profile", element: <Profile /> },
       { path: "forbidden", element: <Forbidden /> },
       { path: "admin/users", element: <AdminUsers /> },
+      { path: "admin/city-settings", element: <CitySettings /> },
       { path: "issues", element: <Issues /> },
       { path: "issues/:ticketId", element: <IssueDetail /> },
       { path: "staff", element: <StaffQueue /> },

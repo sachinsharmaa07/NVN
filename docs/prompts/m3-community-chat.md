@@ -81,8 +81,8 @@ writes AuditLog in the same transaction.
 | GET | `/api/moderation/queue?type&status` | `post:moderate` | city scope in the query |
 | POST | `/api/moderation/:type/:id` `{action, reason}` | `post:moderate` | restore, hide, delete |
 | POST | `/api/chat` `{message}` | signed in | `{reply, kind: "ticket" \| "list" \| "general" \| "fallback"}` |
-| GET/PUT | `/api/admin/category-mappings` | `user:promote` (city_admin) | own city |
-| GET/PUT | `/api/admin/sla-policies` | `user:promote` | own city overrides |
+| GET | `/api/admin/city-settings?cityId` | `user:promote` | own city (super_admin: any) |
+| PUT | `/api/admin/city-settings/:category` | `user:promote` | department + hours, audited |
 
 ### Chat flow
 `extractTicketIds` -> for each id, `issueQueryService` read with the asker's scope (reporter or staff in scope);
