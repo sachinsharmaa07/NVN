@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dictionaries, dictionary as en, t } from "./t";
+import { dictionaries, dictionary as en, getLanguage, setLanguage, t } from "./t";
 
 describe("t()", () => {
   it("returns the English string for a known key", () => {
@@ -20,16 +20,17 @@ describe("t()", () => {
   });
 
   it("uses the requested language and falls back to English for a missing key", () => {
-    dictionaries.hi["app.name"] = "निवारण";
+    const saved = dictionaries.hi["app.name"];
     expect(t("app.name", undefined, "hi")).toBe("निवारण");
     delete dictionaries.hi["app.name"];
     expect(t("app.name", undefined, "hi")).toBe("Nivaran");
+    dictionaries.hi["app.name"] = saved;
     expect(t("app.name", undefined, "xx")).toBe("Nivaran");
   });
 
   it("has no key defined in two files (a later file would silently win)", () => {
     const files = Object.values(
-      import.meta.glob("./**/*.json", { eager: true, import: "default" }),
+      import.meta.glob(["./en.json", "./en/*.json"], { eager: true, import: "default" }),
     );
     const total = files.reduce((n, f) => n + Object.keys(f).length, 0);
     expect(Object.keys(en)).toHaveLength(total);
@@ -39,5 +40,23 @@ describe("t()", () => {
     for (const key of Object.keys(en)) {
       expect(key).toMatch(/^[a-z][a-zA-Z]*(\.[a-z][a-zA-Z0-9]*){1,}$/);
     }
+  });
+
+  it("Hindi has only English keys, with the same {placeholders}", () => {
+    const names = (text) => [...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
+    expect(Object.keys(dictionaries.hi).length).toBeGreaterThan(500);
+    for (const [key, text] of Object.entries(dictionaries.hi)) {
+      expect(Object.hasOwn(en, key), key).toBe(true);
+      expect(names(text), key).toEqual(names(en[key]));
+    }
+  });
+
+  it("uses the language set by setLanguage, and English for an unknown one", () => {
+    setLanguage("hi");
+    expect(getLanguage()).toBe("hi");
+    expect(t("app.name")).toBe("निवारण");
+    setLanguage("xx");
+    expect(t("app.name")).toBe("Nivaran");
+    setLanguage("en");
   });
 });

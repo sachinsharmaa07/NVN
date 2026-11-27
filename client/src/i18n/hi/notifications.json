@@ -1,0 +1,13 @@
+{
+  "notifications.label": "सूचनाएँ",
+  "notifications.labelUnread": "सूचनाएँ, {count} अनपढ़ी",
+  "notifications.title": "सूचनाएँ",
+  "notifications.empty": "अभी कुछ नहीं। आपके टिकटों के अपडेट यहाँ दिखेंगे।",
+  "notifications.new": "नई: ",
+  "notifications.markAll": "सबको पढ़ा हुआ मानें",
+  "notifications.type.statusChanged": "{ticket} अब {status} है",
+  "notifications.type.onHold": "{ticket} रोका गया है",
+  "notifications.type.resumed": "{ticket} पर काम फिर शुरू हो गया है",
+  "notifications.type.slaBreached": "{ticket} की समय-सीमा निकल गई है",
+  "notifications.type.slaEscalated": "{ticket} आपके पास भेजा गया है"
+}

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Navigate, ScrollRestoration } from "react-router";
 import { ChatBubble } from "@/components/chat/ChatBubble";
 import { BottomBar } from "@/components/nav/BottomBar";
@@ -5,6 +6,8 @@ import { Sidebar } from "@/components/nav/Sidebar";
 import { SkipLink } from "@/components/nav/SkipLink";
 import { TopBar } from "@/components/nav/TopBar";
 import { useAuth } from "@/hooks/useAuth";
+import { useGuestLanguage } from "@/i18n/guestLanguage";
+import { setLanguage } from "@/i18n/t";
 import { PageTransition } from "./PageTransition";
 
 /*
@@ -17,11 +20,20 @@ import { PageTransition } from "./PageTransition";
  */
 export function AppLayout() {
   // A suspended account may only see /suspended, on every route (public ones too).
-  const { status } = useAuth();
+  const { status, user } = useAuth();
+  const guest = useGuestLanguage();
+  const lang = (user?.preferredLanguage ?? guest) === "hi" ? "hi" : "en";
+  // Set before the children render, so every t() below uses it (see i18n/t.js).
+  setLanguage(lang);
+  // <html lang> picks the Devanagari line heights in globals.css and tells screen readers what to speak.
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
   if (status === "suspended") return <Navigate to="/suspended" replace />;
 
+  // key: a language change remounts the frame, so no screen keeps strings from the old language.
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div key={lang} className="flex min-h-dvh flex-col">
       <SkipLink />
       <TopBar />
       <div className="flex flex-1">
