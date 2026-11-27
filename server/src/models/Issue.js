@@ -126,6 +126,9 @@ issueSchema.index({ slaState: 1, breachNotifiedStateOfficerAt: 1, breachNotified
 issueSchema.index({ status: 1, resolvedAt: 1 });
 issueSchema.index({ status: 1, slaPausedAt: 1, respondNotifiedAt: 1, respondBy: 1 }); // SLA job: not assigned in time
 issueSchema.index({ status: 1, category: 1 });
+// POST /api/uploads/discard: is this photo on any issue? (multikey, at most 3 short strings each)
+issueSchema.index({ "photos.publicId": 1 });
+issueSchema.index({ "afterPhotos.publicId": 1 });
 // A replayed submit finds the first issue; a racing duplicate hits E11000.
 issueSchema.index({ reporterId: 1, idempotencyKey: 1 }, { unique: true });
 

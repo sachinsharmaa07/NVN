@@ -1,9 +1,12 @@
 // Photo check for POST /api/issues (decision M1-12): a signed Cloudinary upload cannot cap size, so before an
 // issue may reference a photo we ask the Cloudinary Admin API (fetch + basic auth, no SDK) what was stored.
-// Our folder, <= 5 MB, an allowed format; anything else is deleted and refused.
+// Our folder, <= 5 MB, an allowed format; anything else is deleted and refused. discardPhotos deletes a draft's
+// photos the citizen abandoned (POST /api/uploads/discard), never one an issue uses.
 import { config } from "../config/env.js";
 import { logger } from "../config/logger.js";
+import { Issue } from "../models/Issue.js";
 import { AppError } from "../utils/AppError.js";
+import { trusted } from "./adminUserSupport.js";
 import { UPLOAD_RULES, reportsFolder } from "./uploadService.js";
 
 export const CHECK_TIMEOUT_MS = 5000;
@@ -25,14 +28,10 @@ const unavailable = () =>
     "We couldn't check your photos right now. Try again in a minute.",
   );
 
-/**
- * Verifies each public_id (max 3, already Zod-checked as strings) and returns what the Issue stores.
- * @returns {Promise<{ publicId: string, width: number, height: number }[]>}
- */
-export async function verifyPhotos(
-  publicIds,
-  { fetchImpl = (...a) => globalThis.fetch(...a) } = {},
-) {
+const defaultFetch = (...a) => globalThis.fetch(...a);
+
+/** The Admin API (basic auth, 5 s timeout, unreachable -> 503) after the shape check every id must pass. */
+function cloudinaryAdmin(publicIds, fetchImpl) {
   const {
     CLOUDINARY_CLOUD_NAME: cloud,
     CLOUDINARY_API_KEY: key,
@@ -61,16 +60,28 @@ export async function verifyPhotos(
       throw unavailable();
     }
   };
+  return { base, call, folder };
+}
+
+/** 401/403 means our keys are wrong: an operator problem, not the user's. */
+const refused = (status) =>
+  log[status === 401 || status === 403 ? "error" : "warn"](
+    { status },
+    "cloudinary admin api refused",
+  );
+
+/**
+ * Verifies each public_id (max 3, already Zod-checked as strings) and returns what the Issue stores.
+ * @returns {Promise<{ publicId: string, width: number, height: number }[]>}
+ */
+export async function verifyPhotos(publicIds, { fetchImpl = defaultFetch } = {}) {
+  const { base, call, folder } = cloudinaryAdmin(publicIds, fetchImpl);
 
   const check = async (publicId, index) => {
     const res = await call(`${base}/${publicId}`, "GET");
     if (res.status === 404) throw invalid(index);
     if (!res.ok) {
-      // 401/403 means our keys are wrong: an operator problem, not the user's.
-      log[res.status === 401 || res.status === 403 ? "error" : "warn"](
-        { status: res.status },
-        "cloudinary admin api refused",
-      );
+      refused(res.status);
       throw unavailable();
     }
     const asset = await res.json().catch(() => null);
@@ -95,4 +106,26 @@ export async function verifyPhotos(
   const failed = results.find((r) => r.status === "rejected");
   if (failed) throw failed.reason;
   return results.map((r) => r.value);
+}
+
+/**
+ * POST /api/uploads/discard: deletes photos of an abandoned draft. Idempotent (a gone id is fine). Refuses with
+ * 409 and deletes nothing when any id is already on an issue, as a report photo or an after photo.
+ * shortcut: uploads go browser -> Cloudinary, so we can't prove who uploaded an unused id; draft ids are random
+ * and only the uploader's browser sees them. Upgrade: sign uploads with a per-user tag and check it here.
+ */
+export async function discardPhotos(publicIds, { fetchImpl = defaultFetch } = {}) {
+  const { base, call } = cloudinaryAdmin(publicIds, fetchImpl);
+  const used = trusted({ $in: publicIds });
+  if (
+    await Issue.exists({ $or: [{ "photos.publicId": used }, { "afterPhotos.publicId": used }] })
+  ) {
+    throw new AppError("CONFLICT", 409, "A photo that's part of a report can't be removed.");
+  }
+  const query = publicIds.map((id) => `public_ids[]=${encodeURIComponent(id)}`).join("&");
+  const res = await call(`${base}?${query}`, "DELETE");
+  if (!res.ok) {
+    refused(res.status);
+    throw unavailable();
+  }
 }
