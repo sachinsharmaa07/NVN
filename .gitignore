@@ -32,8 +32,10 @@ logs/
 # Cleanup holding area (untracked files waiting for deletion)
 _to_delete/
 
-# Claude Code personal overrides
-.claude/settings.local.json
+# Local working notes and AI tooling: kept on disk, not published
+docs/
+.claude/
+CLAUDE.md
 
 # Graphify knowledge graph (regenerate with: graphify extract . --code-only)
 graphify-out/

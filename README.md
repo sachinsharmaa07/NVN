@@ -1,297 +1,426 @@
-# Nivaran v2
+<div align="center">
 
-Nivaran is a civic issue reporting app for Indian cities. A citizen enters a 6-digit pincode, drops a
-pin inside that pincode's boundary, adds a photo and details, and gets a ticket ID
-(`NIV-YYYY-NNNNNN`). Staff work an SLA-driven queue. There is an AI help chatbot (Gemini) and a
-moderated community feed.
+# निवारण · Nivaran
 
-This repository has the **Phase 0 skeleton** (Express API with a health check, lint, tests and CI),
-the **visual foundation** (design tokens, design system, app shell, landing page) and **Phase 1
-sign-in**: Auth0 login, a user record with roles, and the access checks every later route uses.
-There is no report feature or data model beyond users yet.
+**Report a civic problem in your pincode. Track it until it's fixed.**
 
-| Address (dev server) | What is there |
+A full-stack civic issue platform for Indian cities: residents drop a pin, get a ticket ID and an
+expected-by date, and watch the right department work through it.
+
+[![CI](https://github.com/sachinsharmaa07/NVN/actions/workflows/ci.yml/badge.svg)](https://github.com/sachinsharmaa07/NVN/actions/workflows/ci.yml)
+![Node 22](https://img.shields.io/badge/node-22-339933?logo=node.js&logoColor=white)
+![React](https://img.shields.io/badge/React-Vite-61DAFB?logo=react&logoColor=black)
+![Express 5](https://img.shields.io/badge/Express-5-000000?logo=express&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white)
+![Auth0](https://img.shields.io/badge/Auth-Auth0-EB5424?logo=auth0&logoColor=white)
+![English and Hindi](https://img.shields.io/badge/languages-English%20%7C%20हिन्दी-0E6E7A)
+
+<img src=".github/screenshots/landing-desktop.png" alt="Nivaran home page: pincode entry and how it works" width="820">
+
+</div>
+
+---
+
+## Contents
+
+- [What it does](#what-it-does)
+- [Screenshots](#screenshots)
+- [How a report flows](#how-a-report-flows)
+- [Architecture](#architecture)
+- [Tech stack](#tech-stack)
+- [Quick start](#quick-start)
+- [Configuration](#configuration)
+- [Scripts](#scripts)
+- [Testing](#testing)
+- [Run with Docker](#run-with-docker)
+- [API reference](#api-reference)
+- [Security and privacy](#security-and-privacy)
+- [Project structure](#project-structure)
+- [Status and roadmap](#status-and-roadmap)
+- [Troubleshooting](#troubleshooting)
+- [Credits](#credits)
+
+## What it does
+
+| For | They can |
 | --- | --- |
-| `/` | Landing page: pincode entry, how it works, a sample ticket timeline |
-| `/report`, `/issues`, `/community` | Placeholder pages inside the shell (the real screens come in later phases) |
-| `/dev/styleguide` | Every design-system component in light and dark. Development builds only |
+| **Residents** | Enter a 6-digit pincode, drop a pin inside its area, add up to 3 photos and get a ticket `NIV-YYYY-NNNNNN` with the department and an expected-by date. Follow every step on a timeline, confirm the fix or reopen it, get in-app notifications. |
+| **Neighbours** | Read and post notices in their pincode's community feed, comment in threads, report abusive posts. |
+| **Everyone signed in** | Ask the help chat. Ticket questions are answered straight from the database; general questions go to Gemini. |
+| **Staff and department heads** | Work an SLA-sorted queue: assign, start, resolve with an "after" photo, put on hold (pauses the clock), assign triage issues. |
+| **Moderators** | Review posts and comments hidden by three reports; restore them or delete with a reason. |
+| **City admins** | Choose which department handles each category and how many hours it may take; manage users and roles in their city. |
+| **The public** | Live totals on the home page: reports, fixed, open, typical time to fix. |
 
-- Product and data design: [docs/DESIGN.md](docs/DESIGN.md)
-- Visual and copy rules: [docs/UI.md](docs/UI.md)
-- Auth0 tenant setup (needed for sign-in): [docs/AUTH0_SETUP.md](docs/AUTH0_SETUP.md)
-- Architecture decisions: [docs/adr/](docs/adr/)
-- Rules for working in this repo: [CLAUDE.md](CLAUDE.md)
+Works in **English and Hindi** (the choice follows the user's profile), in light and dark themes, from a
+360 px phone up.
 
-## Prerequisites
+## Screenshots
 
-- **Node 22** (the version is pinned in `.nvmrc`; with nvm run `nvm use`)
-- **npm 10** (ships with Node 22)
-- A **MongoDB Atlas** database `nivaran_dev` for `npm run dev`. Atlas is a replica set, so the
-  transactions the role-change code uses work. Tests need a replica set too (see "Running the tests")
+<table>
+  <tr>
+    <td width="34%"><img src=".github/screenshots/report-map-mobile.png" alt="Report step 2: dropping a pin inside the pincode area"></td>
+    <td><img src=".github/screenshots/ticket-desktop.png" alt="A ticket with its status timeline"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Report: pin inside the pincode</sub></td>
+    <td align="center"><sub>Ticket and its timeline</sub></td>
+  </tr>
+  <tr>
+    <td><img src=".github/screenshots/chat-mobile.png" alt="Help chat answering a ticket question"></td>
+    <td><img src=".github/screenshots/staff-queue-desktop.png" alt="Staff queue sorted by SLA"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Help chat</sub></td>
+    <td align="center"><sub>Staff queue, soonest due first</sub></td>
+  </tr>
+  <tr>
+    <td><img src=".github/screenshots/hi-home-mobile.png" alt="The home page in Hindi"></td>
+    <td><img src=".github/screenshots/feed-desktop.png" alt="Community notices for a pincode"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>हिन्दी</sub></td>
+    <td align="center"><sub>Pincode community</sub></td>
+  </tr>
+</table>
 
-## Setup
+<sub>Screenshots come from the end-to-end test suite, which runs against a fake backend: the names and tickets are made up.</sub>
 
-```sh
-# 1. Install everything (both workspaces) from the lockfile
-npm ci
+## How a report flows
 
-# 2. Create your local env files from the templates
-cp server/.env.example server/.env
-cp client/.env.example client/.env
-
-# 3. Fill in the values (see the tables below), then start both apps
-npm run dev
+```mermaid
+flowchart LR
+  A["Resident enters pincode"] --> B{"Covered?"}
+  B -- no --> W["Join the waitlist"]
+  B -- yes --> C["Drop a pin inside the area"]
+  C --> D["Photos, category, details"]
+  D --> E["Ticket ID + department + expected-by date"]
+  E --> F{"Category mapped?"}
+  F -- yes --> G["Department queue"]
+  F -- no --> T["City triage queue"] --> G
+  G --> H["Assigned → In progress → Resolved (after photo)"]
+  H --> I{"Resident: fixed?"}
+  I -- yes --> J["Closed"]
+  I -- no --> K["Reopened with a new deadline"] --> G
+  G -. "deadline passed" .-> X["Notify department head, then city admin"]
 ```
 
-The app runs without Auth0 settings: there is no Sign in button and protected pages say sign-in is
-not set up. To turn sign-in on, follow [docs/AUTH0_SETUP.md](docs/AUTH0_SETUP.md).
+Each kind of problem has a fix-by time (national default, overridable per city). A background job marks
+tickets **at risk** at 75% of that time and **overdue** after it, notifies the department head, escalates to
+the city admin 24 hours later, and auto-closes resolved tickets after 7 days.
 
-- Open the app: <http://localhost:5173>
-- Check the API: <http://localhost:5001/api/health> should return `"status"` and `"db": "up"`
-
-`.env` files hold secrets and are git-ignored. Only the `.env.example` templates are committed.
-
-### macOS note
-
-The API defaults to 5001 because AirPlay Receiver holds 5000 on macOS 12 and later. To use another port,
-set `PORT=5050` in `server/.env` and
-`VITE_API_URL=http://localhost:5050` in `client/.env` to match.
-
-## Environment variables
-
-### Server (`server/.env`)
-
-| Variable | Example / default | Secret? | What it is |
-| --- | --- | --- | --- |
-| `NODE_ENV` | `development` | no | `development`, `test` or `production` |
-| `PORT` | `5001` | no | Port the API listens on |
-| `MONGODB_URI` | `mongodb+srv://.../nivaran_dev` | **yes** | Atlas connection string for the dev database |
-| `MONGODB_URI_TEST` | `mongodb://.../nivaran_test` | **yes** | Test database; tests wipe it, so the name must end in `_test`. Must be a replica set. Optional (see "Running the tests") |
-| `CLIENT_URL` | `http://localhost:5173` | no | The client's origin; the only origin CORS allows (required in production) |
-| `LOG_LEVEL` | `info` | no | pino log level (`fatal`, `error`, `warn`, `info`, `debug`, `trace`, `silent`) |
-| `TRUST_PROXY` | `0` | no | Proxies in front of the API (1 on Render); must be 1 or more in production |
-| `AUTH0_DOMAIN` | `nivaran-dev.us.auth0.com` | no | Auth0 tenant host, no `https://`. Required in production |
-| `AUTH0_AUDIENCE` | `https://api.nivaran.in` | no | The Auth0 API identifier. Required in production |
-| `AUTH0_M2M_CLIENT_ID` | from the Auth0 M2M app | **yes** (treat the pair as one secret) | Machine-to-Machine app for the Management API. Needed for role changes that set the MFA flag, and the scripts. Without it those answer 503 `AUTH_NOT_CONFIGURED` |
-| `AUTH0_M2M_CLIENT_SECRET` | from the Auth0 M2M app | **yes** | Server only, never in `client/.env`, never logged. Set both M2M values or neither |
-| `HMAC_SECRET` | output of `openssl rand -hex 32` | **yes** | Key for hashing waitlist emails (decision O1). 64 hex characters. Required in production. Set once: changing it orphans every stored hash |
-| `SUPER_ADMIN_EMAIL` | `you@example.com` | no (personal data, keep out of git) | Read only by `npm run bootstrap:super-admin -w server`. That person must have signed in once with a verified email |
-| `AUTH_CLOCK_TOLERANCE_SECONDS` | `5` | no | Allowed clock difference when checking token expiry, 0 to 30. Keep hosts on NTP |
-| `DNS_SERVERS` | `1.1.1.1,8.8.8.8` | no | Dev only, usually empty. DNS servers for the `mongodb+srv` lookup (see Troubleshooting) |
-
-The server checks these with Zod when it starts and exits with a list of the wrong keys if any are
-missing or invalid.
-
-### Client (`client/.env`)
-
-| Variable | Example | Secret? | What it is |
-| --- | --- | --- | --- |
-| `VITE_API_URL` | `http://localhost:5001` | no | Base URL of the API (must match the server's `PORT`) |
-| `VITE_AUTH0_DOMAIN` | `nivaran-dev.us.auth0.com` | no | Auth0 tenant host (same as the server's) |
-| `VITE_AUTH0_CLIENT_ID` | from the Auth0 application | no | Client ID of the Single Page Application |
-| `VITE_AUTH0_AUDIENCE` | `https://api.nivaran.in` | no | Must equal the server's `AUTH0_AUDIENCE` |
-| `VITE_SUPPORT_CONTACT` | `your city admin` | no | Optional. Who a suspended user is told to contact. Default: "your city admin" |
-
-Anything prefixed `VITE_` is bundled into the browser code, so never put a secret in `client/.env`.
-Nothing in this file is a secret. The Auth0 domain, client ID and audience are public by design. The
-M2M client ID and secret belong only in `server/.env`.
-
-## Sign-in and access
-
-Login uses Auth0 (OAuth 2.0 authorization code with PKCE). The browser keeps tokens in memory only,
-never in localStorage. The API checks every token (RS256, issuer and audience) and then loads the
-user from MongoDB on each request, so suspending or demoting someone works on their next call.
-Role, scope and status live in MongoDB, never in the token.
-
-**Auth0 setup summary** (full steps, about 20 minutes: [docs/AUTH0_SETUP.md](docs/AUTH0_SETUP.md)):
-create a tenant, a Single Page Application (callbacks `http://localhost:5173`, refresh-token rotation
-on), an API with RS256, the Google and database connections, the "Add Nivaran claims" Action, and a
-Machine-to-Machine app limited to `update:users` and `update:users_app_metadata`. Then fill in the
-env vars above and run the bootstrap script to create the first super admin.
-
-| Endpoint | Who | What it does |
+| Category | Respond within | Fix within (default) |
 | --- | --- | --- |
-| `GET /api/health` | anyone | Status and database state |
-| `GET /api/me` | signed in | Creates your citizen record on first sign-in, returns your profile |
-| `PATCH /api/me` | signed in | Edits your name, preferred language and default pincode |
-| `GET /api/admin/users` | city_admin, state_officer, super_admin; verified email, MFA | Lists users in your scope (cursor pages, search, role filter) |
-| `PATCH /api/admin/users/:id/role` | city_admin, super_admin | Changes a role below your own level, with a reason; writes an AuditLog |
-| `PATCH /api/admin/users/:id/status` | city_admin, super_admin | Suspends or reactivates a user below your level, with a reason |
+| Pothole or broken road | 24 h | 168 h |
+| Garbage | 12 h | 48 h |
+| Streetlight | 24 h | 72 h |
+| Water leak | 12 h | 48 h |
+| Drain or sewer | 24 h | 72 h |
+| Something else (always triage) | 48 h | 168 h |
 
-Routes are protected by a chain of small middleware: `authenticate` (`middleware/auth.js`), then
-`loadUser`, `requireActive`, `requireVerifiedEmail` and `requirePermission(...)` (`middleware/access.js`).
-The scope check (same city, department or state; out of scope is a 404) runs in the service. The
-role and scope rules are pure functions in `server/src/utils/permissions.js`, used by `middleware/access.js`. On
-the client, wrap a page in `<RequireAuth>` (props `verified`, `permission`, `minLevel`); the server
-enforces the same rules.
+## Architecture
+
+```mermaid
+flowchart LR
+  subgraph Browser["React SPA · :5173"]
+    UI["Resident, staff, moderator and admin screens"]
+  end
+  subgraph API["Express 5 API · :5001"]
+    direction LR
+    R["routes"] --> C["controllers"] --> S["services"] --> M["models"]
+    J["SLA job"] --> S
+  end
+  DB[("MongoDB Atlas<br/>replica set")]
+  A0["Auth0<br/>Google + email code"]
+  CL["Cloudinary<br/>photos"]
+  GM["Gemini<br/>help chat"]
+  UI -- "login (PKCE)" --> A0
+  UI -- "Bearer token" --> R
+  UI -- "signed upload" --> CL
+  M --> DB
+  S -- "verify, delete" --> CL
+  S -- "general questions only" --> GM
+  S -- "MFA flag" --> A0
+```
+
+- **Layered server.** route → controller → service → model. Controllers never touch Mongoose; ESLint
+  enforces it. Every route validates `body`, `params` and `query` with strict Zod schemas.
+- **Access on every request.** `authenticate` (RS256 JWT) → `loadUser` (MongoDB) → `requireActive` →
+  `requireVerifiedEmail` → `requirePermission(...)`, then the city or department scope is applied inside the
+  service's query. Role, scope and status come from the database, never from the token.
+- **Out of scope looks like missing.** Someone else's ticket or another city's record is a `404` with the same
+  body as a real miss, so IDs can't be probed.
+- **Audited changes.** Role and status changes, issue moves, moderation and city settings each write an
+  AuditLog row in the same transaction as the change.
+- **One error shape.** `{ "error": { "code": "UPPER_SNAKE", "message": "..." } }`; stack traces never leave the server.
+- **Lists are cursor-paginated** (max 50) on compound indexes.
+
+## Tech stack
+
+| Layer | Choices |
+| --- | --- |
+| Client | React, Vite, React Router, TanStack Query, Tailwind CSS v4, shadcn/ui (Radix), Leaflet, motion, react-hook-form + Zod |
+| Server | Node 22, Express 5 (ES modules), Mongoose, Zod 4, pino, helmet, express-rate-limit |
+| Data | MongoDB Atlas (replica set for transactions), 2dsphere geo queries |
+| Identity | Auth0: Google and passwordless email code, PKCE, refresh-token rotation, MFA for admins |
+| Services | Cloudinary (signed uploads, EXIF stripped), Gemini via `@google/genai` |
+| Quality | ESLint 9, Prettier, Vitest + Supertest, Testing Library, Playwright, GitHub Actions |
+| Ops | Docker images (API + nginx web), Compose with optional local MongoDB |
+
+## Quick start
+
+**You need:** Node 22 (`nvm use`), a MongoDB Atlas database, an Auth0 tenant, and the GeoNames pincode file.
+
+```bash
+git clone https://github.com/sachinsharmaa07/NVN.git && cd NVN
+npm ci                                   # installs both workspaces
+cp server/.env.example server/.env       # then fill in (see Configuration)
+cp client/.env.example client/.env
+```
+
+Load the pincode data once. Download `IN.zip` from [GeoNames](https://download.geonames.org/export/zip/),
+unzip it and save `IN.txt` as `data/pincodes.tsv` (about 12 MB, git-ignored). Then:
+
+```bash
+npm run setup:data -w server   # indexes, ~19k pincodes, default departments, SLA defaults; safe to rerun
+npm run dev                    # API on :5001, app on :5173
+```
+
+- App: <http://localhost:5173> · API health: <http://localhost:5001/api/health> (expect `"db": "up"`)
+- Sign in once, then make yourself the first admin: set `SUPER_ADMIN_EMAIL` in `server/.env` and run
+  `npm run bootstrap:super-admin -w server`.
+
+> [!NOTE]
+> Without Auth0 settings the app still runs: the public pages work and protected pages say sign-in isn't set up.
+> Photos need the `CLOUDINARY_*` keys; real chat answers need `GEMINI_API_KEY` (ticket answers work without it).
+
+## Configuration
+
+Both apps read a `.env` file (git-ignored; only the `.env.example` templates are committed). The server checks
+every value with Zod at start-up and exits with a list of what's wrong.
+
+<details>
+<summary><b>Server: <code>server/.env</code></b></summary>
+
+| Variable | Example | Secret | Purpose |
+| --- | --- | --- | --- |
+| `NODE_ENV` | `development` | | `development`, `test` or `production` |
+| `PORT` | `5001` | | API port (macOS AirPlay holds 5000) |
+| `MONGODB_URI` | `mongodb+srv://…/nivaran_dev` | **yes** | Database (must be a replica set; Atlas is) |
+| `MONGODB_URI_TEST` | `…/nivaran_test` | **yes** | Optional test database; its name must end in `_test` |
+| `CLIENT_URL` | `http://localhost:5173` | | The only origin CORS allows |
+| `LOG_LEVEL` | `info` | | pino level |
+| `TRUST_PROXY` | `0` | | Proxies in front of the API; 1 or more in production |
+| `AUTH0_DOMAIN` | `nivaran-dev.us.auth0.com` | | Tenant host, no `https://` |
+| `AUTH0_AUDIENCE` | `https://api.nivaran.in` | | API identifier |
+| `AUTH0_M2M_CLIENT_ID` / `_SECRET` | from the M2M app | **yes** | Management API, for the admin MFA flag. Server only |
+| `HMAC_SECRET` | `openssl rand -hex 32` | **yes** | Hashes waitlist emails. Set once |
+| `CLOUDINARY_CLOUD_NAME` / `_API_KEY` / `_API_SECRET` | | **yes** (key + secret) | Photo uploads |
+| `GEMINI_API_KEY` | from Google AI Studio | **yes** | Help chat general answers (optional) |
+| `GEMINI_MODEL` | `gemini-2.5-flash` | | Model name |
+| `SUPER_ADMIN_EMAIL` | `you@example.com` | | Read only by the bootstrap script |
+| `SLA_JOB_INTERVAL_MS` | `300000` | | SLA job tick; `0` turns it off |
+| `AUTH_CLOCK_TOLERANCE_SECONDS` | `5` | | Token expiry tolerance |
+| `DNS_SERVERS` | `1.1.1.1,8.8.8.8` | | Dev only, for SRV lookups on odd networks |
+
+</details>
+
+<details>
+<summary><b>Client: <code>client/.env</code></b> (all public: never put a secret here)</summary>
+
+| Variable | Example | Purpose |
+| --- | --- | --- |
+| `VITE_API_URL` | `http://localhost:5001` | API base URL |
+| `VITE_AUTH0_DOMAIN` | `nivaran-dev.us.auth0.com` | Same tenant as the server |
+| `VITE_AUTH0_CLIENT_ID` | from the SPA app | Auth0 application |
+| `VITE_AUTH0_AUDIENCE` | `https://api.nivaran.in` | Must equal the server's |
+| `VITE_SUPPORT_CONTACT` | `your city admin` | Who suspended users should contact |
+
+</details>
+
+<details>
+<summary><b>Auth0 setup</b> (about 20 minutes)</summary>
+
+1. **Tenant.** Create a tenant (e.g. `nivaran-dev`).
+2. **Web app.** Applications → Create → *Single Page Application*. Allowed Callback, Logout and Web Origins:
+   `http://localhost:5173` (add `http://localhost:8080` for Docker). Turn on **Refresh Token Rotation**.
+3. **API.** APIs → Create, identifier `https://api.nivaran.in`, RS256. Under *Application Access*, give the web
+   app user-delegated access.
+4. **Sign-in methods.** Turn on Google (`google-oauth2`) and Passwordless *Email* (6-digit code) for the web
+   app. Do **not** add automatic account linking; the server links only verified emails. Turn on Attack
+   Protection.
+5. **Claims Action.** Actions → Library → *Build from scratch*, trigger *Login / Post Login*, name
+   `Add Nivaran claims`, deploy, and add it to the post-login flow:
+
+   ```js
+   exports.onExecutePostLogin = async (event, api) => {
+     const ns = "https://nivaran.in/"; // must match CLAIM_NAMESPACE in server/src/services/userService.js
+     const mfaDone = (event.authentication?.methods ?? []).some((m) => m.name === "mfa");
+     const isRefresh = event.transaction?.protocol === "oauth2-refresh-token";
+     if (event.user.app_metadata?.mfa_required === true && !mfaDone && !isRefresh) {
+       api.multifactor.enable("any", { allowRememberBrowser: false });
+     }
+     api.accessToken.setCustomClaim(`${ns}email`, event.user.email);
+     api.accessToken.setCustomClaim(`${ns}name`, event.user.name);
+     api.accessToken.setCustomClaim(`${ns}picture`, event.user.picture);
+     api.accessToken.setCustomClaim(`${ns}email_verified`, event.user.email_verified === true);
+     api.accessToken.setCustomClaim(`${ns}mfa`, mfaDone);
+   };
+   ```
+
+6. **Machine-to-Machine app** for the Management API with only `update:users_app_metadata` (and
+   `update:users`). Its ID and secret go in `server/.env`.
+7. Fill in both `.env` files, restart, sign in, then run the bootstrap script.
+
+</details>
 
 ## Scripts
 
-Run these from the repository root.
+Run from the repository root. Add `-w server` or `-w client` to target one workspace.
 
-| Script                 | What it does                                                        |
-| ---------------------- | ------------------------------------------------------------------- |
-| `npm run dev`          | Starts the server and the client together, with coloured prefixes   |
-| `npm run build`        | Builds the client for production into `client/dist/`               |
-| `npm test`             | Runs the unit and API tests of both workspaces (Vitest)             |
-| `npm run test:e2e`     | Runs the Playwright end-to-end tests (see "Running the tests")      |
-| `npm run lint`         | Lints the whole repo with ESLint                                    |
-| `npm run format`       | Formats the code with Prettier                                      |
-| `npm run format:check` | Checks formatting without changing files (used in CI)               |
-| `npm run check`        | Lint, format check, tests and build: what CI runs. Run this before you push |
-| `npm run docker:up`    | Builds and starts the Docker images (see "Run with Docker")         |
-| `npm run docker:smoke` | Starts the images, checks `/` and `/api/health`, stops them         |
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | API and app together with live reload |
+| `npm run check` | Lint, format check, all tests, production build: exactly what CI runs |
+| `npm test` · `npm run test:e2e` | Unit and API tests · Playwright end-to-end tests |
+| `npm run lint` · `npm run format` | ESLint · Prettier |
+| `npm run build` | Production build of the client |
+| `npm run docker:up` · `docker:smoke` | Run both images · start, health-check and stop them |
 
-To run one workspace on its own, add `-w server` or `-w client`, for example
-`npm run test -w server`.
+<details>
+<summary><b>Server data and admin scripts</b> (dry run unless noted; add <code>-- --apply</code> to write)</summary>
 
-### One-off server scripts
+| Command | What it does |
+| --- | --- |
+| `setup:data` | Everything a fresh database needs, applied: M1 + M2 indexes, pincode import, departments, SLA defaults |
+| `import:pincodes` | Loads `data/pincodes.tsv`; one city per (state, district), e.g. `PB-KAPURTHALA` |
+| `import:boundaries` | Optional exact pincode polygons from GeoJSON (`data/boundaries/*.geojson`) |
+| `seed:departments` | Roads, Sanitation, Electrical, Water, Drainage per city, plus the category map |
+| `seed:sla` | National respond and fix hours per category |
+| `migrate:m1-indexes` · `migrate:m2-indexes` | Build indexes (production never builds them at start-up) |
+| `bootstrap:super-admin` | Makes `SUPER_ADMIN_EMAIL` the first super admin (applies directly, safe to rerun) |
+| `sync:mfa-flags` | Re-syncs Auth0 MFA flags from the database (applies directly, safe to rerun) |
+| `migrate:users-v1` · `migrate:users-v2` | Historical user migrations (v1 applies directly, v2 needs `--apply`), idempotent |
 
-Run from the repo root with the server's `.env` filled in. All print what they changed and never
-print secrets.
+</details>
 
-| Script | What it does | Exit codes |
-| --- | --- | --- |
-| `npm run bootstrap:super-admin -w server` | Makes `SUPER_ADMIN_EMAIL` the first `super_admin` (sets the Auth0 MFA flag first, then one transaction with an AuditLog row). Safe to rerun. Needs `MONGODB_URI` and both M2M values | `0` done or already done, `1` unexpected or missing settings, `2` no such user (sign in once first), `3` several users with that email, `4` email not verified, `5` Auth0 flag could not be set, `6` account suspended, `7` another super admin exists, `8` the user changed while promoting (run it again). Add `--force` to create a second one: `npm run bootstrap:super-admin -w server -- --force` |
-| `npm run sync:mfa-flags -w server` | Sets Auth0's `mfa_required` flag from the database for every user (on for level 4 and above, off below). Use it after an Auth0 outage left flags out of step. Safe to rerun | `0` all synced, `1` unexpected or some users failed |
-| `npm run migrate:users-v1 -w server` | Moves the `users` collection to the Phase 1 shape (`verified` renamed to `emailVerified`, `status` set to `active`), swaps old indexes for new ones, and lists rows that break the scope rules without changing them. Run it after any deploy that changes indexes (production has autoIndex off). On a database without `auth0Ids`, run `migrate:users-v2` first | `0` done, `1` error |
-| `npm run migrate:users-v2 -w server` | Copies each user's `auth0Id` into `auth0Ids` and builds the new indexes (unique `auth0Ids`, unique email among verified rows). Dry run by default; add `-- --apply` to write. Stops without writing if two users share a verified email | `0` done, `1` error, `2` duplicate verified emails |
-| `npm run migrate:m1-indexes -w server` | Builds the M1 indexes (pincodes, waitlists, cities, departments, category mappings) and sets `status: "onboarding"` on cities that have none. Dry run by default; add `-- --apply` to write. Never drops an index | `0` done, `1` error |
-| `npm run import:pincodes -w server` | Loads `data/pincodes.tsv` (GeoNames) into `pincodes` and creates one city per (state, district), code like `PB-KAPURTHALA`, status `active`. Per pincode: unique place names as `localities`, mean position as `centroid`, `radiusM` = farthest place + 1.5 km (3 to 25 km), `isServed: true`. Streams the file, writes in batches of 500, about 1 s for 19k pincodes on a local database. Dry run prints counts; add `-- --apply` to write. `--city PB-KAPURTHALA` imports one district city only. `--format csv` reads the data.gov.in CSV (`data/pincodes.csv`) instead; it has no coordinates, so it never marks pincodes served. `--file <path>` for another file. A second `--apply` changes 0 rows | `0` done, `1` error |
-| `npm run import:boundaries -w server` | Optional. Sets `boundary`, `boundarySource` and `centroid` from a GeoJSON FeatureCollection (default `data/boundaries/phagwara.geojson`; each feature needs `properties.pincode`). A pincode with a polygon gets exact pin checks; the rest use the radius circle. Validates rings (closed, 4+ points, `[lon, lat]` inside India). Reports invalid features, polygons with no pincode row, and served pincodes with no polygon. Run `import:pincodes` first. Dry run by default; `-- --apply` writes | `0` done, `1` error |
-| `npm run setup:data -w server` | A fresh database in one command: M1 and M2 indexes, `import:pincodes`, `seed:departments` and `seed:sla`, all with `--apply`. Needs `data/pincodes.tsv` (below). Every step is safe to rerun | `0` done, `1` the first step that failed |
-| `npm run seed:departments -w server` | Gives every city the default departments (Roads, Sanitation, Electrical, Water, Drainage) and the category map (pothole to Roads, garbage to Sanitation, streetlight to Electrical, water_leak to Water, drainage to Drainage, other to triage). Inserts only what is missing, so it never overwrites a renamed department or an admin's mapping; a rerun creates 0. Run `import:pincodes` first. Dry run by default; `-- --apply` writes; `--city PB-KAPURTHALA` for one city | `0` done, `1` error |
+## Testing
 
-**Pincode data (not in git).** Download `IN.zip` from GeoNames (<https://download.geonames.org/export/zip/>),
-unzip it and save `IN.txt` as `data/pincodes.tsv` (about 12 MB, tab-separated, no header; `.gitignore` excludes it).
-GeoNames data is CC BY 4.0: credit "GeoNames" wherever pincode data is shown. Then run, in order:
-`import:pincodes -- --apply`, optionally `import:boundaries -- --apply`, then `seed:departments -- --apply`.
-Or run everything a fresh database needs in one go (indexes, pincodes, departments, SLA defaults; every
-step is safe to rerun): `npm run setup:data -w server`.
-Hand-drawn polygons in `data/boundaries/*.geojson` (`boundarySource: "manual"`) can be committed.
-
-## Running the tests
-
-```sh
-npm test                    # both workspaces
-npm run test -w server      # server only
+```bash
+npm test                                         # server (Vitest + Supertest) and client (Testing Library)
+(cd client && npx playwright install chromium)   # once
+npm run test:e2e                                 # phone (360 px) and laptop (1280 px)
 ```
 
-The server API tests use real MongoDB, and the role-change code uses transactions, so the database
-must be a **replica set** (a plain `mongod` fails). Two ways to get one:
-
-1. **Automatic (default).** With `MONGODB_URI_TEST` unset, the test setup starts a throwaway
-   single-node replica set with `mongodb-memory-server`. The first run downloads a `mongod` binary
-   (MongoDB 7.0.14, override with `MONGOMS_VERSION`) from `fastdl.mongodb.org`, so that host must be
-   reachable; later runs use the cached copy.
-2. **Your own replica set.** Set `MONGODB_URI_TEST` to a replica-set URI (Atlas works). Its database
-   name must end in `_test` (for example `nivaran_test`) and differ from `MONGODB_URI`; the tests
-   wipe it, and refuse to run otherwise.
-
-If neither works, the DB tests **fail** with the reason rather than skip, so a green run means the
-auth cases really ran. In CI the value comes from the `MONGODB_URI_TEST` repository secret; give it
-its own Atlas database user with access to `nivaran_test` only.
-
-### End-to-end tests (Playwright)
-
-```sh
-(cd client && npx playwright install chromium)   # once: downloads the browser (about 100 MB)
-npm run test:e2e                                 # builds (--mode e2e), previews on 5199, runs both projects
-(cd client && npx playwright test --ui)          # watch the steps in a browser window
-(cd client && npx playwright show-report)        # the HTML report of the last run
-```
-
-The suite drives the report flow on a 360 px phone and a 1280 px laptop. It needs no Auth0 account,
-database, Cloudinary keys or internet: `VITE_E2E=1` swaps sign-in for a fake verified citizen, and
-`client/e2e/fixtures.js` answers every API, upload and map-tile request (ADR 0003). It runs against the
-production bundle (`vite build --mode e2e` into `dist-e2e/`, served by `vite preview`). Any other build
-with `VITE_E2E` set stops with an error, so the fake sign-in can never ship. In CI the `e2e`
-job runs after `check` and uploads `playwright-report` when it fails.
+- **About 1,600 unit and API tests.** Server tests use a real MongoDB replica set: a throwaway one from
+  `mongodb-memory-server` by default, or yours via `MONGODB_URI_TEST`. Auth0 is replaced by a local fake key server.
+- **43 end-to-end flows** run against the production bundle with a fake backend (`client/e2e/fixtures.js`), so
+  they need no accounts or internet. The `VITE_E2E` sign-in shortcut refuses to build outside e2e mode.
+- **A route-inventory test** walks every route and fails if one lacks the guard chain.
+- **CI** (`.github/workflows/ci.yml`) runs `check`, the e2e suite and a Docker build-and-smoke job on every
+  push and pull request.
 
 ## Run with Docker
 
-Images and compose for local runs and CI (ADR 0004). No deployment. Needs Docker Desktop (or Docker Engine with
-Compose v2.24+). Run from the repository root:
-
 ```bash
-npm run docker:up      # build both images and start them (detached)
-npm run docker:logs    # follow the logs
-npm run docker:down    # stop and remove the containers
-npm run docker:build   # build only
-npm run docker:smoke   # up, wait for healthy, curl / and /api/health through nginx, down; non-zero on failure
+npm run docker:up     # build and start: app on http://localhost:8080 (nginx proxies /api/)
+npm run docker:smoke  # start, check / and /api/health, stop
+npm run docker:down
 ```
 
-- App: http://localhost:8080 (nginx serves the build and proxies `/api/` to the API). API direct:
-  http://localhost:5001/api/health.
-- The API runs with `NODE_ENV=production`, so `server/.env` must hold everything production requires:
-  `MONGODB_URI`, `AUTH0_DOMAIN`, `AUTH0_AUDIENCE`, `AUTH0_M2M_CLIENT_ID`, `AUTH0_M2M_CLIENT_SECRET`,
-  `HMAC_SECRET` and the three `CLOUDINARY_*` values. Compose sets `CLIENT_URL=http://localhost:8080`,
-  `TRUST_PROXY=1` and `PORT=5001`. Compose reads `server/.env` stricter than dotenv: every comment line must
-  start with `#`.
-- The web image takes `VITE_AUTH0_DOMAIN`, `VITE_AUTH0_CLIENT_ID` and `VITE_AUTH0_AUDIENCE` from `client/.env`
-  at build time (public values); `VITE_API_URL` is always empty (same origin). Rebuild after changing them.
-- **Auth0:** add `http://localhost:8080` to the SPA application's Allowed Callback URLs, Allowed Logout URLs and
-  Allowed Web Origins, or sign-in from the container fails.
-- **Local MongoDB (optional, offline):** set
-  `MONGODB_URI=mongodb://mongo:27017/nivaran?replicaSet=rs0` in `server/.env` and run with the `local-db`
-  profile, e.g. `COMPOSE_PROFILES=local-db npm run docker:up`. It is a one-node replica set (transactions
-  work), data in the `nivaran_mongo-data` volume. Production never builds indexes at start-up, so build them once:
-  `docker compose exec api node scripts/migrateM1Indexes.js --apply` and the same for `migrateM2Indexes.js`
-  (seed and import scripts run the same way: `node scripts/<name>.js`).
-- Image sizes (unpacked on disk): API about 175 MB, web about 59 MB.
+The API runs with `NODE_ENV=production`, so `server/.env` needs the production settings (Auth0, M2M,
+`HMAC_SECRET`, Cloudinary). For an offline database, set
+`MONGODB_URI=mongodb://mongo:27017/nivaran?replicaSet=rs0` and start with `COMPOSE_PROFILES=local-db`.
 
-## Troubleshooting
+## API reference
 
-| Symptom | Cause | Fix |
+All routes are under `/api`. Signed-in routes need `Authorization: Bearer <token>`.
+
+| Method and path | Who | Purpose |
 | --- | --- | --- |
-| Server start fails with `querySrv ECONNREFUSED _mongodb._tcp...` | The network (often a phone hotspot) hands out a link-local IPv6 DNS server (`fe80::...%en0`) that Node's resolver cannot use for the SRV lookup | Set `DNS_SERVERS=1.1.1.1,8.8.8.8` in `server/.env` and restart. Dev only; leave it empty elsewhere |
-| App says "Sign-in isn't set up yet" | `VITE_AUTH0_*` blank in `client/.env` (put in `server/.env` by mistake) | Put them in `client/.env` and restart Vite (it reads env files only at startup) |
-| "Client ... is not authorized to access resource server" | Nivaran Web lacks User-delegated Access on the API | Auth0 > APIs > Nivaran > Application Access > edit Nivaran Web |
-| Vite starts on 5174 | An old Vite process holds 5173, breaking Auth0 callbacks and CORS | `lsof -nP -iTCP:5173 -sTCP:LISTEN`, then `kill <PID>` |
-| No users in Atlas after login | `GET /api/me` never succeeded | `curl -i http://localhost:5001/api/me` should be 401 `UNAUTHENTICATED`; then check the Network tab |
+| `GET /health` · `GET /stats` | public | Status and DB state · public totals (cached 5 min) |
+| `GET /pincodes/:pin` · `POST /pincodes/:pin/check-point` | public | Is a pincode covered · is a point inside it |
+| `POST /waitlist` | public | Join the waitlist for an uncovered pincode |
+| `GET /me` · `PATCH /me` | signed in | Profile (created on first sign-in) · name, language, home pincode |
+| `POST /uploads/sign` | verified | Signed Cloudinary upload |
+| `POST /issues` | verified | Submit a report (`Idempotency-Key` header) |
+| `GET /issues/mine` · `GET /issues/:ticketId` | reporter | My tickets · one ticket with its timeline |
+| `POST /issues/:ticketId/confirm` · `/reopen` | reporter | Confirm the fix · reopen with a note |
+| `GET /staff/issues` | staff and above | SLA-sorted queue in scope |
+| `PATCH /issues/:ticketId/status` · `/assign` | staff, dept head, city admin | Move through the state machine · assign triage |
+| `POST /issues/:ticketId/hold` · `/resume` | dept head | Pause or resume the SLA clock |
+| `GET /notifications` · `POST /notifications/read` | signed in | In-app notifications |
+| `GET /community/posts?pincode` · `POST /community/posts` | signed in · verified | Pincode feed · new post |
+| `GET`/`DELETE /community/posts/:id` · `…/comments` | signed in · author | Post, comments, delete your own |
+| `POST /community/flags` | verified | Report a post or comment (3 reports hide it) |
+| `GET /moderation/queue` · `POST /moderation/:type/:id` | moderator, city admin | Review queue · hide, restore, delete |
+| `POST /chat` | signed in | Help chat |
+| `GET /admin/users` · `PATCH /admin/users/:id/role` · `/status` | city admin and above | Users, roles, suspension |
+| `GET /admin/city-settings` · `PUT /admin/city-settings/:category` | city admin | Department and SLA hours per category |
+| `GET /cities` · `GET /departments` | admins | Pickers |
 
-## Folder tree
+## Security and privacy
+
+- Sign-in is Auth0 only (Google or email code). No passwords, no home-grown tokens or OTPs.
+- The browser keeps tokens **in memory only**, never in `localStorage`.
+- Admins (level 4 and up) must use two-step verification; the server fails closed without it.
+- Photos are stripped of EXIF location data and checked on the server (type, size, folder).
+- Waitlist emails are stored only as an HMAC hash.
+- The help chat never stores messages, removes emails and phone numbers before calling Gemini, and never
+  lets the model answer ticket questions.
+- Strict Zod validation, `sanitizeFilter`, rate limits per user and IP, helmet headers and no stack traces in responses.
+
+## Project structure
 
 ```text
 .
-├── .github/workflows/ci.yml   CI: lint, format check, tests, client build
-├── client/                    React + Vite app (JavaScript)
-│   ├── e2e/                   Playwright tests (later phase)
+├── client/                 React app
+│   ├── e2e/                Playwright flows and the fake backend
 │   └── src/
-│       ├── components/        ui/ (shadcn, generated), system/ (StatusBadge, SlaCountdown,
-│       │                      TicketId...), nav/, auth/, theme/, chat/, map/
-│       ├── layouts/           AppLayout (the shell) and PageTransition
-│       ├── pages/             Landing/, Report, Issues, Community, Profile, Suspended,
-│       │                      Forbidden, admin/AdminUsers, dev/StyleGuide
-│       ├── hooks/
-│       ├── lib/               api.js, motion.js (shared animation variants) and helpers
-│       ├── i18n/              en.json, en/*.json (copy by area) and the t() helper
-│       ├── styles/            globals.css (design tokens from docs/UI.md)
-│       ├── App.jsx
-│       └── main.jsx
-├── server/                    Express 5 API (ES modules)
+│       ├── app/            router, providers, Auth0 wiring
+│       ├── components/     ui/ (shadcn), system/, report/, issues/, staff/, community/, chat/, admin/, nav/
+│       ├── pages/          Landing, Report, Issues, IssueDetail, Community, Moderation, staff/, admin/
+│       ├── hooks/          TanStack Query hooks per feature
+│       ├── i18n/           en/ and hi/ dictionaries and t()
+│       └── styles/         design tokens
+├── server/                 Express API
 │   ├── src/
-│   │   ├── config/            env.js, db.js, logger.js
-│   │   ├── middleware/        requestId, validate, errorHandler, auth, access, userRateLimit
-│   │   ├── routes/
-│   │   ├── controllers/
-│   │   ├── services/
-│   │   ├── models/
-│   │   ├── utils/
-│   │   ├── jobs/
-│   │   ├── app.js             builds the Express app
-│   │   └── server.js          connects the DB and listens
-│   ├── scripts/               one-off data scripts
-│   └── tests/                 unit/, api/, helpers/ (a fake Auth0 key server) and setup/ (test DB)
-├── docs/                      DESIGN.md, UI.md, AUTH0_SETUP.md, adr/
-├── .editorconfig
-├── .nvmrc                     Node version (22)
-├── .prettierrc
-├── eslint.config.js           one ESLint config for both apps, including the ADR 0002 layering rules
-├── package.json               npm workspaces (client, server) and root scripts
-└── package-lock.json
+│   │   ├── routes/ → controllers/ → services/ → models/
+│   │   ├── middleware/     auth, access, validate, rate limits, errors
+│   │   ├── validators/     Zod schemas
+│   │   ├── utils/          pure rules: permissions, state machines, geo, cursors
+│   │   └── jobs/           SLA timer
+│   ├── scripts/            data and admin scripts
+│   └── tests/              unit/, api/, helpers/
+├── .github/                CI workflow and README screenshots
+├── docker-compose.yml      API, web and optional local MongoDB
+└── package.json            npm workspaces and root scripts
 ```
 
-The server is layered route -> controller -> service -> model ([ADR 0002](docs/adr/0002-layering.md)).
-ESLint enforces part of this: controllers, middleware and jobs cannot import Mongoose or models, and
-`server/src/utils/` cannot import Mongoose, config or I/O modules.
+## Status and roadmap
+
+| Milestone | Status |
+| --- | --- |
+| Sign-in, roles, admin users | ✅ Done |
+| Report flow: pincode, map pin, photos, ticket, routing | ✅ Done |
+| Tracking, staff queue, SLA job, notifications, public stats | ✅ Done |
+| Community and moderation, help chat, city settings, Hindi | ✅ Done |
+| Docker images and CI | ✅ Done |
+| Email notifications | ⏳ Waiting on a provider choice |
+| Cloud deployment, monitoring, load and accessibility audits | ⏳ Next |
+
+## Troubleshooting
+
+| Symptom | Fix |
+| --- | --- |
+| `querySrv ECONNREFUSED` on start | Set `DNS_SERVERS=1.1.1.1,8.8.8.8` in `server/.env` (dev only) |
+| "Sign-in isn't set up yet" | The `VITE_AUTH0_*` values belong in `client/.env`; restart Vite |
+| "Client … is not authorized to access resource server" | Auth0 → APIs → your API → Application Access → allow the web app |
+| Vite starts on 5174 | An old Vite holds 5173: `lsof -nP -iTCP:5173 -sTCP:LISTEN`, then `kill <PID>` |
+| Signed out after a page refresh | The browser blocks Auth0's third-party cookie. Sign in again, or use an Auth0 custom domain |
+| No users in the database after login | `curl -i http://localhost:5001/api/me` should answer 401; then check the browser's Network tab |
+
+## Credits
+
+Pincode data © [GeoNames](https://www.geonames.org/), CC BY 4.0. Map tiles © [OpenStreetMap](https://www.openstreetmap.org/copyright)
+contributors. Fonts: Anek Devanagari and Mukta by Ek Type.
