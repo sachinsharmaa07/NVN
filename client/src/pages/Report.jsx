@@ -7,6 +7,7 @@ import { MapStep } from "@/components/report/MapStep";
 import { PincodeStep } from "@/components/report/PincodeStep";
 import { clearDraft, readDraft, saveDraft } from "@/components/report/reportDraft";
 import { StartOver } from "@/components/report/StartOver";
+import { StepSlide } from "@/components/report/StepSlide";
 import { usePhotoUploads } from "@/components/report/usePhotoUploads";
 import { FormStrip } from "@/components/system/FormStrip";
 import { PageHeader } from "@/components/system/PageHeader";
@@ -123,42 +124,44 @@ export function Report() {
           <h2 aria-live="polite" className="sr-only">
             {t("report.wizard.stepOf", { step, total: 3, title: t(STEP_TITLES[step - 1]) })}
           </h2>
-          {step === 1 && (
-            <PincodeStep
-              key={resets}
-              initialPin={initialPin}
-              onNext={(pin) => {
-                saveDraft({ pincode: pin });
-                goTo(2);
-              }}
-            />
-          )}
-          {step === 2 && (
-            <MapStep
-              pincode={draft.pincode}
-              saved={draft.lng != null ? [draft.lng, draft.lat] : null}
-              notice={mapNotice}
-              onBack={() => goTo(1)}
-              onNext={({ lat, lng, precision }) => {
-                saveDraft({ lat, lng, precision });
-                setMapNotice("");
-                goTo(3);
-              }}
-            />
-          )}
-          {step === 3 && (
-            <DetailsStep
-              draft={draft}
-              uploads={uploads}
-              submit={{ pending: send.isPending, error: sendError }}
-              onBack={() => goTo(2)}
-              onSubmit={(fields) => {
-                if (inFlight.current) return;
-                inFlight.current = true;
-                send.mutate(fields, { onSettled: () => (inFlight.current = false) });
-              }}
-            />
-          )}
+          <StepSlide step={step}>
+            {step === 1 && (
+              <PincodeStep
+                key={resets}
+                initialPin={initialPin}
+                onNext={(pin) => {
+                  saveDraft({ pincode: pin });
+                  goTo(2);
+                }}
+              />
+            )}
+            {step === 2 && (
+              <MapStep
+                pincode={draft.pincode}
+                saved={draft.lng != null ? [draft.lng, draft.lat] : null}
+                notice={mapNotice}
+                onBack={() => goTo(1)}
+                onNext={({ lat, lng, precision }) => {
+                  saveDraft({ lat, lng, precision });
+                  setMapNotice("");
+                  goTo(3);
+                }}
+              />
+            )}
+            {step === 3 && (
+              <DetailsStep
+                draft={draft}
+                uploads={uploads}
+                submit={{ pending: send.isPending, error: sendError }}
+                onBack={() => goTo(2)}
+                onSubmit={(fields) => {
+                  if (inFlight.current) return;
+                  inFlight.current = true;
+                  send.mutate(fields, { onSettled: () => (inFlight.current = false) });
+                }}
+              />
+            )}
+          </StepSlide>
         </>
       )}
     </div>

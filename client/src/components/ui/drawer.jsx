@@ -1,12 +1,12 @@
 import { createContext, useContext, useRef } from "react";
-import { useDragControls, useReducedMotion } from "motion/react";
+import { useDragControls, useMotionValue, useReducedMotion } from "motion/react";
 import * as m from "motion/react-m";
 import { XIcon } from "lucide-react";
 import { Dialog as DrawerPrimitive } from "radix-ui";
 import { useReturnFocus } from "@/components/ui/returnFocus";
 import { t } from "@/i18n/t";
 import { cn } from "@/lib/utils";
-import { shouldDismiss } from "./drawerDrag";
+import { shouldDismiss, springBack } from "./drawerDrag";
 
 /*
  * Bottom drawer for phones (docs/UI.md §6: Dialog on desktop, Drawer below 1024px), built on the Radix
@@ -53,6 +53,7 @@ function DrawerContent({ className, children, onOpenAutoFocus, onCloseAutoFocus,
   const controls = useDragControls();
   const reduced = useReducedMotion();
   const panel = useRef(null);
+  const y = useMotionValue(0);
 
   // Drag starts only from the handle or the header, so the list inside still scrolls.
   function startDrag(event) {
@@ -64,6 +65,8 @@ function DrawerContent({ className, children, onOpenAutoFocus, onCloseAutoFocus,
     const height = panel.current?.offsetHeight ?? 0;
     if (shouldDismiss({ offset: info.offset.y, velocity: info.velocity.y, height })) {
       onOpenChange?.(false);
+    } else {
+      springBack(y, reduced);
     }
   }
 
@@ -78,11 +81,12 @@ function DrawerContent({ className, children, onOpenAutoFocus, onCloseAutoFocus,
           dragListener={false}
           dragControls={controls}
           dragConstraints={{ top: 0, bottom: 0 }}
-          dragElastic={{ top: 0, bottom: 1 }}
+          dragElastic={{ top: 0, bottom: 0.6 }}
           dragMomentum={false}
           dragTransition={reduced ? INSTANT_RETURN : undefined}
           onPointerDown={startDrag}
           onDragEnd={endDrag}
+          style={{ y }}
           className={cn(
             "fixed inset-x-0 bottom-0 z-sheet flex max-h-[90dvh] flex-col gap-4 overflow-y-auto rounded-t-xl border-t bg-background pb-[env(safe-area-inset-bottom)] shadow-lg outline-none data-[state=closed]:animate-out data-[state=closed]:duration-base data-[state=closed]:ease-exit data-[state=closed]:slide-out-to-bottom data-[state=open]:animate-in data-[state=open]:duration-slow data-[state=open]:ease-enter data-[state=open]:slide-in-from-bottom",
             className,
