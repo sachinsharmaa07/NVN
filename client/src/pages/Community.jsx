@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { PincodeStamp } from "@/components/community/PincodeStamp";
+import { PincodeLookup } from "@/components/community/PincodeLookup";
 import { PincodeSwitch } from "@/components/community/PincodeSwitch";
 import { PostCard } from "@/components/community/PostCard";
 import { PostComposer } from "@/components/community/PostComposer";
@@ -13,6 +14,7 @@ import { ErrorState } from "@/components/system/ErrorState";
 import { durations, easings } from "@/components/system/motionTokens";
 import { PageHeader } from "@/components/system/PageHeader";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { SkeletonList } from "@/components/system/SkeletonList";
 import { useFeed } from "@/hooks/useCommunity";
 import { useMe } from "@/hooks/useMe";
@@ -99,22 +101,26 @@ function Feed({ pincode }) {
   );
 }
 
-/** No home pincode yet: one left-aligned group, the way to add one, then the labelled switch. */
+/**
+ * No home pincode yet: one decision, top to bottom. Adding a home pincode (the primary) comes first;
+ * below a hairline, reading any pincode's posts with the PIN boxes (UI.md §1, §3).
+ */
 function NoHomePincode({ onShow }) {
   return (
-    <div className="flex flex-col items-start gap-2">
+    <div className="flex max-w-xl flex-col gap-8">
       <EmptyState
         variant="inline"
         title={t("community.feed.noPincodeTitle")}
         hint={t("community.feed.noPincodeHint")}
         action={
-          // The one way forward here, so the primary; "Show posts" below is the side road.
+          // The one way forward here, so the primary; reading another pincode below is the side road.
           <Button asChild>
             <Link to="/profile">{t("community.feed.addPincode")}</Link>
           </Button>
         }
       />
-      <PincodeSwitch onShow={onShow} />
+      <Separator />
+      <PincodeLookup onShow={onShow} />
     </div>
   );
 }
