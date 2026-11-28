@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { ROLES, assignableRoles, canRole, hasPermission, levelOf, roleNeeds } from "./roles";
+import {
+  ROLES,
+  assignableRoles,
+  canHoldIssues,
+  canRole,
+  hasPermission,
+  isCityBound,
+  levelOf,
+  picksAnyCity,
+  roleNeeds,
+} from "./roles";
 
 describe("levels", () => {
   it.each(ROLES.map((role, i) => [role, i + 1]))("%s is level %i", (role, level) => {
@@ -56,4 +66,18 @@ describe("roleNeeds", () => {
     ["state_officer", { city: false, department: false, state: true }],
     ["super_admin", { city: false, department: false, state: false }],
   ])("%s needs %j", (role, needs) => expect(roleNeeds(role)).toEqual(needs));
+});
+
+describe("scope rules", () => {
+  // Each rule is true for exactly one role; a missing user or an unknown role is never let through.
+  it.each([
+    ["picksAnyCity", picksAnyCity, "super_admin"],
+    ["canHoldIssues", canHoldIssues, "dept_head"],
+    ["isCityBound", isCityBound, "city_admin"],
+  ])("%s holds only for %s", (_name, rule, role) => {
+    for (const other of ROLES) expect(rule({ role: other })).toBe(other === role);
+    expect(rule(null)).toBe(false);
+    expect(rule(undefined)).toBe(false);
+    expect(rule({ role: "wizard" })).toBe(false);
+  });
 });
