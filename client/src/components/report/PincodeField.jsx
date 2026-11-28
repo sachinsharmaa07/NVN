@@ -43,7 +43,7 @@ export function PincodeField({
             <span
               key={i}
               className={cn(
-                "flex h-14 w-9 items-center justify-center rounded-sm border-2 bg-card font-display text-3xl font-semibold tabular-nums transition-colors duration-fast ease-standard min-[360px]:w-10 sm:h-16 sm:w-12",
+                "flex h-14 w-9 items-center justify-center rounded-sm border-2 bg-card font-display text-3xl font-semibold tabular-nums transition-colors duration-fast ease-standard xs:w-10 sm:h-16 sm:w-12",
                 error ? "border-destructive" : "border-input",
                 focused && i === activeIndex && !error && "border-primary",
               )}

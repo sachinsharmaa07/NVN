@@ -235,6 +235,9 @@
 
 /* §1 type scale (1.25 ratio), §3 shadows (three levels) and §4 easings: plain values, so a normal @theme block. */
 @theme {
+  /* 360px: the small-phone step (PIN boxes, hero padding). Tailwind's own breakpoints start at 640px. */
+  --breakpoint-xs: 22.5rem;
+
   /* Tailwind's xs/sm/base/xl already are 12/14/16/20px; these three move 2xl-4xl onto our 25/31/39px steps. */
   --text-2xl: 1.5625rem; /* 25px */
   --text-2xl--line-height: 1.2;

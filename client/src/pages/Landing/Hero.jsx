@@ -41,7 +41,7 @@ export function Hero() {
           </a>
         </div>
 
-        <div className="rounded-lg border bg-card p-4 min-[360px]:p-6 lg:col-span-5 lg:p-8">
+        <div className="rounded-lg border bg-card p-4 xs:p-6 lg:col-span-5 lg:p-8">
           <PincodeInput />
         </div>
       </div>

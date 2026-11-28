@@ -45,7 +45,7 @@ export function ChatBubble() {
           size="icon"
           aria-label={t("shell.chat.open")}
           className={cn(
-            "fixed right-4 bottom-[calc(4rem+env(safe-area-inset-bottom)+1rem)] z-chat size-14 rounded-full shadow-md",
+            "fixed right-4 bottom-[calc(64px+env(safe-area-inset-bottom)+16px)] z-chat size-14 rounded-full shadow-md",
             "lg:right-6 lg:bottom-6",
             pathname === "/report" && "max-lg:hidden",
           )}
