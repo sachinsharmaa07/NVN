@@ -1,8 +1,8 @@
+import { lazy, Suspense } from "react";
 import { PanelLeftCloseIcon, PanelLeftOpenIcon } from "lucide-react";
 import * as m from "motion/react-m";
 import { NavLink } from "react-router";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { useCan } from "@/hooks/useCan";
 import { useNavIntent } from "@/hooks/useNavIntent";
@@ -14,6 +14,9 @@ import { cn } from "@/lib/utils";
 import { manageItemsFor } from "./manageItems";
 import { navItemsFor } from "./navItems";
 import { focusRing } from "./navStyles";
+import { loadSidebarTooltip, useSidebarTooltip } from "./useSidebarTooltip";
+
+const SidebarTooltip = lazy(loadSidebarTooltip);
 
 /*
  * Desktop navigation (1024px and up, docs/UI.md §5). Hidden below that by CSS, where the bottom
@@ -159,11 +162,11 @@ function SideLink({ item, collapsed }) {
 // Icon-only items show their name in a tooltip on hover and keyboard focus. The aria-label above
 // carries the name for screen readers, so the tooltip is only a visual hint (UI.md §6 Tooltip).
 function WithTooltip({ show, label, children }) {
-  if (!show) return children;
+  const ready = useSidebarTooltip(show);
+  if (!show || !ready) return children;
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>{children}</TooltipTrigger>
-      <TooltipContent side="right">{label}</TooltipContent>
-    </Tooltip>
+    <Suspense fallback={children}>
+      <SidebarTooltip label={label}>{children}</SidebarTooltip>
+    </Suspense>
   );
 }

@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { useLocation, useNavigate } from "react-router";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useSignInPrompt } from "@/hooks/useSignInPrompt";
 import { t } from "@/i18n/t";

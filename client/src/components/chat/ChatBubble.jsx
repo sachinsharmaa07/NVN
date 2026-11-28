@@ -1,23 +1,12 @@
 import { MessageCircleIcon } from "lucide-react";
-import { useState } from "react";
 import { useLocation } from "react-router";
+import { LazyMenu } from "@/components/system/LazyMenu";
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { useAuth } from "@/hooks/useAuth";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { useSignInPrompt } from "@/hooks/useSignInPrompt";
 import { t } from "@/i18n/t";
 import { cn } from "@/lib/utils";
-import { ChatPanel } from "./ChatPanel";
 
+// The sheet and the chat itself load lazily (LazyMenu); the bubble is here from the first paint.
+const loadSheet = () => import("./ChatSheet");
 /*
  * Help chat launcher (docs/UI.md §5): a 56px circle at the bottom right of every page.
  * Mobile: 16px above the bottom bar (64px + safe area), clear of the Report tile.
@@ -30,17 +19,13 @@ import { ChatPanel } from "./ChatPanel";
  */
 export function ChatBubble() {
   const { pathname, search } = useLocation();
-  const isDesktop = useMediaQuery("(min-width: 1024px)");
-  const { status } = useAuth();
-  const { openSignIn } = useSignInPrompt();
-  const [open, setOpen] = useState(false);
-  const signedIn = status === "signedIn";
-
   if (pathname === "/report" && new URLSearchParams(search).get("step") === "2") return null;
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
+    <LazyMenu
+      load={loadSheet}
+      popup="dialog"
+      trigger={
         <Button
           size="icon"
           aria-label={t("shell.chat.open")}
@@ -52,35 +37,7 @@ export function ChatBubble() {
         >
           <MessageCircleIcon aria-hidden="true" className="size-6" />
         </Button>
-      </SheetTrigger>
-      {/* Bottom sheet on phones (no Vaul drawer yet), side panel on desktop. */}
-      <SheetContent
-        side={isDesktop ? "right" : "bottom"}
-        className={cn("flex flex-col", !isDesktop && "h-[85dvh] rounded-t-xl")}
-        style={isDesktop ? undefined : { paddingBottom: "env(safe-area-inset-bottom)" }}
-      >
-        <SheetHeader className="pr-12">
-          <SheetTitle className="font-display text-xl">{t("chat.title")}</SheetTitle>
-          <SheetDescription className="max-w-prose text-base">
-            {t(signedIn ? "chat.intro" : "chat.signInBody")}
-          </SheetDescription>
-        </SheetHeader>
-        {signedIn ? (
-          <ChatPanel />
-        ) : (
-          <SheetFooter>
-            {/* One overlay at a time (UI.md §6): this sheet closes before the sign-in one opens. */}
-            <Button
-              onClick={() => {
-                setOpen(false);
-                openSignIn({ returnTo: pathname + search });
-              }}
-            >
-              {t("chat.signIn")}
-            </Button>
-          </SheetFooter>
-        )}
-      </SheetContent>
-    </Sheet>
+      }
+    />
   );
 }

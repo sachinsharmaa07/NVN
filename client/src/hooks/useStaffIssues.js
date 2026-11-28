@@ -6,7 +6,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useApi } from "@/hooks/useApi";
 import { onConflict } from "@/hooks/useIssues";
 import { t } from "@/i18n/t";

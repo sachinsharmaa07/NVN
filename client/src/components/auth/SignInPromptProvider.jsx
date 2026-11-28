@@ -1,7 +1,12 @@
-import { useCallback, useMemo, useState } from "react";
-import { SignInPrompt } from "@/components/auth/SignInPrompt";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { SignInPromptContext } from "@/components/auth/signInPromptContext";
+import { whenIdle } from "@/lib/whenIdle";
 import { useAuth } from "@/hooks/useAuth";
+
+// The sheet's code (dialog, drawer) is not in the first download (HLD §7): it loads when the browser is
+// idle, or on the first open, and mounts from then on so it can animate closed.
+const loadPrompt = () => import("@/components/auth/SignInPrompt");
+const SignInPrompt = lazy(() => loadPrompt().then((mod) => ({ default: mod.SignInPrompt })));
 
 /*
  * Mounts ONE sign-in sheet for the whole app and lets anything open it:
@@ -34,11 +39,19 @@ export function SignInPromptProvider({ children }) {
         returnTo: window.location.pathname + window.location.search,
       };
 
+  const [mounted, setMounted] = useState(false);
+  if (shown.open && !mounted) setMounted(true);
+  useEffect(() => whenIdle(loadPrompt), []);
+
   const value = useMemo(() => ({ openSignIn }), [openSignIn]);
   return (
     <SignInPromptContext.Provider value={value}>
       {children}
-      <SignInPrompt {...shown} onOpenChange={onOpenChange} />
+      {mounted && (
+        <Suspense fallback={null}>
+          <SignInPrompt {...shown} onOpenChange={onOpenChange} />
+        </Suspense>
+      )}
     </SignInPromptContext.Provider>
   );
 }

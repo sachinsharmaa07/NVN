@@ -2,8 +2,15 @@ import common from "./en.json";
 
 // Strings are split by area so features can own their own file: en.json holds shared keys
 // (app.*, common.*, errors.*), and src/i18n/en/<area>.json holds each area's keys.
-// import.meta.glob is a Vite feature: it bundles every matching file at build time.
-const areaFiles = import.meta.glob("./en/*.json", { eager: true, import: "default" });
+// import.meta.glob is a Vite feature: it bundles every matching file at build time. Only the shell's
+// areas are bundled here; page-only areas (enDeferred.js, same list) arrive with the first page.
+const areaFiles = import.meta.glob(
+  [
+    "./en/*.json",
+    "!./en/{issues,report,community,profile,admin,staff,moderation,citySettings}.json",
+  ],
+  { eager: true, import: "default" },
+);
 
 // One flat dictionary per language. English is in the main bundle; Hindi (i18n/hi.js) is its own chunk,
 // loaded by loadLanguage("hi") when someone picks it, so English readers never download it (UI.md §5.2).
@@ -33,6 +40,22 @@ export function loadLanguage(lang) {
     },
   );
   return pending[lang];
+}
+
+let pageStrings;
+/** Adds the page-only English areas to the dictionary, once. Every page loader waits for it (lib/prefetch.js). */
+export function loadPageStrings() {
+  pageStrings ??= import("./enDeferred.js").then(
+    (mod) => {
+      Object.assign(dictionary, mod.default);
+      listeners.forEach((fn) => fn());
+    },
+    (error) => {
+      pageStrings = undefined; // a later page load may try again
+      throw error;
+    },
+  );
+  return pageStrings;
 }
 
 // The language every t() call uses unless it names one. AppLayout sets it from the signed-in user's

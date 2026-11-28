@@ -9,8 +9,14 @@ function TooltipProvider({ delayDuration = 0, ...props }) {
     />
   );
 }
-function Tooltip({ ...props }) {
-  return <TooltipPrimitive.Root data-slot="tooltip" {...props} />;
+// Each tooltip brings its own provider (as upstream shadcn does), so no app-wide provider pulls the
+// tooltip code into the first download (HLD §7). 300ms: the delay the app-wide provider used.
+function Tooltip({ delayDuration = 300, ...props }) {
+  return (
+    <TooltipProvider delayDuration={delayDuration}>
+      <TooltipPrimitive.Root data-slot="tooltip" {...props} />
+    </TooltipProvider>
+  );
 }
 function TooltipTrigger({ ...props }) {
   return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />;

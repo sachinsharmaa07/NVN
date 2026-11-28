@@ -48,8 +48,11 @@ describe("useApi", () => {
       code: "EMAIL_NOT_VERIFIED",
     });
     expect(auth.markUnverified).toHaveBeenCalled();
-    expect(toast.error).toHaveBeenCalledWith(
-      "We couldn't confirm your email. Sign in again with Google or an email code.",
+    // lib/toast.js loads sonner on first use, so the call lands a moment later.
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(
+        "We couldn't confirm your email. Sign in again with Google or an email code.",
+      ),
     );
     expect(openSignIn).toHaveBeenCalledWith({ returnTo: "/admin/users?q=abc", variant: "gated" });
     expect(result.current.path).toBe("/admin/users"); // no navigation

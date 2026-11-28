@@ -2,10 +2,12 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
 import { afterEach } from "vitest";
-import { loadLanguage } from "@/i18n/t";
+import { loadLanguage, loadPageStrings } from "@/i18n/t";
 
 // Hindi is a lazy chunk in the app; tests that render or check Hindi expect it to be there already.
 await loadLanguage("hi");
+// Page-only English strings arrive with the first page in the app; tests render pages directly.
+await loadPageStrings();
 
 // With globals: false, Testing Library cannot register its own auto-cleanup, so we do it here.
 afterEach(() => {
