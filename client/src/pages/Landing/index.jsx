@@ -5,6 +5,7 @@ import { LandingFooter } from "./LandingFooter";
 import { StatsRow } from "./StatsRow";
 import { TimelinePreview } from "./TimelinePreview";
 import { TrustSection } from "./TrustSection";
+import { useClaimPagePrimary } from "@/hooks/usePagePrimary";
 
 // Sections below the hero fade up as they scroll in (CSS only, UI.md §4). Where the browser has no
 // scroll timelines, or the user asks for less motion, they are simply there.
@@ -15,6 +16,8 @@ const REVEAL = "reveal-on-scroll";
  * the numbers so far, an example ticket, and why you can trust it. One <h1>, in the hero.
  */
 export function Landing() {
+  // Check my pincode: its own primary button, so the sidebar's Report turns outline (one primary per screen).
+  useClaimPagePrimary();
   return (
     <div className="flex flex-col">
       <Hero />

@@ -17,6 +17,7 @@ import { SkeletonList } from "@/components/system/SkeletonList";
 import { useFeed } from "@/hooks/useCommunity";
 import { useMe } from "@/hooks/useMe";
 import { t } from "@/i18n/t";
+import { useClaimPagePrimary } from "@/hooks/usePagePrimary";
 
 // Cards arrive one after another, 30ms apart, at most 8 staggered (UI.md §4); new pages arrive together.
 const list = { hidden: {}, visible: { transition: { staggerChildren: 0.03 } } };
@@ -126,6 +127,8 @@ function CommunityPage() {
   const pincode = params.get("pincode") ?? home;
   const show = (pin) => setParams(pin === home ? {} : { pincode: pin });
   const canPost = Boolean(home) && pincode === home;
+  // Write a post, or Add pincode when there is no home pincode: its own primary button, so the sidebar's Report turns outline (one primary per screen).
+  useClaimPagePrimary(canPost || !pincode);
 
   const writeButton = canPost && (
     <Button onClick={() => setComposing(true)}>

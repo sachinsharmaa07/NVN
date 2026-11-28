@@ -11,11 +11,14 @@ import { Button } from "@/components/ui/button";
 import { useMyIssues } from "@/hooks/useIssues";
 import { t } from "@/i18n/t";
 import { plural } from "@/lib/plural";
+import { useClaimPagePrimary } from "@/hooks/usePagePrimary";
 
 function MyIssues() {
   const query = useMyIssues();
   const [announcement, setAnnouncement] = useState("");
   const issues = query.data?.pages.flatMap((p) => p.items) ?? [];
+  // The empty state's Report an issue: its own primary button, so the sidebar's Report turns outline (one primary per screen).
+  useClaimPagePrimary(query.isSuccess && issues.length === 0);
 
   async function loadMore() {
     const result = await query.fetchNextPage();

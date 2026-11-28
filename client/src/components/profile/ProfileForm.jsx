@@ -29,6 +29,7 @@ import { useUpdateProfile } from "@/hooks/useUpdateProfile";
 import { t } from "@/i18n/t";
 import { serverFieldErrors } from "@/lib/fieldErrors";
 import { areaLabel } from "@/lib/roles";
+import { useClaimPagePrimary } from "@/hooks/usePagePrimary";
 
 // Mirrors the server's strict PATCH /api/me schema: these three keys and nothing else.
 const schema = z.object({
@@ -48,6 +49,8 @@ const toValues = (user) => ({
 
 export function ProfileForm({ user }) {
   const save = useUpdateProfile();
+  // Save changes: its own primary button, so the sidebar's Report turns outline (one primary per screen).
+  useClaimPagePrimary();
   const [formError, setFormError] = useState("");
   const form = useForm({
     resolver: zodResolver(schema),

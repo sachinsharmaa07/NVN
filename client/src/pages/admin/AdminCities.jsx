@@ -17,10 +17,13 @@ import { useAdminCities, useUpdateCity } from "@/hooks/useAdminCities";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { t } from "@/i18n/t";
 import { STATE_CODES } from "@/lib/stateCodes";
+import { useClaimPagePrimary } from "@/hooks/usePagePrimary";
 
 const TABS = ["active", "onboarding"];
 
 function CitiesContent() {
+  // Add city: its own primary button, so the sidebar's Report turns outline (one primary per screen).
+  useClaimPagePrimary();
   const [params, setParams] = useSearchParams();
   const status = params.get("status") === "onboarding" ? "onboarding" : "active";
   const stateCode = params.get("stateCode") ?? "";

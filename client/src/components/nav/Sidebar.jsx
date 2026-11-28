@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useAuth } from "@/hooks/useAuth";
 import { useCan } from "@/hooks/useCan";
 import { useNavIntent } from "@/hooks/useNavIntent";
+import { usePagePrimaryClaimed } from "@/hooks/usePagePrimary";
 import { useSidebarCollapsed } from "@/hooks/useSidebarCollapsed";
 import { t } from "@/i18n/t";
 import { springs, useMotionSafe } from "@/lib/motion";
@@ -92,9 +93,16 @@ export function Sidebar() {
 
 function PrimaryLink({ item, collapsed }) {
   const intent = useNavIntent(item.to);
+  // Outline while the page shows its own primary, so each screen has one filled button (UI.md §6).
+  const pageHasPrimary = usePagePrimaryClaimed();
   return (
     <WithTooltip show={collapsed} label={t(item.longLabelKey)}>
-      <Button asChild size={collapsed ? "icon" : "default"} className="justify-start">
+      <Button
+        asChild
+        variant={pageHasPrimary ? "outline" : "default"}
+        size={collapsed ? "icon" : "default"}
+        className="justify-start"
+      >
         <NavLink to={item.to} aria-label={collapsed ? t(item.longLabelKey) : undefined} {...intent}>
           <item.icon aria-hidden="true" />
           {!collapsed && t(item.longLabelKey)}

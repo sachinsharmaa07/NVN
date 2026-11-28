@@ -13,6 +13,7 @@ import { PageHeader } from "@/components/system/PageHeader";
 import { useApi } from "@/hooks/useApi";
 import { t } from "@/i18n/t";
 import { isValidPincode } from "@/pages/Landing/pincode";
+import { useClaimPagePrimary } from "@/hooks/usePagePrimary";
 
 const STEP_TITLES = ["report.wizard.step1", "report.wizard.step2", "report.wizard.step3"];
 
@@ -28,6 +29,8 @@ function stepFrom(param, draft) {
 // A landing link /report?pincode=144401 prefills step 1; otherwise the session draft does.
 export function Report() {
   const api = useApi();
+  // Next / Submit report / Track this issue: its own primary button, so the sidebar's Report turns outline (one primary per screen).
+  useClaimPagePrimary();
   const [searchParams, setSearchParams] = useSearchParams();
   const draft = readDraft();
   const step = stepFrom(searchParams.get("step"), draft);

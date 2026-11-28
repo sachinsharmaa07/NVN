@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useResolveAnswer } from "@/hooks/useIssues";
 import { t } from "@/i18n/t";
 import { REOPEN_MIN } from "./issueRules";
+import { useClaimPagePrimary } from "@/hooks/usePagePrimary";
 
 /**
  * Where the ticket page shows "Is it fixed?": while the ticket is resolved, and, once it has been
@@ -41,6 +42,8 @@ export function ResolveCard({ issue }) {
  */
 export function ResolvePrompt({ issue }) {
   const mutation = useResolveAnswer(issue.ticketId);
+  // Yes, it's fixed: its own primary button, so the sidebar's Report turns outline (one primary per screen).
+  useClaimPagePrimary();
   const [reopening, setReopening] = useState(false);
   const [note, setNote] = useState("");
   const [tried, setTried] = useState(false);
