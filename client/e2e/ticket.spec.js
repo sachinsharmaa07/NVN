@@ -56,6 +56,7 @@ test("photos are requested at their rendered size, not the full upload (HLD §7)
   await page.getByRole("img", { name: "Photo from the report, photo 1" }).scrollIntoViewIfNeeded();
   await expect.poll(() => photos.length).toBeGreaterThan(0);
   for (const url of photos) expect(url).toMatch(/\/image\/upload\/c_limit,w_\d+\/f_auto\/q_auto\//);
+});
 
 test("at 375 the before and after photos sit side by side (review m10)", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
