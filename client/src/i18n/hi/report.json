@@ -1,6 +1,6 @@
 {
   "report.wizard.stepOf": "{total} में से चरण {step}: {title}",
-  "report.wizard.step1": "आपका पिनकोड",
+  "report.wizard.step1": "पिनकोड",
   "report.wizard.step2": "पिन लगाएँ",
   "report.wizard.step3": "फ़ोटो और जानकारी",
   "report.wizard.next": "आगे",
@@ -44,6 +44,7 @@
   "report.details.descLabel": "क्या गड़बड़ है, और ठीक कहाँ?",
   "report.details.descShort": "समस्या कम से कम 20 अक्षरों में बताएँ, ताकि विभाग उसे ढूँढकर ठीक कर सके।",
   "report.details.countShort": "{count} अक्षर। कम से कम {min} लिखें।",
+  "report.details.countEmpty": "कम से कम {min} अक्षर।",
   "report.details.count": "{max} में से {count} अक्षर",
   "report.details.photoTooLarge": "यह फ़ोटो 5 MB से बड़ी है। छोटी फ़ोटो चुनें या नई फ़ोटो लें।",
   "report.photos.label": "फ़ोटो (वैकल्पिक)",

@@ -35,13 +35,13 @@ afterEach(() => {
 describe("Report step 1: pincode", () => {
   it("a landing link prefills, looks up, announces the place, and waits for Next", async () => {
     setup("/report?pincode=144601", { "/api/pincodes/144601": [200, kapurthala] });
-    expect(screen.getByText("Step 1 of 3: Your pincode")).toBeInTheDocument();
+    expect(screen.getByText("Step 1 of 3: Pincode")).toBeInTheDocument();
     expect(await screen.findByText("Kapurthala, Punjab")).toBeInTheDocument();
     expect(
       screen.getByText("Covers Kapurthala, Sultanpur Road, Bhulath, Dhilwan and 2 more"),
     ).toBeInTheDocument();
     expect(screen.getByText("Kapurthala, Punjab").closest("[aria-live]")).toBeTruthy();
-    expect(screen.getByText("Step 1 of 3: Your pincode")).toBeInTheDocument(); // no auto-advance
+    expect(screen.getByText("Step 1 of 3: Pincode")).toBeInTheDocument(); // no auto-advance
     fireEvent.click(next());
     expect(await screen.findByText("Step 2 of 3: Place the pin")).toBeInTheDocument();
   });

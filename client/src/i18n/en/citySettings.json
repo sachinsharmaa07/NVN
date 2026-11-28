@@ -11,6 +11,7 @@
   "citySettings.fromNational": "Using the national default",
   "citySettings.fromCity": "Set for this city",
   "citySettings.save": "Save {category}",
+  "citySettings.saveShort": "Save",
   "citySettings.saving": "Saving…",
   "citySettings.saved": "{category} saved. New reports use it.",
   "citySettings.hoursError": "Enter whole hours, 1 to 2160, with fix-by at least respond-by.",

@@ -4,7 +4,7 @@ import { StatusBadge } from "@/components/system/StatusBadge";
 import { TicketId } from "@/components/system/TicketId";
 import { useNavIntent } from "@/hooks/useNavIntent";
 import { t } from "@/i18n/t";
-import { formatDateTime } from "@/lib/format";
+import { formatDate, formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { focusRing } from "@/components/nav/navStyles";
 import { OPEN_STATUSES } from "./issueRules";
@@ -31,7 +31,9 @@ export function IssueCard({ issue }) {
       to={to}
       {...intent}
       className={cn(
-        "@container block rounded-lg border bg-card p-4 transition-colors duration-fast ease-standard hover:bg-accent/40",
+        // before: a dashed rule inside the left edge, the counterfoil's stub line (as on the receipt and ticket).
+        "@container relative block rounded-lg border bg-card p-4 pl-5 transition-colors duration-fast ease-standard hover:bg-accent/40",
+        "before:absolute before:inset-y-3 before:left-2 before:border-l-2 before:border-dashed before:border-border",
         focusRing,
       )}
     >
@@ -50,11 +52,12 @@ export function IssueCard({ issue }) {
             transitionName={`ticket-${issue.ticketId}`}
           />
         </div>
-        {open && (
-          <p className="text-sm text-muted-foreground tabular-nums @md:shrink-0 @md:text-right">
-            {t("issues.expectedBy", { date: formatDateTime(issue.expectedBy) })}
-          </p>
-        )}
+        {/* Always a date: when it should be fixed while open, when it was reported once it's closed. */}
+        <p className="text-sm text-muted-foreground tabular-nums @md:shrink-0 @md:text-right">
+          {open
+            ? t("issues.expectedBy", { date: formatDateTime(issue.expectedBy) })
+            : t("issues.reportedOn", { date: formatDate(issue.createdAt) })}
+        </p>
       </div>
     </Link>
   );

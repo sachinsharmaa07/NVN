@@ -95,9 +95,12 @@ export function DetailsStep({ draft, uploads, submit, onBack, onSubmit }) {
           aria-describedby={`${id}-count ${problems.description ? `${id}-desc-error` : ""}`.trim()}
         />
         <p id={`${id}-count`} className="text-sm text-muted-foreground tabular-nums">
-          {count < LIMITS.descMin
-            ? t("report.details.countShort", { count, min: LIMITS.descMin })
-            : t("report.details.count", { count, max: LIMITS.descMax })}
+          {/* Before any typing, a neutral hint: "0 characters" on arrival reads like an error. */}
+          {count === 0
+            ? t("report.details.countEmpty", { min: LIMITS.descMin })
+            : count < LIMITS.descMin
+              ? t("report.details.countShort", { count, min: LIMITS.descMin })
+              : t("report.details.count", { count, max: LIMITS.descMax })}
         </p>
         <FieldError id={`${id}-desc-error`}>{problems.description}</FieldError>
       </div>

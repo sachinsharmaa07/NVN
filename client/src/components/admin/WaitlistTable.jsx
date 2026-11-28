@@ -1,10 +1,19 @@
 import { LedgerTable } from "@/components/system/LedgerTable";
-import { Badge } from "@/components/ui/badge";
+import { CircleCheckIcon, ClockIcon } from "lucide-react";
+import { StateBadge } from "@/components/system/StateBadge";
 import { t } from "@/i18n/t";
 import { formatDate } from "@/lib/format";
 import { plural } from "@/lib/plural";
 
 const area = (row) => [row.district, row.state].filter(Boolean).join(", ") || "–";
+const Served = ({ row }) => (
+  <StateBadge
+    tone={row.isServed ? "good" : "neutral"}
+    icon={row.isServed ? CircleCheckIcon : ClockIcon}
+  >
+    {served(row)}
+  </StateBadge>
+);
 const served = (row) => t(row.isServed ? "admin.waitlist.served" : "admin.waitlist.notServed");
 
 /**
@@ -36,7 +45,7 @@ export function WaitlistTable({ rows, ...ledger }) {
     {
       key: "served",
       header: t("admin.waitlist.colServed"),
-      cell: (row) => <Badge variant="outline">{served(row)}</Badge>,
+      cell: (row) => <Served row={row} />,
     },
   ];
 
@@ -50,7 +59,7 @@ export function WaitlistTable({ rows, ...ledger }) {
         <div className="flex flex-col gap-2 rounded-lg border bg-card p-4">
           <div className="flex items-center justify-between gap-3">
             <span className="font-display text-h3 font-semibold tabular-nums">{row.pin}</span>
-            <Badge variant="outline">{served(row)}</Badge>
+            <Served row={row} />
           </div>
           <span className="text-muted-foreground">{area(row)}</span>
           <span className="text-sm tabular-nums">

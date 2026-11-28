@@ -92,7 +92,8 @@ export function Report() {
     <div className="mx-auto flex w-full max-w-160 flex-col gap-8 px-4 pt-8 pb-16 md:px-6 md:pt-12 lg:px-8 lg:pb-12">
       <PageHeader
         title={t("shell.report.title")}
-        description={t("shell.report.description")}
+        // The "three steps" line is for the task; above a finished receipt it would be instructions for nothing.
+        description={issue ? undefined : t("shell.report.description")}
         actions={
           !issue && hasDraft ? (
             <StartOver publicIds={uploads.publicIds} onReset={startOver} />

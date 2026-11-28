@@ -1,10 +1,19 @@
 import { LedgerTable } from "@/components/system/LedgerTable";
-import { Badge } from "@/components/ui/badge";
+import { CircleCheckIcon, CirclePauseIcon } from "lucide-react";
+import { StateBadge } from "@/components/system/StateBadge";
 import { Button } from "@/components/ui/button";
 import { t } from "@/i18n/t";
 
 const statusLabel = (city) =>
   t(city.status === "active" ? "admin.cities.active" : "admin.cities.paused");
+const CityState = ({ city }) =>
+  city.status === "active" ? (
+    <StateBadge tone="good" icon={CircleCheckIcon}>
+      {statusLabel(city)}
+    </StateBadge>
+  ) : (
+    <StateBadge icon={CirclePauseIcon}>{statusLabel(city)}</StateBadge>
+  );
 const actionLabel = (city) =>
   t(city.status === "active" ? "admin.cities.pause" : "admin.cities.open");
 
@@ -29,7 +38,7 @@ export function CitiesTable({ cities, onToggle, ...ledger }) {
     {
       key: "status",
       header: t("admin.cities.colStatus"),
-      cell: (city) => <Badge variant="outline">{statusLabel(city)}</Badge>,
+      cell: (city) => <CityState city={city} />,
     },
     {
       key: "actions",
@@ -58,7 +67,7 @@ export function CitiesTable({ cities, onToggle, ...ledger }) {
                 {city.code}, {city.stateCode}
               </span>
             </span>
-            <Badge variant="outline">{statusLabel(city)}</Badge>
+            <CityState city={city} />
           </div>
           <Button
             variant="outline"

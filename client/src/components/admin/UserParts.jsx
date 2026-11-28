@@ -1,4 +1,5 @@
-import { CircleXIcon } from "lucide-react";
+import { CircleCheckIcon, CircleXIcon } from "lucide-react";
+import { StateBadge } from "@/components/system/StateBadge";
 import { AccountAvatar } from "@/components/auth/AccountAvatar";
 import { t } from "@/i18n/t";
 import { displayName } from "@/components/admin/userText";
@@ -22,11 +23,14 @@ export function UserIdentity({ user }) {
 export function StatusText({ user }) {
   if (user.status === "suspended") {
     return (
-      <span className="inline-flex items-center gap-1.5">
-        <CircleXIcon aria-hidden="true" className="size-4" />
+      <StateBadge tone="bad" icon={CircleXIcon}>
         {t("admin.users.suspended")}
-      </span>
+      </StateBadge>
     );
   }
-  return <span>{t("admin.users.active")}</span>;
+  return (
+    <StateBadge tone="good" icon={CircleCheckIcon}>
+      {t("admin.users.active")}
+    </StateBadge>
+  );
 }

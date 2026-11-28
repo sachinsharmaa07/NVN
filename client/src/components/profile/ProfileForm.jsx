@@ -4,17 +4,18 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { FieldError } from "@/components/system/FieldError";
 import { RoleBadge } from "@/components/auth/RoleBadge";
-import { Badge } from "@/components/ui/badge";
+import { MailCheckIcon, MailWarningIcon } from "lucide-react";
+import { StateBadge } from "@/components/system/StateBadge";
 import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { PincodeField } from "@/components/report/PincodeField";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -114,9 +115,12 @@ export function ProfileForm({ user }) {
             <dd className="flex min-w-0 flex-col gap-1">
               <span className="flex flex-wrap items-center gap-2">
                 <span className="break-all">{user.email}</span>
-                <Badge variant="outline">
+                <StateBadge
+                  tone={user.emailVerified ? "good" : "bad"}
+                  icon={user.emailVerified ? MailCheckIcon : MailWarningIcon}
+                >
                   {t(user.emailVerified ? "profile.form.verified" : "profile.form.notVerified")}
-                </Badge>
+                </StateBadge>
               </span>
               <span className="text-sm text-muted-foreground">{t("profile.form.emailHint")}</span>
             </dd>
@@ -133,21 +137,18 @@ export function ProfileForm({ user }) {
           <FormField
             control={form.control}
             name="defaultPincode"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t("profile.form.pincode")}</FormLabel>
-                <FormControl>
-                  <Input
-                    inputMode="numeric"
-                    maxLength={6}
-                    autoComplete="postal-code"
-                    className="w-40 tabular-nums"
-                    {...field}
-                  />
-                </FormControl>
-                <FormDescription>{t("profile.form.pincodeHint")}</FormDescription>
-                <FormMessage />
-              </FormItem>
+            // The six PIN boxes, as in the report: the pincode looks the same wherever you type it.
+            render={({ field, fieldState }) => (
+              <PincodeField
+                label={t("profile.form.pincode")}
+                hint={t("profile.form.pincodeHint")}
+                name={field.name}
+                value={field.value ?? ""}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                inputRef={field.ref}
+                error={fieldState.error?.message}
+              />
             )}
           />
         </Section>

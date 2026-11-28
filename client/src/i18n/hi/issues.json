@@ -9,6 +9,7 @@
   "issues.detail.notFoundHint": "टिकट आईडी जाँचें, या इसे मेरी शिकायतें से खोलें।",
   "issues.detail.error": "यह टिकट लोड नहीं हो सका",
   "issues.detail.reported": "दर्ज करने की तारीख",
+  "issues.reportedOn": "{date} को दर्ज",
   "issues.detail.paused": "रुका हुआ",
   "issues.detail.history": "अब तक क्या हुआ",
   "issues.timeline.by": "{date}, {who} द्वारा",

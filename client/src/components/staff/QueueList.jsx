@@ -1,6 +1,7 @@
 import { IssueSla } from "@/components/issues/IssueCard";
 import { focusRing } from "@/components/nav/navStyles";
 import { StatusBadge } from "@/components/system/StatusBadge";
+import { TicketId } from "@/components/system/TicketId";
 import { t } from "@/i18n/t";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -28,8 +29,10 @@ export function QueueCard({ issue, selected, onOpen }) {
         <IssueSla issue={issue} />
       </span>
       <span className="font-medium text-foreground">{issue.title}</span>
-      <span className="text-sm text-muted-foreground tabular-nums">
-        {issue.ticketId}, {issue.pincode}
+      {/* The ID in its display face, as everywhere else; no Copy, since the card is itself a button. */}
+      <span className="flex flex-wrap items-baseline gap-x-2 text-sm text-muted-foreground tabular-nums">
+        <TicketId id={issue.ticketId} size="sm" copyable={false} />
+        <span>{issue.pincode}</span>
       </span>
       <span className="flex w-full flex-col text-sm @sm:flex-row @sm:justify-between">
         <span className="tabular-nums">

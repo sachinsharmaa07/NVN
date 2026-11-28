@@ -107,7 +107,8 @@ function NoHomePincode({ onShow }) {
         title={t("community.feed.noPincodeTitle")}
         hint={t("community.feed.noPincodeHint")}
         action={
-          <Button asChild variant="outline">
+          // The one way forward here, so the primary; "Show posts" below is the side road.
+          <Button asChild>
             <Link to="/profile">{t("community.feed.addPincode")}</Link>
           </Button>
         }

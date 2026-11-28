@@ -1,6 +1,6 @@
 {
   "report.wizard.stepOf": "Step {step} of {total}: {title}",
-  "report.wizard.step1": "Your pincode",
+  "report.wizard.step1": "Pincode",
   "report.wizard.step2": "Place the pin",
   "report.wizard.step3": "Photo and details",
   "report.wizard.next": "Next",
@@ -44,6 +44,7 @@
   "report.details.descLabel": "What's wrong, and where exactly?",
   "report.details.descShort": "Describe the problem in at least 20 characters, so the department can find and fix it.",
   "report.details.countShort": "{count} characters. Write at least {min}.",
+  "report.details.countEmpty": "At least {min} characters.",
   "report.details.count": "{count} of {max} characters",
   "report.details.photoTooLarge": "This photo is over 5 MB. Choose a smaller one or take a new photo.",
   "report.photos.label": "Photos (optional)",
