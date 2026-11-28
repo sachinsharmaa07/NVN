@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { IssueSla } from "@/components/issues/IssueCard";
 import { OPEN_STATUSES } from "@/components/issues/issueRules";
-import { PhotoGrid } from "@/components/issues/PhotoGrid";
+import { BeforeAfter } from "@/components/issues/BeforeAfter";
 import { ResolveCard } from "@/components/issues/ResolvePrompt";
 import { CATEGORIES } from "@/components/report/categories";
 import { EmptyState } from "@/components/system/EmptyState";
@@ -20,7 +20,10 @@ import { t } from "@/i18n/t";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { roleName } from "@/lib/roles";
 
-const frame = "mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-8 md:px-6 md:py-12";
+// Same centred max-w-6xl frame as every other page, so the title starts at the same x (review m12);
+// the ticket itself stays a readable max-w-2xl column, aligned left.
+const frame =
+  "mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 *:max-w-2xl md:px-6 md:py-12 lg:px-8";
 
 // Oldest first; the last entry is where the ticket is now. Who did it is a role, never a person.
 const stepsOf = (timeline) =>
@@ -134,19 +137,7 @@ function Ticket() {
         <StatusTimeline steps={stepsOf(issue.timeline ?? [])} />
       </section>
 
-      <div className="flex flex-col gap-6">
-        <PhotoGrid
-          photos={issue.photos}
-          title={t("issues.photos.before")}
-          label={t("issues.photos.before")}
-        />
-        <PhotoGrid
-          photos={issue.afterPhotos}
-          title={t("issues.photos.after")}
-          label={t("issues.photos.after")}
-          emptyLabel={t("issues.photos.afterPending")}
-        />
-      </div>
+      <BeforeAfter before={issue.photos} after={issue.afterPhotos} open={open} />
     </div>
   );
 }

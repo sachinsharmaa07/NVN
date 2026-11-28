@@ -217,3 +217,31 @@ test("Start over shows only once there is a draft to throw away", async ({ page 
   await toMapStep(page);
   await expect(page.getByRole("button", { name: "Start over" })).toBeVisible();
 });
+
+// Review m8/m9: the wizard header and the receipt.
+test("the receipt has one h1, and at 375 the ticket ID and Copy share a line", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await toDetailsStep(page);
+  await fillDetails(page);
+  await submit(page).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Report submitted");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+  await expect(counterfoil(page)).toHaveCount(1);
+  const id = await page.getByText(CREATED.ticketId).boundingBox();
+  const copy = await page
+    .getByRole("button", { name: `Copy ticket ID ${CREATED.ticketId}` })
+    .boundingBox();
+  // Same line: their vertical extents overlap.
+  expect(copy.y).toBeLessThan(id.y + id.height);
+  expect(copy.y + copy.height).toBeGreaterThan(id.y);
+});
+
+test("'Step 3 of 3' shows above the step on phones and hides where the full strip shows", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await toDetailsStep(page);
+  await expect(page.getByText("Step 3 of 3", { exact: true })).toBeVisible();
+  await page.setViewportSize({ width: 1024, height: 900 });
+  await expect(page.getByText("Step 3 of 3", { exact: true })).toBeHidden();
+});

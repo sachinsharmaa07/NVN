@@ -143,3 +143,39 @@ test("e) city admin routes potholes to Water with a shorter fix-by time", async 
     resolveHours: 48,
   });
 });
+
+// Review M7: with no home pincode, reading another pincode uses the PIN boxes, like Landing.
+test("no home pincode: six digits in the PIN boxes open that pincode's posts", async ({
+  page,
+  api,
+}) => {
+  api.answers.me = { ...ME, defaultPincode: null };
+  await page.goto("/community");
+  await expect(page.getByRole("link", { name: "Add pincode" })).toBeVisible();
+  const field = page.getByLabel("Read posts from a pincode");
+  await field.click();
+  await page.keyboard.type("14460");
+  await page.keyboard.press("Backspace");
+  await expect(field).toHaveValue("1446");
+  await page.keyboard.type("01");
+  await expect(page.getByRole("img", { name: `Pincode ${PIN}` })).toBeVisible();
+  await expect(page.getByRole("link", { name: new RegExp(POST.title) })).toBeVisible();
+});
+
+test("no home pincode: a pasted pincode opens its posts too", async ({ page, api, context }) => {
+  test.skip(test.info().project.name === "mobile", "clipboard shortcut is a desktop keyboard path");
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  api.answers.me = { ...ME, defaultPincode: null };
+  await page.goto("/community");
+  await page.getByLabel("Read posts from a pincode").click();
+  await page.evaluate((pin) => navigator.clipboard.writeText(pin), PIN);
+  await page.keyboard.press("ControlOrMeta+V");
+  await expect(page.getByRole("img", { name: `Pincode ${PIN}` })).toBeVisible();
+});
+
+test("no home pincode: a pincode we don't cover says so inline", async ({ page, api }) => {
+  api.answers.me = { ...ME, defaultPincode: null };
+  await page.goto("/community");
+  await page.getByLabel("Read posts from a pincode").fill("999999");
+  await expect(page.getByText("We don't cover 999999 yet, so it has no posts.")).toBeVisible();
+});

@@ -1,5 +1,6 @@
 {
   "report.wizard.stepOf": "Step {step} of {total}: {title}",
+  "report.wizard.stepCount": "Step {step} of {total}",
   "report.wizard.step1": "Pincode",
   "report.wizard.step2": "Place the pin",
   "report.wizard.step3": "Photo and details",

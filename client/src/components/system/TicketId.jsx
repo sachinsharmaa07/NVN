@@ -9,8 +9,8 @@ const SIZES = {
   sm: "text-sm", // list cards (My issues)
   md: "text-xl",
   lg: "text-2xl sm:text-3xl md:text-4xl",
-  // The counterfoil (UI.md §1: 39px). 31px below 640px, where 39px would not fit beside Copy.
-  xl: "text-3xl sm:text-4xl",
+  // The counterfoil (UI.md §1: 39px). 24px below 640px, so Copy stays on the same line at 375.
+  xl: "text-2xl sm:text-4xl",
 };
 
 /**

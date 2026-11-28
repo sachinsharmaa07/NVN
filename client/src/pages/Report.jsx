@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { Counterfoil } from "@/components/report/Counterfoil";
 import { DetailsStep } from "@/components/report/DetailsStep";
@@ -46,6 +46,11 @@ export function Report() {
   const [issue, setIssue] = useState(null);
   // Bumped by Start over, so step 1 remounts empty even when it is already showing.
   const [resets, setResets] = useState(0);
+  // The receipt's heading is the page h1; it takes focus so screen readers hear "Report submitted".
+  const title = useRef(null);
+  useEffect(() => {
+    if (issue) title.current?.focus();
+  }, [issue]);
   // Set synchronously on the first click: a double click lands before React re-renders Submit as disabled.
   const inFlight = useRef(false);
 
@@ -91,11 +96,14 @@ export function Report() {
   // Start over only once there is something to throw away (a saved draft, a later step or a photo).
   const hasDraft = step > 1 || Object.keys(draft).length > 0 || uploads.publicIds.length > 0;
   return (
-    // pb-16 below 1024px: with content-reserve, keeps the last field clear of the fixed Back/Next bar,
+    // The same centred max-w-6xl frame as every page, so the title starts at the same x (review m12); the
+    // wizard itself stays a 640px column, aligned left. pb-16 below 1024px: with content-reserve, keeps the last field clear of the fixed Back/Next bar,
     // even when it shows its hint line (measured at 360 on all three steps).
-    <div className="mx-auto flex w-full max-w-160 flex-col gap-8 px-4 pt-8 pb-16 md:px-6 md:pt-12 lg:px-8 lg:pb-12">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 pt-8 pb-16 *:max-w-160 md:px-6 md:pt-12 lg:px-8 lg:pb-12">
       <PageHeader
-        title={t("shell.report.title")}
+        title={issue ? t("report.done.title") : t("shell.report.title")}
+        titleRef={title}
+        inlineActions
         // The "three steps" line is for the task; above a finished receipt it would be instructions for nothing.
         description={issue ? undefined : t("shell.report.description")}
         actions={
@@ -106,7 +114,12 @@ export function Report() {
       />
       {!issue && (
         <nav aria-label={t("report.wizard.stepsLabel")}>
-          <FormStrip steps={steps} current={step - 1} collapsed />
+          <FormStrip
+            steps={steps}
+            current={step - 1}
+            collapsed
+            stepLabel={t("report.wizard.stepCount", { step, total: 3 })}
+          />
         </nav>
       )}
       {issue ? (

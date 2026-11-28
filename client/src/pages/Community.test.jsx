@@ -1,5 +1,6 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { t } from "@/i18n/t";
 import { authState, fakeFetch, people, renderWithAuth } from "@/test/renderWithAuth";
 import { Community } from "./Community";
 import { CommunityPost } from "./CommunityPost";
@@ -69,15 +70,49 @@ describe("Community feed", () => {
     expect(screen.getByRole("button", { name: "Back to my pincode" })).toBeInTheDocument();
   });
 
-  it("asks for a home pincode when the profile has none, with the switch right below", async () => {
+  it("asks for a home pincode when the profile has none, with the PIN boxes below", async () => {
     renderFeed({}, people.citizen);
     expect(
       await screen.findByRole("heading", { name: "Add your home pincode to post" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Add pincode" })).toHaveAttribute("href", "/profile");
-    fireEvent.change(screen.getByLabelText("Pincode"), { target: { value: "12" } });
+    fireEvent.change(screen.getByLabelText("Read posts from a pincode"), {
+      target: { value: "12" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Show posts" }));
-    expect(screen.getByText("Enter 6 digits, e.g. 144601.")).toBeInTheDocument();
+    expect(screen.getByText(t("landing.pincode.errorShort", { count: 2 }))).toBeInTheDocument();
+  });
+
+  it("six digits of a served pincode open its posts on their own", async () => {
+    renderFeed(
+      {
+        "/api/pincodes/144601": [200, { pin: "144601", served: true }],
+        "/api/community/posts?pincode=144601": page([post]),
+      },
+      people.citizen,
+    );
+    fireEvent.change(await screen.findByLabelText("Read posts from a pincode"), {
+      target: { value: "144601" },
+    });
+    expect(await screen.findByRole("img", { name: "Pincode 144601" })).toBeInTheDocument();
+  });
+
+  it("a pincode we don't cover says so inline", async () => {
+    renderFeed(
+      {
+        "/api/pincodes/999999": [
+          404,
+          { error: { code: "PINCODE_NOT_FOUND", message: "We don't know that pincode." } },
+        ],
+      },
+      people.citizen,
+    );
+    fireEvent.change(await screen.findByLabelText("Read posts from a pincode"), {
+      target: { value: "999999" },
+    });
+    expect(
+      await screen.findByText("We don't cover 999999 yet, so it has no posts."),
+    ).toBeInTheDocument();
   });
 });
 

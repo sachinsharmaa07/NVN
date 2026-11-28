@@ -38,7 +38,8 @@ export function PhotoGrid({ photos = [], label, title, emptyLabel }) {
   );
 }
 
-function Photo({ photo, alt }) {
+/** One photo in its reserved 4:3 box, fading in once loaded (also used by BeforeAfter). */
+export function Photo({ photo, alt }) {
   const [loaded, setLoaded] = useState(false);
   return (
     <img

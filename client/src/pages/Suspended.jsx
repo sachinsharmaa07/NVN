@@ -20,7 +20,7 @@ export function Suspended() {
   if (status !== "suspended") return <Navigate to="/" replace />;
 
   return (
-    <div className="mx-auto flex w-full max-w-160 flex-col px-4 py-12 md:px-6 lg:px-8">
+    <div className="mx-auto flex w-full max-w-6xl flex-col px-4 py-12 *:max-w-160 md:px-6 lg:px-8">
       <EmptyState
         icon={BanIcon}
         titleAs="h1"

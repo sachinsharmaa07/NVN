@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fakeFetch } from "@/test/renderWithAuth";
-import { StatsRow } from "./StatsRow";
+import { StatsNote, StatsRow } from "./StatsRow";
 
 function show(answer) {
   const spy = fakeFetch({ "/api/stats": answer });
@@ -11,6 +11,7 @@ function show(answer) {
   const view = render(
     <QueryClientProvider client={client}>
       <StatsRow />
+      <StatsNote />
     </QueryClientProvider>,
   );
   return { spy, ...view };
@@ -43,6 +44,8 @@ describe("Landing StatsRow", () => {
       await screen.findByText("Counts appear here once the first reports are in."),
     ).toBeInTheDocument();
     expect(screen.queryByRole("listitem")).not.toBeInTheDocument();
+    // No empty section: the sentence stands alone, without the "Reports at a glance" heading.
+    expect(screen.queryByRole("heading", { name: "Reports at a glance" })).not.toBeInTheDocument();
   });
 
   it("shows four tiles and no made-up 0 h when nothing has been fixed yet", async () => {
@@ -51,6 +54,8 @@ describe("Landing StatsRow", () => {
       { totalReports: 6, resolved: 0, medianResolutionHours: null, openByCategory: { pothole: 6 } },
     ]);
     expect(await screen.findAllByRole("listitem")).toHaveLength(4);
+    expect(screen.getByRole("heading", { name: "Reports at a glance" })).toBeInTheDocument();
+    expect(screen.queryByText("Counts appear here once the first reports are in.")).toBeNull();
     expect(screen.getByText("Typical time to fix").nextSibling).toHaveTextContent("No reports yet");
   });
 
