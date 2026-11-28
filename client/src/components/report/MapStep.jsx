@@ -1,6 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { LocateFixedIcon } from "lucide-react";
 import { lazy, Suspense, useState } from "react";
+import { StepBody } from "@/components/report/StepSlide";
 import { WizardFooter } from "@/components/report/WizardFooter";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -79,35 +80,37 @@ function PinPicker({ area, pincode, saved, notice, onBack, onNext }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-sm text-muted-foreground">
-        {t(area.precision === "approx" ? "report.location.approx" : "report.location.exact", {
-          pincode,
-        })}
-      </p>
-      <Suspense fallback={<Skeleton className="h-80 w-full sm:h-96" />}>
-        <PinMap
-          area={area}
-          pin={pin}
-          onPin={(p) => {
-            setPin(p);
-            setMessage("");
-          }}
-          onOutside={outside}
-          label={t("report.location.mapLabel", { pincode })}
-        />
-      </Suspense>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button variant="outline" onClick={locateMe}>
-          <LocateFixedIcon aria-hidden="true" />
-          {t("report.location.useMine")}
-        </Button>
+      <StepBody className="flex flex-col gap-4">
         <p className="text-sm text-muted-foreground">
-          {t(pin ? "report.location.keyboardHint" : "report.location.tapHint")}
+          {t(area.precision === "approx" ? "report.location.approx" : "report.location.exact", {
+            pincode,
+          })}
         </p>
-      </div>
-      <p aria-live="polite" role="status" className="min-h-6 text-sm">
-        {message}
-      </p>
+        <Suspense fallback={<Skeleton className="h-80 w-full sm:h-96" />}>
+          <PinMap
+            area={area}
+            pin={pin}
+            onPin={(p) => {
+              setPin(p);
+              setMessage("");
+            }}
+            onOutside={outside}
+            label={t("report.location.mapLabel", { pincode })}
+          />
+        </Suspense>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button variant="outline" onClick={locateMe}>
+            <LocateFixedIcon aria-hidden="true" />
+            {t("report.location.useMine")}
+          </Button>
+          <p className="text-sm text-muted-foreground">
+            {t(pin ? "report.location.keyboardHint" : "report.location.tapHint")}
+          </p>
+        </div>
+        <p aria-live="polite" role="status" className="min-h-6 text-sm">
+          {message}
+        </p>
+      </StepBody>
       <WizardFooter
         onBack={onBack}
         onNext={() => check.mutate(pin)}

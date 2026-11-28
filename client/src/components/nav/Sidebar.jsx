@@ -36,7 +36,7 @@ export function Sidebar() {
     <aside
       data-collapsed={collapsed}
       className={cn(
-        "hidden shrink-0 border-r bg-sidebar text-sidebar-foreground transition-[width] duration-base ease-standard lg:block",
+        "hidden shrink-0 border-r bg-sidebar text-sidebar-foreground lg:block",
         collapsed ? "w-12" : "w-64",
       )}
     >

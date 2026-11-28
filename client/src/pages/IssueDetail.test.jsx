@@ -1,5 +1,5 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { authState, fakeFetch, renderWithAuth } from "@/test/renderWithAuth";
 import { IssueDetail } from "./IssueDetail";
 
@@ -50,17 +50,6 @@ function expectPromptFoldsAway() {
   expect(screen.queryByText("Is it fixed?")).not.toBeInTheDocument();
 }
 
-// StatusTimeline reveals on scroll (motion's whileInView); jsdom has no IntersectionObserver.
-beforeEach(() =>
-  vi.stubGlobal(
-    "IntersectionObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    },
-  ),
-);
 afterEach(() => vi.unstubAllGlobals());
 
 describe("Ticket page", () => {

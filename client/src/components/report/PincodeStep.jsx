@@ -3,6 +3,7 @@ import { PincodeField } from "@/components/report/PincodeField";
 import { pincodeError } from "@/pages/Landing/pincode";
 import { PincodeResult } from "@/components/report/PincodeResult";
 import { saveDraft } from "@/components/report/reportDraft";
+import { StepBody } from "@/components/report/StepSlide";
 import { WizardFooter } from "@/components/report/WizardFooter";
 import { useLookupPincode } from "@/hooks/useLookupPincode";
 import { t } from "@/i18n/t";
@@ -27,15 +28,17 @@ export function PincodeStep({ initialPin, onNext }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <PincodeField
-        value={pin}
-        onChange={change}
-        onBlur={() => pin && setError(pincodeError(pin))}
-        error={error}
-      />
-      <section aria-live="polite" aria-label={t("report.pincode.resultLabel")}>
-        {complete && <PincodeResult pin={pin} lookup={lookup} />}
-      </section>
+      <StepBody className="flex flex-col gap-6">
+        <PincodeField
+          value={pin}
+          onChange={change}
+          onBlur={() => pin && setError(pincodeError(pin))}
+          error={error}
+        />
+        <section aria-live="polite" aria-label={t("report.pincode.resultLabel")}>
+          {complete && <PincodeResult pin={pin} lookup={lookup} />}
+        </section>
+      </StepBody>
       <WizardFooter
         onNext={() => onNext(pin)}
         nextDisabled={!canGoOn}
