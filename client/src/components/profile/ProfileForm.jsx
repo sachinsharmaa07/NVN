@@ -171,7 +171,12 @@ export function ProfileForm({ user }) {
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="en">{t("profile.form.languageEn")}</SelectItem>
-                    <SelectItem value="hi">{t("profile.form.languageHi")}</SelectItem>
+                    <SelectItem value="hi">
+                      {/* System font: no Mukta Devanagari download for one word on an English page. */}
+                      <span lang="hi" className="font-system">
+                        {t("profile.form.languageHi")}
+                      </span>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />

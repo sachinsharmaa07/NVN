@@ -1,7 +1,7 @@
 import { LockIcon, TriangleAlertIcon } from "lucide-react";
 import { useEffect } from "react";
 import { Navigate, useLocation } from "react-router";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { ForbiddenView } from "@/components/auth/ForbiddenView";
 import { EmptyState } from "@/components/system/EmptyState";
 import { Button } from "@/components/ui/button";

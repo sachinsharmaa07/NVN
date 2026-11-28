@@ -5,8 +5,11 @@ import { AccountMenu } from "./AccountMenu";
 
 afterEach(() => vi.useRealTimers());
 
-const open = () =>
-  fireEvent.keyDown(screen.getByRole("button", { name: "Your account" }), { key: "Enter" });
+// The menu's code is lazy (LazyMenu): Enter opens it once the chunk has arrived.
+const open = async (name = "Your account") => {
+  fireEvent.keyDown(screen.getByRole("button", { name }), { key: "Enter" });
+  await screen.findByRole("menu");
+};
 
 describe("AccountMenu", () => {
   it("loading: no Sign in button, only a status for screen readers; a skeleton after 200ms", async () => {
@@ -28,10 +31,10 @@ describe("AccountMenu", () => {
     expect(openSignIn).toHaveBeenCalledWith({ returnTo: "/community?x=1" });
   });
 
-  it("signed in: shows who, Profile and Sign out; no Manage group for a citizen", () => {
+  it("signed in: shows who, Profile and Sign out; no Manage group for a citizen", async () => {
     const auth = authState("verified");
     renderWithAuth(<AccountMenu />, { auth });
-    open();
+    await open();
     expect(screen.getByText("Asha Rao")).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Profile" })).toHaveAttribute("href", "/profile");
     expect(screen.queryByText("Manage")).not.toBeInTheDocument();
@@ -41,9 +44,9 @@ describe("AccountMenu", () => {
     expect(auth.logout).toHaveBeenCalled();
   });
 
-  it("admin: Users and City settings under Manage", () => {
+  it("admin: Users and City settings under Manage", async () => {
     renderWithAuth(<AccountMenu />, { auth: authState("admin") });
-    open();
+    await open();
     expect(screen.getByText("Manage")).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Users" })).toHaveAttribute("href", "/admin/users");
     expect(screen.getByRole("menuitem", { name: "City settings" })).toHaveAttribute(
@@ -52,18 +55,18 @@ describe("AccountMenu", () => {
     );
   });
 
-  it("signed in: the theme lives in a Theme submenu", () => {
+  it("signed in: the theme lives in a Theme submenu", async () => {
     renderWithAuth(<AccountMenu />, { auth: authState("verified") });
-    open();
+    await open();
     expect(screen.getByRole("menuitem", { name: "Theme" })).toHaveAttribute(
       "aria-haspopup",
       "menu",
     );
   });
 
-  it("unverified: no verify item (there is no verification link any more)", () => {
+  it("unverified: no verify item (there is no verification link any more)", async () => {
     renderWithAuth(<AccountMenu />, { auth: authState("unverified") });
-    open();
+    await open();
     expect(screen.getAllByRole("menuitem")[0]).toHaveTextContent("Profile");
     expect(screen.queryByText("Verify your email")).not.toBeInTheDocument();
   });
@@ -76,12 +79,10 @@ describe("AccountMenu", () => {
     expect(auth.logout).toHaveBeenCalled();
   });
 
-  it("error: a warning button with Try again and Sign out", () => {
+  it("error: a warning button with Try again and Sign out", async () => {
     const auth = authState("error", { error: { kind: "network", message: "x" } });
     renderWithAuth(<AccountMenu />, { auth });
-    fireEvent.keyDown(screen.getByRole("button", { name: "Account unavailable" }), {
-      key: "Enter",
-    });
+    await open("Account unavailable");
     fireEvent.click(screen.getByRole("menuitem", { name: "Try again" }));
     expect(auth.retry).toHaveBeenCalled();
   });

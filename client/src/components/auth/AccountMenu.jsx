@@ -1,21 +1,16 @@
-import { TriangleAlertIcon, UserRoundIcon } from "lucide-react";
-import { Link, useLocation } from "react-router";
+import { TriangleAlertIcon } from "lucide-react";
+import { useLocation } from "react-router";
 import { AccountAvatar } from "@/components/auth/AccountAvatar";
-import { ManageMenuItems, ThemeSubmenu } from "./AccountMenuSections";
+import { LazyMenu } from "@/components/system/LazyMenu";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { useSignInPrompt } from "@/hooks/useSignInPrompt";
 import { t } from "@/i18n/t";
+
+// The menus' code loads lazily (LazyMenu); the triggers are here from the first paint.
+const loadDropdown = () => import("./AccountMenuDropdown");
 
 // The slot is always 44px wide, so the header does not jump when the answer arrives.
 const SLOT = "flex size-11 items-center justify-center";
@@ -61,68 +56,33 @@ export function AccountMenu() {
   }
   if (auth.status === "error") {
     return (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
+      <LazyMenu
+        load={loadDropdown}
+        kind="error"
+        trigger={
           <Button variant="ghost" size="icon" aria-label={t("auth.account.unavailable")}>
             <TriangleAlertIcon aria-hidden="true" className="size-5" />
           </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="min-w-56">
-          {/* Sign-in without an email can't be fixed by retrying, so only Sign out is offered. */}
-          {auth.error?.kind !== "claims" && auth.error?.kind !== "mfa" && (
-            <DropdownMenuItem onSelect={() => auth.retry()}>
-              {t("auth.account.retry")}
-            </DropdownMenuItem>
-          )}
-          <DropdownMenuItem onSelect={() => auth.logout()}>
-            {t("auth.account.signOut")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+        }
+      />
     );
   }
   if (auth.status !== "signedIn" || !auth.user) return null; // "unconfigured"
 
-  const { user } = auth;
-
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+    <LazyMenu
+      load={loadDropdown}
+      kind="signedIn"
+      trigger={
         <Button
           variant="ghost"
           size="icon"
           className="rounded-full"
           aria-label={t("auth.account.menu")}
         >
-          <AccountAvatar user={user} />
+          <AccountAvatar user={auth.user} />
         </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-56">
-        <DropdownMenuLabel className="font-normal">
-          <span className="block text-xs text-muted-foreground">
-            {t("auth.account.signedInAs")}
-          </span>
-          <span className="block truncate font-medium text-foreground">
-            {user.name || user.email}
-          </span>
-          {user.name && (
-            <span className="block truncate text-xs text-muted-foreground">{user.email}</span>
-          )}
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link to="/profile">
-            <UserRoundIcon aria-hidden="true" />
-            {t("auth.account.profile")}
-          </Link>
-        </DropdownMenuItem>
-        <ThemeSubmenu />
-        <ManageMenuItems />
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={() => auth.logout()}>
-          {t("auth.account.signOut")}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+      }
+    />
   );
 }

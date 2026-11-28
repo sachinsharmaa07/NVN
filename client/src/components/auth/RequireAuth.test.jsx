@@ -1,4 +1,4 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { authState, people, renderWithAuth } from "@/test/renderWithAuth";
 import { toast } from "sonner";
@@ -35,10 +35,11 @@ describe("RequireAuth", () => {
     expect(auth.login).toHaveBeenCalledWith("/report?pincode=144401");
   });
 
-  it("an unverified user gets a toast and the sign-in sheet when verification is required", () => {
+  it("an unverified user gets a toast and the sign-in sheet when verification is required", async () => {
     const { openSignIn } = renderAt(authState("unverified"), { verified: true });
     expect(screen.queryByText("secret page")).not.toBeInTheDocument();
-    expect(toast.error).toHaveBeenCalled();
+    // lib/toast.js loads sonner on first use, so the call lands a moment later.
+    await waitFor(() => expect(toast.error).toHaveBeenCalled());
     expect(openSignIn).toHaveBeenCalledWith({
       returnTo: "/report?pincode=144401",
       variant: "gated",

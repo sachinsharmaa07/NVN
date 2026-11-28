@@ -1,28 +1,32 @@
 import { issueDetailQuery, myIssuesQuery } from "@/hooks/useIssues";
 import { staffQueueQuery } from "@/hooks/useStaffIssues";
+import { loadPageStrings } from "@/i18n/t";
+
+// A page renders only once its English strings are in the dictionary (they are not in the first download).
+const withStrings = (load) => () => Promise.all([load(), loadPageStrings()]).then(([mod]) => mod);
 
 /*
  * One import function per page. lazyPages.js builds React.lazy from these, and prefetchRoute calls
  * the same ones, so a hover and the click that follows share one download (02-lld prefetch contract).
  */
 export const pageLoaders = {
-  Landing: () => import("@/pages/Landing"),
-  Report: () => import("@/pages/Report"),
-  Issues: () => import("@/pages/Issues"),
-  IssueDetail: () => import("@/pages/IssueDetail"),
-  StaffQueue: () => import("@/pages/staff/StaffQueue"),
-  Community: () => import("@/pages/Community"),
-  CommunityPost: () => import("@/pages/CommunityPost"),
-  Moderation: () => import("@/pages/Moderation"),
-  Profile: () => import("@/pages/Profile"),
-  Suspended: () => import("@/pages/Suspended"),
-  Forbidden: () => import("@/pages/Forbidden"),
-  AdminUsers: () => import("@/pages/admin/AdminUsers"),
-  CitySettings: () => import("@/pages/admin/CitySettings"),
-  AdminCities: () => import("@/pages/admin/AdminCities"),
-  AdminWaitlist: () => import("@/pages/admin/AdminWaitlist"),
-  AdminAudit: () => import("@/pages/admin/AdminAudit"),
-  NotFound: () => import("@/pages/NotFound"),
+  Landing: withStrings(() => import("@/pages/Landing")),
+  Report: withStrings(() => import("@/pages/Report")),
+  Issues: withStrings(() => import("@/pages/Issues")),
+  IssueDetail: withStrings(() => import("@/pages/IssueDetail")),
+  StaffQueue: withStrings(() => import("@/pages/staff/StaffQueue")),
+  Community: withStrings(() => import("@/pages/Community")),
+  CommunityPost: withStrings(() => import("@/pages/CommunityPost")),
+  Moderation: withStrings(() => import("@/pages/Moderation")),
+  Profile: withStrings(() => import("@/pages/Profile")),
+  Suspended: withStrings(() => import("@/pages/Suspended")),
+  Forbidden: withStrings(() => import("@/pages/Forbidden")),
+  AdminUsers: withStrings(() => import("@/pages/admin/AdminUsers")),
+  CitySettings: withStrings(() => import("@/pages/admin/CitySettings")),
+  AdminCities: withStrings(() => import("@/pages/admin/AdminCities")),
+  AdminWaitlist: withStrings(() => import("@/pages/admin/AdminWaitlist")),
+  AdminAudit: withStrings(() => import("@/pages/admin/AdminAudit")),
+  NotFound: withStrings(() => import("@/pages/NotFound")),
 };
 
 // Pages a link can point at: their code, and for list pages the first page of their data
