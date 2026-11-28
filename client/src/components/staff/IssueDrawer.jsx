@@ -20,6 +20,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/useAuth";
+import { canHoldIssues } from "@/lib/roles";
 import { useCan } from "@/hooks/useCan";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { t } from "@/i18n/t";
@@ -96,7 +97,7 @@ function Details({ issue, onPanel }) {
   const { user } = useAuth();
   const can = useCan();
   const resume = useStaffSubmit(issue, () => {});
-  const isHead = user.role === "dept_head";
+  const isHead = canHoldIssues(user);
   const canStatus = can("issue:update_status") && nextStatuses(issue, user.role).length > 0;
   const canAssign = can("issue:assign") && issue.queue === "triage" && !issue.onHold;
   const canHold = isHead && !issue.onHold && OPEN_STATUSES.includes(issue.status);

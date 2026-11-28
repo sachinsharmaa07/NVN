@@ -3,33 +3,14 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { FieldError } from "@/components/system/FieldError";
-import { RoleBadge } from "@/components/auth/RoleBadge";
-import { MailCheckIcon, MailWarningIcon } from "lucide-react";
-import { StateBadge } from "@/components/system/StateBadge";
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { PincodeField } from "@/components/report/PincodeField";
-import { Input } from "@/components/ui/input";
+import { Form } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useUpdateProfile } from "@/hooks/useUpdateProfile";
 import { t } from "@/i18n/t";
 import { serverFieldErrors } from "@/lib/fieldErrors";
-import { areaLabel } from "@/lib/roles";
 import { useClaimPagePrimary } from "@/hooks/usePagePrimary";
+import { DetailsSection, HomePincodeSection, LanguageSection } from "./ProfileSections";
 
 // Mirrors the server's strict PATCH /api/me schema: these three keys and nothing else.
 const schema = z.object({
@@ -94,96 +75,14 @@ export function ProfileForm({ user }) {
     }
   }
 
-  const area = areaLabel(user, t("profile.form.areaAll")) || t("profile.form.areaNone");
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} noValidate className="flex flex-col gap-8">
-        <Section title={t("profile.section.details")}>
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t("profile.form.name")}</FormLabel>
-                <FormControl>
-                  <Input autoComplete="name" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          {/* Read-only facts are plain text (reachable by screen readers), not disabled inputs. */}
-          <dl className="grid gap-4 rounded-lg border p-4 sm:grid-cols-[8rem_1fr]">
-            <dt className="text-sm text-muted-foreground">{t("profile.form.email")}</dt>
-            <dd className="flex min-w-0 flex-col gap-1">
-              <span className="flex flex-wrap items-center gap-2">
-                <span className="break-all">{user.email}</span>
-                <StateBadge
-                  tone={user.emailVerified ? "good" : "bad"}
-                  icon={user.emailVerified ? MailCheckIcon : MailWarningIcon}
-                >
-                  {t(user.emailVerified ? "profile.form.verified" : "profile.form.notVerified")}
-                </StateBadge>
-              </span>
-              <span className="text-sm text-muted-foreground">{t("profile.form.emailHint")}</span>
-            </dd>
-            <dt className="text-sm text-muted-foreground">{t("profile.form.role")}</dt>
-            <dd>
-              <RoleBadge role={user.role} />
-            </dd>
-            <dt className="text-sm text-muted-foreground">{t("profile.form.area")}</dt>
-            <dd>{area}</dd>
-          </dl>
-        </Section>
+        <DetailsSection control={form.control} user={user} />
         <Separator />
-        <Section title={t("profile.section.pincode")}>
-          <FormField
-            control={form.control}
-            name="defaultPincode"
-            // The six PIN boxes, as in the report: the pincode looks the same wherever you type it.
-            render={({ field, fieldState }) => (
-              <PincodeField
-                label={t("profile.form.pincode")}
-                hint={t("profile.form.pincodeHint")}
-                name={field.name}
-                value={field.value ?? ""}
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-                inputRef={field.ref}
-                error={fieldState.error?.message}
-              />
-            )}
-          />
-        </Section>
+        <HomePincodeSection control={form.control} />
         <Separator />
-        <Section title={t("profile.section.language")}>
-          <FormField
-            control={form.control}
-            name="preferredLanguage"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t("profile.form.language")}</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger ref={field.ref}>
-                      <SelectValue />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="en">{t("profile.form.languageEn")}</SelectItem>
-                    <SelectItem value="hi">
-                      {/* System font: no Mukta Devanagari download for one word on an English page. */}
-                      <span lang="hi" className="font-system">
-                        {t("profile.form.languageHi")}
-                      </span>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </Section>
+        <LanguageSection control={form.control} />
 
         {formError && (
           <div role="alert">
@@ -209,15 +108,5 @@ export function ProfileForm({ user }) {
         </div>
       </form>
     </Form>
-  );
-}
-
-// One titled part of the form (an h2: the page title is the h1).
-function Section({ title, children }) {
-  return (
-    <section className="flex flex-col gap-4">
-      <h2 className="font-display text-h3 font-semibold">{title}</h2>
-      {children}
-    </section>
   );
 }

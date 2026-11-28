@@ -79,7 +79,7 @@ function TimelineStep({ step, isLast, nextUpcoming }) {
         />
       )}
 
-      {/* Square marker like a rubber stamp (rounded-full is reserved for avatars and chat). */}
+      {/* Square marker like a rubber stamp (round shapes are kept for avatars, chat and the postmark). */}
       <span
         aria-hidden="true"
         className={cn(

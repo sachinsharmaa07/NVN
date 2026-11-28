@@ -21,7 +21,7 @@ const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyV
 // A 44px pin drawn with our tokens (Leaflet's default icon images don't survive bundling anyway).
 const pinIcon = L.divIcon({
   className: "",
-  html: `<span class="flex size-11 items-center justify-center text-primary"><svg viewBox="0 0 24 24" class="size-9 drop-shadow" aria-hidden="true"><path fill="currentColor" stroke="white" stroke-width="1.5" d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z"/><circle cx="12" cy="10" r="2.5" fill="white"/></svg></span>`,
+  html: `<span class="flex size-11 items-center justify-center text-primary"><svg viewBox="0 0 24 24" class="size-9 drop-shadow" aria-hidden="true"><path fill="currentColor" class="stroke-background" stroke-width="1.5" d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z"/><circle cx="12" cy="10" r="2.5" class="fill-background"/></svg></span>`,
   iconSize: [44, 44],
   iconAnchor: [22, 42],
 });

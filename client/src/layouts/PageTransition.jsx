@@ -7,8 +7,8 @@ import { PageSkeleton } from "./PageSkeleton";
  * React Router runs every navigation inside startTransition, so React drives document.startViewTransition.
  * - Keyed by pathname: a new path exits and enters, and both get the `page` class, which globals.css
  *   animates (old out in `fast`, new in and up 8px in `base`). A query change (?step=2) is the same key,
- *   so it is an "update", and `default="none"` keeps it still. 02-lld says unkeyed; unkeyed, every
- *   wizard step change would cross-fade the whole page.
+ *   so it is an "update", and `default="none"` keeps it still (02-lld). Unkeyed, every wizard step
+ *   change would cross-fade the whole page.
  * - Only `main` is inside the boundary; the shell never animates.
  * - Reduced motion: the reduced-motion block in globals.css turns the animations off.
  * - Suspense shows PageSkeleton only on a first load; during a navigation the old page stays until

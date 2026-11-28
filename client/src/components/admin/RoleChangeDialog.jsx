@@ -12,7 +12,7 @@ import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useDepartments } from "@/hooks/useDepartments";
 import { t } from "@/i18n/t";
 import { serverFieldErrors } from "@/lib/fieldErrors";
-import { assignableRoles, levelOf, roleName, roleNeeds } from "@/lib/roles";
+import { assignableRoles, isCityBound, levelOf, roleName, roleNeeds } from "@/lib/roles";
 
 /*
  * Change a user's role. Pessimistic: the button shows a spinner and the dialog stays open until
@@ -24,7 +24,7 @@ export function RoleChangeDialog({ user, actor, open, onOpenChange, onGone, retu
   const name = user.name || user.email;
   const mutation = useChangeRole();
   const roleRef = useRef(null);
-  const cityFixed = actor.role === "city_admin"; // a city admin can only work inside their city
+  const cityFixed = isCityBound(actor); // a city admin can only work inside their city
   const [form, setForm] = useState({
     role: "",
     reason: "",

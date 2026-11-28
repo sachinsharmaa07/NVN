@@ -60,13 +60,13 @@ function Item({ item }) {
     >
       {({ isActive }) => (
         <>
-          <span className="relative isolate flex h-8 w-12 items-center justify-center rounded-full transition-colors duration-fast ease-standard group-aria-[current=page]:text-accent-foreground">
+          <span className="relative isolate flex h-8 w-12 items-center justify-center rounded-md transition-colors duration-fast ease-standard group-aria-[current=page]:text-accent-foreground">
             {isActive && (
               <m.span
                 aria-hidden="true"
                 layoutId="bottombar-active"
                 transition={transition}
-                className="absolute inset-0 -z-10 rounded-full bg-accent"
+                className="absolute inset-0 -z-10 rounded-md bg-accent"
               />
             )}
             <Icon aria-hidden="true" className="size-5" />

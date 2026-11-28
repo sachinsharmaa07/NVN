@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
+import { picksAnyCity } from "@/lib/roles";
 import { useCities } from "@/hooks/useCities";
 import { useCitySettings, useSaveCategory } from "@/hooks/useCitySettings";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
@@ -52,7 +53,7 @@ function CityPicker({ value, onChange }) {
 
 function Settings() {
   const { user } = useAuth();
-  const isRoot = user?.role === "super_admin";
+  const isRoot = picksAnyCity(user);
   const [cityId, setCityId] = useState(null);
   const query = useCitySettings(isRoot ? cityId : null, { enabled: !isRoot || Boolean(cityId) });
   const save = useSaveCategory(isRoot ? cityId : null);

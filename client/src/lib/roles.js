@@ -73,6 +73,18 @@ export const roleNeeds = (role) => ({
   ...NEEDS[role],
 });
 
+// Scope rules (not permissions): who may do something depends on the role's place, not a grant.
+// Each mirrors the server rule it stands for; the server still enforces every one.
+
+/** super_admin chooses the city to configure (server: services/citySettingsService.js:16). */
+export const picksAnyCity = (user) => user?.role === "super_admin";
+
+/** Only a dept_head may put an issue on hold or resume it (server: services/issueHoldService.js:10). */
+export const canHoldIssues = (user) => user?.role === "dept_head";
+
+/** A city_admin manages users only inside their own city (server: services/adminUserScope.js:21). */
+export const isCityBound = (user) => user?.role === "city_admin";
+
 // Text for the "Area" column and row: department, city, state; super_admin sees everything.
 export function areaLabel(user, allLabel) {
   if (user.role === "super_admin") return allLabel;
