@@ -1,7 +1,10 @@
 import { createContext, useContext, useRef } from "react";
 import { useDragControls, useReducedMotion } from "motion/react";
 import * as m from "motion/react-m";
+import { XIcon } from "lucide-react";
 import { Dialog as DrawerPrimitive } from "radix-ui";
+import { useReturnFocus } from "@/components/ui/returnFocus";
+import { t } from "@/i18n/t";
 import { cn } from "@/lib/utils";
 import { shouldDismiss } from "./drawerDrag";
 
@@ -44,8 +47,9 @@ function DrawerOverlay({ className, ...props }) {
 // Overdamped bounce under reduced motion: the drawer returns at once instead of springing.
 const INSTANT_RETURN = { bounceStiffness: 1e6, bounceDamping: 1e7 };
 
-function DrawerContent({ className, children, ...props }) {
+function DrawerContent({ className, children, onOpenAutoFocus, onCloseAutoFocus, ...props }) {
   const onOpenChange = useContext(DrawerCloseContext);
+  const focus = useReturnFocus({ onOpenAutoFocus, onCloseAutoFocus });
   const controls = useDragControls();
   const reduced = useReducedMotion();
   const panel = useRef(null);
@@ -66,7 +70,7 @@ function DrawerContent({ className, children, ...props }) {
   return (
     <DrawerPortal>
       <DrawerOverlay />
-      <DrawerPrimitive.Content asChild {...props}>
+      <DrawerPrimitive.Content asChild {...props} {...focus}>
         <m.div
           ref={panel}
           data-slot="drawer-content"
@@ -92,6 +96,14 @@ function DrawerContent({ className, children, ...props }) {
           >
             <div className="h-1.5 w-12 rounded-full bg-muted" />
           </div>
+          {/* Dragging is never the only way out (WCAG 2.5.7): a close button, like the Dialog's. */}
+          <DrawerPrimitive.Close
+            data-slot="drawer-close"
+            className="absolute top-2 right-2 inline-flex size-11 items-center justify-center rounded-md opacity-70 transition-opacity duration-fast hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-hidden [&_svg]:size-4"
+          >
+            <XIcon aria-hidden="true" />
+            <span className="sr-only">{t("common.close")}</span>
+          </DrawerPrimitive.Close>
           {children}
         </m.div>
       </DrawerPrimitive.Content>
@@ -102,7 +114,8 @@ function DrawerHeader({ className, ...props }) {
   return (
     <div
       data-slot="drawer-header"
-      className={cn("flex touch-none flex-col gap-1.5 px-4 text-left", className)}
+      // pr-14 keeps a long title clear of the close button in the corner.
+      className={cn("flex touch-none flex-col gap-1.5 px-4 pr-14 text-left", className)}
       {...props}
     />
   );

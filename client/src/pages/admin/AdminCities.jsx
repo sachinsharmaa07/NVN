@@ -12,7 +12,7 @@ import { PageHeader } from "@/components/system/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAdminCities, useUpdateCity } from "@/hooks/useAdminCities";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { t } from "@/i18n/t";
@@ -89,6 +89,7 @@ function CitiesContent() {
       <Tabs
         value={status}
         onValueChange={(next) => setParam({ status: next === "active" ? "" : next })}
+        className="gap-6"
       >
         <TabsList aria-label={t("admin.cities.tabsLabel")}>
           {TABS.map((tab) => (
@@ -97,57 +98,60 @@ function CitiesContent() {
             </TabsTrigger>
           ))}
         </TabsList>
+        {/* One panel for the selected tab, so each trigger's aria-controls points at a real tabpanel. */}
+        <TabsContent value={status} className="flex flex-col gap-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
+            <div className="grid flex-1 gap-2">
+              <Label htmlFor="city-search">{t("admin.cities.search")}</Label>
+              <Input
+                id="city-search"
+                type="search"
+                value={text}
+                placeholder={t("admin.cities.searchPlaceholder")}
+                onChange={(e) => setText(e.target.value)}
+              />
+            </div>
+            <FilterBar
+              filters={[
+                {
+                  key: "stateCode",
+                  label: t("admin.cities.colState"),
+                  allLabel: t("admin.cities.allStates"),
+                  options: STATE_CODES.map((code) => [code, code]),
+                  value: stateCode,
+                },
+              ]}
+              onChange={(key, value) => setParam({ [key]: value })}
+              onClear={() => {
+                setText("");
+                setParam({ stateCode: "", q: "" });
+              }}
+            />
+          </div>
+          <CitiesTable
+            cities={cities}
+            onToggle={(city) => {
+              setError("");
+              setTarget(city);
+            }}
+            busy={query.isPlaceholderData}
+            isLoading={query.isPending}
+            isError={query.isError}
+            errorTitle={t("admin.cities.error")}
+            onRetry={() => query.refetch()}
+            empty={
+              <EmptyState
+                icon={filtered ? SearchXIcon : Building2Icon}
+                title={t(filtered ? "admin.cities.noMatch" : `admin.cities.empty.${status}`)}
+                hint={t(filtered ? "admin.cities.noMatchHint" : "admin.cities.emptyHint")}
+              />
+            }
+            hasMore={query.hasNextPage}
+            onLoadMore={() => query.fetchNextPage()}
+            loadingMore={query.isFetchingNextPage}
+          />
+        </TabsContent>
       </Tabs>
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
-        <div className="grid flex-1 gap-2">
-          <Label htmlFor="city-search">{t("admin.cities.search")}</Label>
-          <Input
-            id="city-search"
-            type="search"
-            value={text}
-            placeholder={t("admin.cities.searchPlaceholder")}
-            onChange={(e) => setText(e.target.value)}
-          />
-        </div>
-        <FilterBar
-          filters={[
-            {
-              key: "stateCode",
-              label: t("admin.cities.colState"),
-              allLabel: t("admin.cities.allStates"),
-              options: STATE_CODES.map((code) => [code, code]),
-              value: stateCode,
-            },
-          ]}
-          onChange={(key, value) => setParam({ [key]: value })}
-          onClear={() => {
-            setText("");
-            setParam({ stateCode: "", q: "" });
-          }}
-        />
-      </div>
-      <CitiesTable
-        cities={cities}
-        onToggle={(city) => {
-          setError("");
-          setTarget(city);
-        }}
-        busy={query.isPlaceholderData}
-        isLoading={query.isPending}
-        isError={query.isError}
-        errorTitle={t("admin.cities.error")}
-        onRetry={() => query.refetch()}
-        empty={
-          <EmptyState
-            icon={filtered ? SearchXIcon : Building2Icon}
-            title={t(filtered ? "admin.cities.noMatch" : `admin.cities.empty.${status}`)}
-            hint={t(filtered ? "admin.cities.noMatchHint" : "admin.cities.emptyHint")}
-          />
-        }
-        hasMore={query.hasNextPage}
-        onLoadMore={() => query.fetchNextPage()}
-        loadingMore={query.isFetchingNextPage}
-      />
       <CityStatusDialog
         city={target}
         open={Boolean(target)}

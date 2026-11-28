@@ -26,14 +26,14 @@ export function PincodeField({ value, onChange, onBlur, error, inputRef }) {
         {t("landing.pincode.label")}
       </label>
       {/* Keyboard focus ring goes around the whole row because the input itself is invisible.
-          Boxes are 40px wide at 360px screens so all six fit; the tap target is the 56px-tall row. */}
+          Boxes are 36px under 360px and 40px from 360px so all six fit at 320px; the tap target is the 56px-tall row. */}
       <div className="relative w-fit rounded-md has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-ring has-[input:focus-visible]:ring-offset-4 has-[input:focus-visible]:ring-offset-background">
         <div aria-hidden="true" className="flex gap-2 sm:gap-3">
           {BOXES.map((i) => (
             <span
               key={i}
               className={cn(
-                "flex h-14 w-10 items-center justify-center rounded-sm border-2 bg-card font-display text-3xl font-semibold tabular-nums transition-colors duration-fast ease-standard sm:h-16 sm:w-12",
+                "flex h-14 w-9 items-center justify-center rounded-sm border-2 bg-card font-display text-3xl font-semibold tabular-nums transition-colors duration-fast ease-standard min-[360px]:w-10 sm:h-16 sm:w-12",
                 error ? "border-destructive" : "border-input",
                 focused && i === activeIndex && !error && "border-primary",
               )}

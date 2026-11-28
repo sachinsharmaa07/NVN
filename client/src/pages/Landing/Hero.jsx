@@ -21,7 +21,7 @@ function goToHowItWorks(event) {
 export function Hero() {
   return (
     <section aria-labelledby="landing-hero-title">
-      <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-12 md:px-6 lg:grid-cols-12 lg:items-center lg:gap-12 lg:px-8 lg:py-16">
+      <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-8 px-4 py-12 md:px-6 lg:grid-cols-12 lg:items-center lg:gap-12 lg:px-8 lg:py-16">
         <div className="flex flex-col gap-4 lg:col-span-7">
           <h1
             id="landing-hero-title"
@@ -41,7 +41,7 @@ export function Hero() {
           </a>
         </div>
 
-        <div className="rounded-lg border bg-card p-6 lg:col-span-5 lg:p-8">
+        <div className="rounded-lg border bg-card p-4 min-[360px]:p-6 lg:col-span-5 lg:p-8">
           <PincodeInput />
         </div>
       </div>
