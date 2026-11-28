@@ -32,7 +32,8 @@ function Target({ row }) {
         size="icon"
         onClick={copy}
         aria-label={t("admin.audit.copyId", { id: row.targetId })}
-        className="text-muted-foreground"
+        // -my-3: the 44px tap target overhangs the line instead of pushing the text below the row's others.
+        className="-my-3 text-muted-foreground"
       >
         <CopyIcon aria-hidden="true" />
       </Button>

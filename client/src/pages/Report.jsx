@@ -84,6 +84,8 @@ export function Report() {
   }
 
   const steps = STEP_TITLES.map((key) => ({ title: t(key) }));
+  // Start over only once there is something to throw away (a saved draft, a later step or a photo).
+  const hasDraft = step > 1 || Object.keys(draft).length > 0 || uploads.publicIds.length > 0;
   return (
     // pb-16 below 1024px: with content-reserve, keeps the last field clear of the fixed Back/Next bar,
     // even when it shows its hint line (measured at 360 on all three steps).
@@ -91,7 +93,11 @@ export function Report() {
       <PageHeader
         title={t("shell.report.title")}
         description={t("shell.report.description")}
-        actions={issue ? null : <StartOver publicIds={uploads.publicIds} onReset={startOver} />}
+        actions={
+          !issue && hasDraft ? (
+            <StartOver publicIds={uploads.publicIds} onReset={startOver} />
+          ) : null
+        }
       />
       {!issue && (
         <nav aria-label={t("report.wizard.stepsLabel")}>

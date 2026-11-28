@@ -209,3 +209,11 @@ test("at 360 the Back/Next bar sits just above the bottom bar on every step", as
   await expect(page.getByLabel("Short title")).toBeVisible();
   expect(await footerOnBar()).toBe(true);
 });
+
+test("Start over shows only once there is a draft to throw away", async ({ page }) => {
+  await page.goto("/report");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Start over" })).toHaveCount(0);
+  await toMapStep(page);
+  await expect(page.getByRole("button", { name: "Start over" })).toBeVisible();
+});

@@ -37,7 +37,13 @@ export function Counterfoil({ issue, onReportAnother }) {
       </h2>
       <div className="flex flex-col items-center gap-2">
         <p className="text-sm text-muted-foreground">{t("report.done.yourTicket")}</p>
-        <TicketId id={issue.ticketId} size="xl" transitionName={`ticket-${issue.ticketId}`} />
+        {/* justify-center: when Copy wraps under the long ID it stays centred with the rest. */}
+        <TicketId
+          id={issue.ticketId}
+          size="xl"
+          transitionName={`ticket-${issue.ticketId}`}
+          className="justify-center"
+        />
       </div>
       <div className="flex items-center gap-3">
         {/* The postmark holds no words; the date beside it is the text (UI.md §1). */}

@@ -2,6 +2,7 @@ import { LedgerTable } from "@/components/system/LedgerTable";
 import { Badge } from "@/components/ui/badge";
 import { t } from "@/i18n/t";
 import { formatDate } from "@/lib/format";
+import { plural } from "@/lib/plural";
 
 const area = (row) => [row.district, row.state].filter(Boolean).join(", ") || "–";
 const served = (row) => t(row.isServed ? "admin.waitlist.served" : "admin.waitlist.notServed");
@@ -53,7 +54,7 @@ export function WaitlistTable({ rows, ...ledger }) {
           </div>
           <span className="text-muted-foreground">{area(row)}</span>
           <span className="text-sm tabular-nums">
-            {t("admin.waitlist.cardCount", {
+            {plural(row.count, "admin.waitlist.cardCount", {
               count: new Intl.NumberFormat("en-IN").format(row.count),
             })}
             {", "}
