@@ -12,6 +12,7 @@ const { createApp } = await import("../../src/app.js");
 const { Issue } = await import("../../src/models/Issue.js");
 const { AuditLog } = await import("../../src/models/AuditLog.js");
 const { Notification } = await import("../../src/models/Notification.js");
+const { runSlaTick } = await import("../../src/jobs/slaJob.js");
 
 useTestDb();
 useFakeAuth0();
@@ -46,6 +47,7 @@ describe("POST /api/issues/:ticketId/confirm", () => {
     expect(res.body.timeline.at(-1)).toMatchObject({ status: "closed", role: "citizen" });
     expect(await AuditLog.countDocuments({ action: "issue.status_change" })).toBe(1);
     expect(await Notification.countDocuments()).toBe(0); // nobody to tell: the reporter did it
+    expect((await Issue.findById(issue._id).lean()).closureType).toBe("citizen_confirmed");
   });
 
   it("is the same 404 for anyone but the reporter, even staff in scope", async () => {
@@ -88,6 +90,31 @@ describe("POST /api/issues/:ticketId/reopen", () => {
     expect(stored.atRiskAt.toISOString()).toBe(new Date(NOW.getTime() + 126 * HOUR).toISOString());
   });
 
+  it("clears the closure and the state escalation, and counts every reopen", async () => {
+    const issue = await makeIssue(w, {
+      status: "resolved",
+      resolvedAt: new Date(NOW - HOUR),
+      closureType: "citizen_confirmed", // a stale value must not survive a reopen
+      breachNotifiedStateOfficerAt: new Date(NOW - 2 * HOUR),
+    });
+    expect(
+      (await post(w.reporter, issue, "reopen", { note: "Still broken", version: 0 })).status,
+    ).toBe(200);
+    let stored = await Issue.findById(issue._id).lean();
+    expect(stored).toMatchObject({
+      reopenCount: 1,
+      closureType: null,
+      breachNotifiedStateOfficerAt: null,
+    });
+
+    await Issue.updateOne({ _id: issue._id }, { status: "resolved", resolvedAt: NOW });
+    expect(
+      (await post(w.reporter, issue, "reopen", { note: "Broken again", version: 1 })).status,
+    ).toBe(200);
+    stored = await Issue.findById(issue._id).lean();
+    expect(stored.reopenCount).toBe(2);
+  });
+
   it("needs a note; 404 for someone else; 400 unless resolved; 409 when stale", async () => {
     const issue = await resolved();
     expect(code(await post(w.reporter, issue, "reopen", { version: 0 }))).toBe("VALIDATION_ERROR");
@@ -127,6 +154,24 @@ describe("POST /api/issues/:ticketId/hold and /resume", () => {
     expect(stored.atRiskAt - issue.atRiskAt).toBe(5 * HOUR);
     expect(await AuditLog.countDocuments({ action: "issue.hold" })).toBe(1);
     expect(await AuditLog.countDocuments({ action: "issue.resume" })).toBe(1);
+  });
+
+  it("resume shifts respondBy too, so the respond-by alert doesn't fire for time spent on hold", async () => {
+    const respondBy = new Date(NOW.getTime() + 24 * HOUR);
+    const issue = await makeIssue(w, { respondBy });
+    expect(
+      (await post(w.head, issue, "hold", { reason: "Waiting for parts", version: 0 })).status,
+    ).toBe(200);
+    vi.setSystemTime(new Date(NOW.getTime() + 5 * HOUR));
+    expect((await post(w.head, issue, "resume", { version: 1 })).status).toBe(200);
+
+    const stored = await Issue.findById(issue._id).lean();
+    expect(stored.respondBy - respondBy).toBe(5 * HOUR);
+    // At the old deadline the clock has only run 19 of its 24 hours: no alert yet.
+    expect(await runSlaTick(new Date(respondBy.getTime() + HOUR))).toMatchObject({
+      respondOverdue: 0,
+    });
+    expect(await Notification.countDocuments({ type: "sla_respond_overdue" })).toBe(0);
   });
 
   it("is 403 for staff and city_admin (dept_head only), 404 for another department's head", async () => {

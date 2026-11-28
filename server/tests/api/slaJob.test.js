@@ -1,12 +1,13 @@
 // SLA job (M2 step 7), called directly with a chosen time. Real MongoDB, real transactions.
 import { describe, it, expect, beforeEach } from "vitest";
-import { useTestDb } from "../helpers/testDb.js";
+import { useTestDb, seedUser } from "../helpers/testDb.js";
 import { makeIssue, seedIssueWorld, HOUR } from "../helpers/issueWorld.js";
 
 const { runSlaTick, startSlaJob } = await import("../../src/jobs/slaJob.js");
 const { Issue } = await import("../../src/models/Issue.js");
 const { AuditLog } = await import("../../src/models/AuditLog.js");
 const { Notification } = await import("../../src/models/Notification.js");
+const { User } = await import("../../src/models/User.js");
 
 useTestDb();
 
@@ -58,14 +59,43 @@ describe("runSlaTick", () => {
     expect(sent[0].userId).toEqual(w.admin._id); // the issue's city admin, not the other city's
   });
 
-  it("a breached triage issue goes straight to the city_admin, once", async () => {
+  it("a breached triage issue goes straight to the city_admin, once, then the state 48 h later", async () => {
     await issueAtT0({ departmentId: null, queue: "triage", category: "other" });
     await runSlaTick(at(168));
     await runSlaTick(at(168 + 48));
     const sent = await notes({});
     expect(sent.map((n) => [String(n.userId), n.type])).toEqual([
       [String(w.admin._id), "sla_breached"],
+      [String(w.state._id), "sla_escalated_state"],
     ]);
+  });
+
+  it("escalates to the state officers of the city's state 48 h after the city_admin, once", async () => {
+    const elsewhere = await seedUser("state_officer", { stateCode: "MH" });
+    const issue = await issueAtT0();
+    await runSlaTick(at(168)); // dept_head
+    await runSlaTick(at(168 + 24)); // city_admin
+    await runSlaTick(at(168 + 24 + 47));
+    expect(await notes({ type: "sla_escalated_state" })).toHaveLength(0);
+    await runSlaTick(at(168 + 24 + 48));
+    await runSlaTick(at(168 + 24 + 49)); // a rerun sends nothing new
+    const sent = await notes({ type: "sla_escalated_state" });
+    expect(sent.map((n) => String(n.userId))).toEqual([String(w.state._id)]);
+    expect(sent.some((n) => String(n.userId) === String(elsewhere._id))).toBe(false);
+    const stored = await Issue.findById(issue._id).lean();
+    expect(stored.breachNotifiedStateOfficerAt).toEqual(at(168 + 24 + 48));
+  });
+
+  it("claims level 3 once even when the state has no officer", async () => {
+    // Raw write: no active officer left in PB (the model guards status changes for app code).
+    await User.collection.updateMany({ role: "state_officer" }, { $set: { status: "suspended" } });
+    const issue = await issueAtT0();
+    await runSlaTick(at(168));
+    await runSlaTick(at(168 + 24));
+    expect((await runSlaTick(at(168 + 72))).notified).toBe(0);
+    expect((await Issue.findById(issue._id).lean()).breachNotifiedStateOfficerAt).toEqual(
+      at(168 + 72),
+    );
   });
 
   it("two ticks at once still notify once", async () => {
@@ -81,6 +111,7 @@ describe("runSlaTick", () => {
     expect((await runSlaTick(at(10 + 169))).autoClosed).toBe(0);
     const stored = await Issue.findById(issue._id).lean();
     expect(stored.status).toBe("closed");
+    expect(stored.closureType).toBe("auto_closed");
     expect(stored.__v).toBe(1);
     expect(stored.statusHistory.at(-1)).toMatchObject({
       status: "closed",

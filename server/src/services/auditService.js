@@ -31,6 +31,8 @@ const ALLOWED_KEYS = {
   "city.category_update": ["category", "departmentId", "queue", "respondHours", "resolveHours"],
   "city.create": ["name", "code", "stateCode", "status"],
   "city.update": ["name", "status"],
+  "department.create": ["name", "code"],
+  "department.update": ["name"],
 };
 const targetOf = (action) => action.split(".")[0];
 

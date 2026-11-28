@@ -16,6 +16,9 @@ const INCOMING = "c_limit,w_1600,h_1600";
 /** Where report photos live; the photo check refuses anything outside it. */
 export const reportsFolder = () => `nivaran/${config.NODE_ENV}/reports`;
 
+/** Signed into every upload, so discarding a photo can check who uploaded it (the browser can't change it). */
+export const uploaderTag = (userId) => `u_${userId}`;
+
 /** Pure: the Cloudinary signature for `params` (values already strings or numbers). */
 export function cloudinarySignature(params, secret) {
   const toSign = Object.keys(params)
@@ -28,7 +31,7 @@ export function cloudinarySignature(params, secret) {
 }
 
 /** Everything the browser needs for one signed upload. Valid for about an hour (Cloudinary's rule). */
-export function signUpload() {
+export function signUpload(actor) {
   const { CLOUDINARY_CLOUD_NAME: cloudName, CLOUDINARY_API_KEY: apiKey } = config;
   if (!cloudName || !config.CLOUDINARY_API_SECRET) {
     throw new AppError("UPLOADS_NOT_CONFIGURED", 503, "Photo uploads are not available right now.");
@@ -36,6 +39,7 @@ export function signUpload() {
   const params = {
     allowed_formats: UPLOAD_RULES.allowedFormats.join(","),
     folder: reportsFolder(),
+    tags: uploaderTag(actor.id),
     timestamp: Math.floor(clock.now().getTime() / 1000),
     transformation: INCOMING,
   };

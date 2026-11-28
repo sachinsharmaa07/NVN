@@ -10,5 +10,6 @@
   "notifications.type.resumed": "Work on {ticket} has started again",
   "notifications.type.slaBreached": "{ticket} is overdue",
   "notifications.type.slaEscalated": "{ticket} was escalated to you",
+  "notifications.type.slaEscalatedState": "{ticket} was escalated to the state",
   "notifications.type.slaRespondOverdue": "{ticket} is waiting to be assigned"
 }

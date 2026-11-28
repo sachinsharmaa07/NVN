@@ -64,9 +64,9 @@ let counter = 0;
 /** A small fixed geography: two cities in one state, one in another, and departments. */
 export async function seedWorld() {
   const [cityA, cityB, cityC] = await City.create([
-    { name: "Ludhiana", code: "LDH", stateCode: "PB" },
-    { name: "Amritsar", code: "ASR", stateCode: "PB" },
-    { name: "Pune", code: "PUN", stateCode: "MH" },
+    { name: "Ludhiana", code: "LDH", stateCode: "PB", status: "active" },
+    { name: "Amritsar", code: "ASR", stateCode: "PB", status: "active" },
+    { name: "Pune", code: "PUN", stateCode: "MH", status: "active" },
   ]);
   const [deptA1, deptA2, deptB1] = await Department.create([
     { cityId: cityA._id, name: "Roads", code: "ROADS" },

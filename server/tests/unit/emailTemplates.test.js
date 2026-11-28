@@ -9,6 +9,19 @@ const base = {
 };
 
 describe("renderNotificationEmail", () => {
+  it("has the level-3 state escalation in English and Hindi, linked to the queue", () => {
+    const note = {
+      type: "sla_escalated_state",
+      ticketId: "NIV-2026-000042",
+      status: "in_progress",
+    };
+    const en = renderNotificationEmail(note, base);
+    expect(en.subject).toBe("NIV-2026-000042 was escalated to the state");
+    expect(en.html).toContain('href="http://localhost:5173/staff"');
+    const hi = renderNotificationEmail(note, { ...base, lang: "hi" });
+    expect(hi.subject).toBe("NIV-2026-000042 राज्य स्तर पर भेजा गया है");
+  });
+
   it("builds an English status email with a link to the ticket", () => {
     const mail = renderNotificationEmail(
       { type: "status_changed", ticketId: "NIV-2026-000042", status: "in_progress" },

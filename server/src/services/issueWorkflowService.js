@@ -149,6 +149,7 @@ export async function reporterAction(actor, ticketId, to, { note, version }, ctx
   const issue = await load({ ticketId, reporterId: actor.id }, version);
   allow(issue, to, "reporter");
   const set = { status: to };
+  if (to === "closed") set.closureType = "citizen_confirmed";
   if (to === "reopened") {
     // Decision 3: a reopened issue gets a fresh deadline and a clean SLA record.
     const now = clock.now();
@@ -163,6 +164,10 @@ export async function reporterAction(actor, ticketId, to, { note, version }, ctx
       resolvedAt: null,
       breachNotifiedDeptHeadAt: null,
       breachNotifiedCityAdminAt: null,
+      breachNotifiedStateOfficerAt: null,
+      closureType: null,
+      // __v in commit() already rejects a concurrent write, so a plain set is safe here.
+      reopenCount: (issue.reopenCount ?? 0) + 1,
     });
   }
   return commit(
