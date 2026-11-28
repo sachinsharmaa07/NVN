@@ -1,6 +1,7 @@
 import { useId, useState } from "react";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { CategorySettingRow } from "@/components/admin/CategorySettingRow";
+import { DepartmentsSection } from "@/components/admin/DepartmentsSection";
 import { PageHeader } from "@/components/system/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -89,6 +90,7 @@ function Settings() {
           ))}
         </div>
       )}
+      {data && <DepartmentsSection cityId={data.city.id} sendCityId={isRoot} />}
     </div>
   );
 }

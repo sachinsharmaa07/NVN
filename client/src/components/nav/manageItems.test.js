@@ -17,15 +17,20 @@ describe("manageItemsFor", () => {
     expect(itemsFor("moderator")).toEqual(["/moderation"]);
   });
 
-  it("gives a city admin Users and City settings, plus Moderation (city admins moderate too)", () => {
-    expect(itemsFor("city_admin")).toEqual(["/moderation", "/admin/users", "/admin/city-settings"]);
+  it("gives a city admin Users, City settings and Audit log, plus Moderation (city admins moderate too)", () => {
+    expect(itemsFor("city_admin")).toEqual([
+      "/moderation",
+      "/admin/users",
+      "/admin/city-settings",
+      "/admin/audit",
+    ]);
   });
 
-  it("gives a super admin Cities and Waitlist, and never a page that is not built yet", () => {
+  it("gives a super admin everything, Cities and Waitlist included; a city admin neither", () => {
     expect(itemsFor("super_admin")).toEqual(
-      expect.arrayContaining(["/admin/cities", "/admin/waitlist"]),
+      expect.arrayContaining(["/admin/cities", "/admin/waitlist", "/admin/audit"]),
     );
-    expect(itemsFor("super_admin")).not.toContain("/admin/audit");
     expect(itemsFor("city_admin")).not.toContain("/admin/cities");
+    expect(itemsFor("city_admin")).not.toContain("/admin/waitlist");
   });
 });

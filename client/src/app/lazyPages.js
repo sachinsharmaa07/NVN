@@ -22,6 +22,7 @@ export const AdminUsers = lazy(load.AdminUsers);
 export const CitySettings = lazy(load.CitySettings);
 export const AdminCities = lazy(load.AdminCities);
 export const AdminWaitlist = lazy(load.AdminWaitlist);
+export const AdminAudit = lazy(load.AdminAudit);
 export const NotFound = lazy(load.NotFound);
 
 // Style guide for developers only. import.meta.env.DEV is false in a production build, so the

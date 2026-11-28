@@ -70,6 +70,7 @@ const ROUTES = [
     },
   },
   { name: "admin-waitlist", path: "/admin/waitlist", setup: (api) => (api.answers.me = SUPER_ME) },
+  { name: "admin-audit", path: "/admin/audit", setup: (api) => (api.answers.me = ADMIN_ME) },
   {
     name: "city-settings",
     path: "/admin/city-settings",

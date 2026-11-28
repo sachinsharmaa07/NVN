@@ -180,7 +180,14 @@ export const ADMIN_ME = {
   name: "Meera Iyer",
   role: "city_admin",
   level: 5,
-  permissions: [...MOD_ME.permissions, "user:read_scope", "user:promote", "user:suspend"],
+  // audit:read: a city admin reads their city's audit log (server/src/utils/permissions.js).
+  permissions: [
+    ...MOD_ME.permissions,
+    "user:read_scope",
+    "user:promote",
+    "user:suspend",
+    "audit:read",
+  ],
 };
 // The super admin (level 7): onboards cities and reads the waitlist (city:onboard). Shapes from API.md.
 export const SUPER_ME = {
@@ -261,6 +268,51 @@ export const WAITLIST = [
     isServed: true,
   },
 ];
+// Admin > Audit log (GET /api/admin/audit), two pages, so "Load more" has a cursor to send. The
+// shape is auditService.listAudit's: ids and a role, never a name or email.
+export const AUDIT_PAGE_1 = {
+  items: [
+    {
+      id: "6750e2e0e2e0e2e0e2e0a001",
+      at: "2026-11-27T09:30:00.000Z",
+      action: "user.role_change",
+      targetType: "user",
+      targetId: "6750e2e0e2e0e2e0e2e0e302",
+      actor: { type: "user", id: "6750e2e0e2e0e2e0e2e0e2e6", role: "city_admin" },
+      before: { role: "citizen" },
+      after: { role: "staff" },
+      reason: null,
+    },
+    {
+      id: "6750e2e0e2e0e2e0e2e0a002",
+      at: "2026-11-27T08:00:00.000Z",
+      action: "city.category_update",
+      targetType: "city",
+      targetId: "6750e2e0e2e0e2e0e2e0c001",
+      actor: { type: "user", id: "6750e2e0e2e0e2e0e2e0e2e6", role: "city_admin" },
+      before: null,
+      after: { category: "pothole", resolveHours: 48 },
+      reason: null,
+    },
+  ],
+  nextCursor: "cursor-page-2",
+};
+export const AUDIT_PAGE_2 = {
+  items: [
+    {
+      id: "6750e2e0e2e0e2e0e2e0a003",
+      at: "2026-11-26T07:00:00.000Z",
+      action: "issue.created",
+      targetType: "issue",
+      targetId: "6750e2e0e2e0e2e0e2e0b001",
+      actor: { type: "system", label: "sla-job" },
+      before: null,
+      after: { ticketId: "NIV-2026-000042" },
+      reason: null,
+    },
+  ],
+  nextCursor: null,
+};
 export const CITY_SETTINGS = {
   city: { id: MOD_ME.cityId, name: "Kapurthala" },
   departments: [
@@ -355,6 +407,14 @@ export const test = base.extend({
           const limit = Number(new URL(req.url()).searchParams.get("limit") ?? 20);
           return [200, { items: WAITLIST.slice(0, limit) }];
         },
+        // The second page when the cursor is sent, the first otherwise.
+        audit: (req) =>
+          new URL(req.url()).searchParams.get("cursor") ? [200, AUDIT_PAGE_2] : [200, AUDIT_PAGE_1],
+        createDepartment: (req) => [
+          201,
+          { id: "6750e2e0e2e0e2e0e2e0d099", cityId: MOD_ME.cityId, ...JSON.parse(req.postData()) },
+        ],
+        renameDepartment: (req) => [200, { ...JSON.parse(req.postData()) }],
         stats: [
           200,
           { totalReports: 0, resolved: 0, medianResolutionHours: null, openByCategory: {} },
@@ -426,6 +486,13 @@ export const test = base.extend({
         return reply(route, answers.cities);
       });
       await page.route(/\/api\/admin\/waitlist(\?.*)?$/, (route) => reply(route, answers.waitlist));
+      await page.route(/\/api\/admin\/audit(\?.*)?$/, (route) => reply(route, answers.audit));
+      await page.route(/\/api\/admin\/departments(\/\w+)?$/, (route) =>
+        reply(
+          route,
+          route.request().method() === "POST" ? answers.createDepartment : answers.renameDepartment,
+        ),
+      );
       await page.route("**/api/chat", (route) => reply(route, answers.chat));
       await page.route("**/api/community/flags", (route) => reply(route, answers.flags));
       await page.route("**/api/stats", (route) => reply(route, answers.stats));

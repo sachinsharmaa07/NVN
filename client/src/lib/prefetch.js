@@ -21,6 +21,7 @@ export const pageLoaders = {
   CitySettings: () => import("@/pages/admin/CitySettings"),
   AdminCities: () => import("@/pages/admin/AdminCities"),
   AdminWaitlist: () => import("@/pages/admin/AdminWaitlist"),
+  AdminAudit: () => import("@/pages/admin/AdminAudit"),
   NotFound: () => import("@/pages/NotFound"),
 };
 
@@ -40,6 +41,7 @@ export const routes = {
   "/admin/city-settings": { load: pageLoaders.CitySettings },
   "/admin/cities": { load: pageLoaders.AdminCities },
   "/admin/waitlist": { load: pageLoaders.AdminWaitlist },
+  "/admin/audit": { load: pageLoaders.AdminAudit },
 };
 
 // A ticket page (/issues/NIV-2026-000042): one code file for all of them, data per ticket.

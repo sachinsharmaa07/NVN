@@ -56,7 +56,7 @@ export const manageItems = [
     labelKey: "shell.manage.audit",
     icon: ScrollTextIcon,
     permission: "audit:read",
-    ready: false,
+    ready: true,
   },
 ];
 
