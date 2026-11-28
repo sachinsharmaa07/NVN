@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { PhotoSlot } from "@/components/system/PhotoSlot";
 import { t } from "@/i18n/t";
+import { sizedImage } from "@/lib/imageUrl";
+
+// Rendered width: half the column below 640px, about 220px in the 3-column grid; 1x and 2x of both.
+const WIDTHS = [200, 400, 640];
+const SIZES = "(min-width: 640px) 220px, 50vw";
 
 /**
  * Before or after photos of a ticket, as links to the full image. Photos without a `url` (uploads not set
@@ -37,7 +42,9 @@ function Photo({ photo, alt }) {
   const [loaded, setLoaded] = useState(false);
   return (
     <img
-      src={photo.url}
+      src={sizedImage(photo.url, 400)}
+      srcSet={WIDTHS.map((w) => `${sizedImage(photo.url, w)} ${w}w`).join(", ")}
+      sizes={SIZES}
       alt={alt}
       width={photo.width}
       height={photo.height}

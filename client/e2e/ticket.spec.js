@@ -43,3 +43,17 @@ test("hovering a card loads the ticket, so the click shows it with no skeleton",
   expect(api.count("GET", `/api/issues/${ID}`)).toBe(1);
   await expect(page.locator('[data-slot="skeleton"]')).toHaveCount(0);
 });
+
+test("photos are requested at their rendered size, not the full upload (HLD §7)", async ({
+  page,
+}) => {
+  const photos = [];
+  page.on("request", (request) => {
+    if (request.url().startsWith("https://res.cloudinary.com/")) photos.push(request.url());
+  });
+  await page.goto(`/issues/${ID}`);
+  // Lazy images load only near the viewport.
+  await page.getByRole("img", { name: "Photo from the report, photo 1" }).scrollIntoViewIfNeeded();
+  await expect.poll(() => photos.length).toBeGreaterThan(0);
+  for (const url of photos) expect(url).toMatch(/\/image\/upload\/c_limit,w_\d+\/f_auto\/q_auto\//);
+});
