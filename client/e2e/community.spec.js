@@ -18,9 +18,7 @@ test.beforeEach(({ api }) => {
 
 test("a) resident reads the pincode feed and publishes a post", async ({ page, api }) => {
   await page.goto("/community");
-  await expect(
-    page.getByRole("heading", { level: 1, name: "Neighbourhood notices" }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Community" })).toBeVisible();
   await expect(page.getByRole("link", { name: new RegExp(POST.title) })).toBeVisible();
   await shot(page, "feed");
 
@@ -77,6 +75,24 @@ test("c) moderator restores a hidden post from the queue", async ({ page, api })
   await expect(page.getByText("Restored. It's visible again.")).toBeVisible();
   await expect(page.getByText("Nothing waiting for review")).toBeVisible();
   expect(sentBody(api, "/api/moderation/post/")).toEqual({ action: "restore" });
+});
+
+test("c2) moderation tabs: arrow keys switch Posts/Comments and the URL, Tab enters the panel", async ({
+  page,
+  api,
+}) => {
+  api.answers.me = MOD_ME;
+  await page.goto("/moderation");
+  const posts = page.getByRole("tab", { name: "Posts" });
+  await expect(posts).toHaveAttribute("aria-selected", "true");
+  await posts.focus();
+  await page.keyboard.press("ArrowRight");
+  const comments = page.getByRole("tab", { name: "Comments" });
+  await expect(comments).toBeFocused();
+  await expect(comments).toHaveAttribute("aria-selected", "true");
+  await expect(page).toHaveURL(/\/moderation\?type=comment$/);
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("tabpanel")).toBeFocused();
 });
 
 test("d) help chat answers a ticket from the records", async ({ page, api }) => {

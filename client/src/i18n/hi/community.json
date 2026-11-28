@@ -1,16 +1,15 @@
 {
-  "community.feed.heading": "मोहल्ले की सूचनाएँ",
   "community.feed.headingLabel": "पिनकोड {pincode}",
   "community.feed.intro": "पड़ोसी बताते हैं कि उन्होंने क्या शिकायत की और क्या बदला। साफ़ और विनम्र लिखें; नाम और फ़ोन नंबर न डालें।",
   "community.feed.emptyTitle": "{pincode} में अभी कुछ पोस्ट नहीं हुआ",
   "community.feed.emptyHint": "अपनी दर्ज की गई शिकायत के बारे में अपडेट साझा करें, ताकि पड़ोसी जानें कि क्या ठीक हो रहा है।",
-  "community.feed.noPincodeTitle": "सूचनाएँ पढ़ने के लिए पिनकोड चुनें",
-  "community.feed.noPincodeHint": "पोस्ट करने के लिए अपनी प्रोफ़ाइल में घर का पिनकोड जोड़ें। आप नीचे किसी भी पिनकोड की सूचनाएँ पढ़ सकते हैं।",
+  "community.feed.noPincodeTitle": "पोस्ट करने के लिए अपना घर का पिनकोड जोड़ें",
+  "community.feed.noPincodeHint": "आप किसी भी पिनकोड की पोस्ट पढ़ सकते हैं। पोस्ट लिखने के लिए अपनी प्रोफ़ाइल में घर का पिनकोड जोड़ें।",
   "community.feed.error": "ये सूचनाएँ लोड नहीं हो सकीं।",
   "community.feed.loadMore": "और सूचनाएँ दिखाएँ",
   "community.feed.loaded": "{count} और सूचनाएँ लोड हुईं।",
-  "community.switch.label": "दूसरा पिनकोड पढ़ें",
-  "community.switch.submit": "सूचनाएँ दिखाएँ",
+  "community.switch.label": "पिनकोड",
+  "community.switch.submit": "पोस्ट दिखाएँ",
   "community.switch.error": "6 अंक लिखें, जैसे 144601।",
   "community.switch.backHome": "मेरे पिनकोड पर वापस",
   "community.composer.open": "पोस्ट लिखें",
@@ -26,7 +25,6 @@
   "community.composer.submitting": "प्रकाशित हो रही है…",
   "community.composer.published": "पोस्ट प्रकाशित हो गई",
   "community.composer.needPincode": "पोस्ट करने के लिए अपनी प्रोफ़ाइल में घर का पिनकोड जोड़ें।",
-  "community.composer.profileLink": "प्रोफ़ाइल खोलें",
   "community.composer.limit": "आप आज 5 बार पोस्ट कर चुके हैं। कल फिर से कोशिश करें।",
   "community.composer.notServed": "आपका घर का पिनकोड अभी शामिल नहीं है, इसलिए आप वहाँ पोस्ट नहीं कर सकते।",
   "community.post.byline": "{author}, {date}",
@@ -71,5 +69,8 @@
   "community.report.reason.other": "कुछ और",
   "community.report.submit": "रिपोर्ट भेजें",
   "community.report.sent": "रिपोर्ट भेज दी गई। धन्यवाद।",
-  "community.report.failed": "आपकी रिपोर्ट नहीं भेजी गई। फिर से कोशिश करें।"
+  "community.report.failed": "आपकी रिपोर्ट नहीं भेजी गई। फिर से कोशिश करें।",
+  "community.page.title": "समुदाय",
+  "community.feed.addPincode": "पिनकोड जोड़ें",
+  "community.feed.listTitle": "{pincode} की सूचनाएँ"
 }

@@ -20,7 +20,7 @@ test("home, my issues and community render in Hindi", async ({ page }) => {
   await page.goto("/issues");
   await expect(page.getByRole("heading", { level: 1, name: "मेरी शिकायतें" })).toBeVisible();
   await page.goto("/community");
-  await expect(page.getByRole("heading", { level: 1, name: "मोहल्ले की सूचनाएँ" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "समुदाय" })).toBeVisible();
   await expect(page.getByRole("button", { name: "पोस्ट लिखें" })).toBeVisible();
   await shot(page, "hi-community");
 });

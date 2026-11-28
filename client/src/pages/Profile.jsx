@@ -7,7 +7,7 @@ import { t } from "@/i18n/t";
 function ProfileContent() {
   const { user } = useAuth();
   return (
-    <div className="mx-auto flex w-full max-w-160 flex-col gap-8 px-4 py-8 md:px-6 md:py-12 lg:px-8">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-4 py-8 md:px-6 md:py-12 lg:px-8">
       <PageHeader title={t("profile.page.title")} description={t("profile.page.description")} />
       <ProfileForm user={user} />
     </div>

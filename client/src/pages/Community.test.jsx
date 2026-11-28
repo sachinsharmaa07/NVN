@@ -34,9 +34,9 @@ describe("Community feed", () => {
     const link = await screen.findByRole("link", { name: /Streetlights back on Mall Road/ });
     expect(link).toHaveAttribute("href", "/community/p1");
     expect(within(link).getByText("2 comments")).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { level: 1, name: "Neighbourhood notices" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Community" })).toBeInTheDocument();
+    // Post titles are h3s under a (visually hidden) h2 for the list.
+    expect(within(link).getByRole("heading", { level: 3 })).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Pincode 144601" })).toBeInTheDocument();
   });
 
@@ -69,13 +69,14 @@ describe("Community feed", () => {
     expect(screen.getByRole("button", { name: "Back to my pincode" })).toBeInTheDocument();
   });
 
-  it("asks for a home pincode when the profile has none", async () => {
+  it("asks for a home pincode when the profile has none, with the switch right below", async () => {
     renderFeed({}, people.citizen);
     expect(
-      await screen.findByRole("heading", { name: "Choose a pincode to read its notices" }),
+      await screen.findByRole("heading", { name: "Add your home pincode to post" }),
     ).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Read another pincode"), { target: { value: "12" } });
-    fireEvent.click(screen.getByRole("button", { name: "Show notices" }));
+    expect(screen.getByRole("link", { name: "Add pincode" })).toHaveAttribute("href", "/profile");
+    fireEvent.change(screen.getByLabelText("Pincode"), { target: { value: "12" } });
+    fireEvent.click(screen.getByRole("button", { name: "Show posts" }));
     expect(screen.getByText("Enter 6 digits, e.g. 144601.")).toBeInTheDocument();
   });
 });

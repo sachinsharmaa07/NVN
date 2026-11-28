@@ -1,16 +1,15 @@
 {
-  "community.feed.heading": "Neighbourhood notices",
   "community.feed.headingLabel": "Pincode {pincode}",
   "community.feed.intro": "Neighbours share what they reported and what changed. Be specific and kind; names and phone numbers stay out.",
   "community.feed.emptyTitle": "Nothing posted in {pincode} yet",
   "community.feed.emptyHint": "Share an update about an issue you reported, so neighbours know what is being fixed.",
-  "community.feed.noPincodeTitle": "Choose a pincode to read its notices",
-  "community.feed.noPincodeHint": "Add your home pincode to your profile to post. You can read any pincode below.",
+  "community.feed.noPincodeTitle": "Add your home pincode to post",
+  "community.feed.noPincodeHint": "You can read any pincode's posts. To write one, add your home pincode to your profile.",
   "community.feed.error": "Couldn't load these notices.",
   "community.feed.loadMore": "Load more notices",
   "community.feed.loaded": "{count} more notices loaded.",
-  "community.switch.label": "Read another pincode",
-  "community.switch.submit": "Show notices",
+  "community.switch.label": "Pincode",
+  "community.switch.submit": "Show posts",
   "community.switch.error": "Enter 6 digits, e.g. 144601.",
   "community.switch.backHome": "Back to my pincode",
   "community.composer.open": "Write a post",
@@ -26,7 +25,6 @@
   "community.composer.submitting": "Publishing…",
   "community.composer.published": "Post published",
   "community.composer.needPincode": "Add your home pincode in your profile to post.",
-  "community.composer.profileLink": "Open profile",
   "community.composer.limit": "You've posted 5 times today. Try again tomorrow.",
   "community.composer.notServed": "Your home pincode isn't covered yet, so you can't post there.",
   "community.post.byline": "{author}, {date}",
@@ -71,5 +69,8 @@
   "community.report.reason.other": "Something else",
   "community.report.submit": "Send report",
   "community.report.sent": "Report sent. Thank you.",
-  "community.report.failed": "Your report wasn't sent. Try again."
+  "community.report.failed": "Your report wasn't sent. Try again.",
+  "community.page.title": "Community",
+  "community.feed.addPincode": "Add pincode",
+  "community.feed.listTitle": "Notices in {pincode}"
 }

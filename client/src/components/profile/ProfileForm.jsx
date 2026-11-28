@@ -16,6 +16,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -92,75 +93,88 @@ export function ProfileForm({ user }) {
   const area = areaLabel(user, t("profile.form.areaAll")) || t("profile.form.areaNone");
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} noValidate className="flex flex-col gap-6">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t("profile.form.name")}</FormLabel>
-              <FormControl>
-                <Input autoComplete="name" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="preferredLanguage"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t("profile.form.language")}</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
+      <form onSubmit={form.handleSubmit(onSubmit)} noValidate className="flex flex-col gap-8">
+        <Section title={t("profile.section.details")}>
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t("profile.form.name")}</FormLabel>
                 <FormControl>
-                  <SelectTrigger ref={field.ref}>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <Input autoComplete="name" {...field} />
                 </FormControl>
-                <SelectContent>
-                  <SelectItem value="en">{t("profile.form.languageEn")}</SelectItem>
-                  <SelectItem value="hi">{t("profile.form.languageHi")}</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="defaultPincode"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t("profile.form.pincode")}</FormLabel>
-              <FormControl>
-                <Input inputMode="numeric" maxLength={6} autoComplete="postal-code" {...field} />
-              </FormControl>
-              <FormDescription>{t("profile.form.pincodeHint")}</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Read-only facts are plain text (reachable by screen readers), not disabled inputs. */}
-        <dl className="grid gap-4 rounded-lg border p-4 sm:grid-cols-[8rem_1fr]">
-          <dt className="text-sm text-muted-foreground">{t("profile.form.email")}</dt>
-          <dd className="flex min-w-0 flex-col gap-1">
-            <span className="flex flex-wrap items-center gap-2">
-              <span className="break-all">{user.email}</span>
-              <Badge variant="outline">
-                {t(user.emailVerified ? "profile.form.verified" : "profile.form.notVerified")}
-              </Badge>
-            </span>
-            <span className="text-sm text-muted-foreground">{t("profile.form.emailHint")}</span>
-          </dd>
-          <dt className="text-sm text-muted-foreground">{t("profile.form.role")}</dt>
-          <dd>
-            <RoleBadge role={user.role} />
-          </dd>
-          <dt className="text-sm text-muted-foreground">{t("profile.form.area")}</dt>
-          <dd>{area}</dd>
-        </dl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          {/* Read-only facts are plain text (reachable by screen readers), not disabled inputs. */}
+          <dl className="grid gap-4 rounded-lg border p-4 sm:grid-cols-[8rem_1fr]">
+            <dt className="text-sm text-muted-foreground">{t("profile.form.email")}</dt>
+            <dd className="flex min-w-0 flex-col gap-1">
+              <span className="flex flex-wrap items-center gap-2">
+                <span className="break-all">{user.email}</span>
+                <Badge variant="outline">
+                  {t(user.emailVerified ? "profile.form.verified" : "profile.form.notVerified")}
+                </Badge>
+              </span>
+              <span className="text-sm text-muted-foreground">{t("profile.form.emailHint")}</span>
+            </dd>
+            <dt className="text-sm text-muted-foreground">{t("profile.form.role")}</dt>
+            <dd>
+              <RoleBadge role={user.role} />
+            </dd>
+            <dt className="text-sm text-muted-foreground">{t("profile.form.area")}</dt>
+            <dd>{area}</dd>
+          </dl>
+        </Section>
+        <Separator />
+        <Section title={t("profile.section.pincode")}>
+          <FormField
+            control={form.control}
+            name="defaultPincode"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t("profile.form.pincode")}</FormLabel>
+                <FormControl>
+                  <Input
+                    inputMode="numeric"
+                    maxLength={6}
+                    autoComplete="postal-code"
+                    className="w-40 tabular-nums"
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription>{t("profile.form.pincodeHint")}</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </Section>
+        <Separator />
+        <Section title={t("profile.section.language")}>
+          <FormField
+            control={form.control}
+            name="preferredLanguage"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t("profile.form.language")}</FormLabel>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <FormControl>
+                    <SelectTrigger ref={field.ref}>
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="en">{t("profile.form.languageEn")}</SelectItem>
+                    <SelectItem value="hi">{t("profile.form.languageHi")}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </Section>
 
         {formError && (
           <div role="alert">
@@ -168,8 +182,9 @@ export function ProfileForm({ user }) {
           </div>
         )}
         <div className="flex flex-wrap gap-2">
+          {/* Same label while saving: the spinner joins it, so the button keeps its width. */}
           <Button type="submit" loading={save.isPending}>
-            {save.isPending ? t("profile.form.saving") : t("profile.form.save")}
+            {t("profile.form.save")}
           </Button>
           <Button
             type="button"
@@ -185,5 +200,15 @@ export function ProfileForm({ user }) {
         </div>
       </form>
     </Form>
+  );
+}
+
+// One titled part of the form (an h2: the page title is the h1).
+function Section({ title, children }) {
+  return (
+    <section className="flex flex-col gap-4">
+      <h2 className="font-display text-h3 font-semibold">{title}</h2>
+      {children}
+    </section>
   );
 }

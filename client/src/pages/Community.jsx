@@ -9,7 +9,9 @@ import { PincodeSwitch } from "@/components/community/PincodeSwitch";
 import { PostCard } from "@/components/community/PostCard";
 import { PostComposer } from "@/components/community/PostComposer";
 import { EmptyState } from "@/components/system/EmptyState";
+import { ErrorState } from "@/components/system/ErrorState";
 import { durations, easings } from "@/components/system/motionTokens";
+import { PageHeader } from "@/components/system/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFeed } from "@/hooks/useCommunity";
@@ -23,10 +25,10 @@ const item = {
   visible: { opacity: 1, y: 0, transition: { duration: durations.base, ease: easings.enter } },
 };
 
-function Feed({ pincode, canPost }) {
+/** One pincode's notices: the board itself, with Load more. ("Write a post" lives in the header.) */
+function Feed({ pincode }) {
   const query = useFeed(pincode);
   const reduce = useReducedMotion();
-  const [composing, setComposing] = useState(false);
   const [announcement, setAnnouncement] = useState("");
   const posts = query.data?.pages.flatMap((p) => p.items) ?? [];
 
@@ -36,36 +38,31 @@ function Feed({ pincode, canPost }) {
     setAnnouncement(t("community.feed.loaded", { count: after - posts.length }));
   }
 
-  const writeButton = canPost && (
-    <Button onClick={() => setComposing(true)}>
-      <PenLineIcon aria-hidden="true" />
-      {t("community.composer.open")}
-    </Button>
-  );
-
-  let body;
-  if (query.isPending) {
-    body = <Skeleton aria-hidden="true" className="h-48 w-full" />;
-  } else if (query.isError) {
-    body = (
-      <div role="alert" className="flex flex-col items-start gap-3">
-        <p>{t("community.feed.error")}</p>
-        <Button variant="secondary" onClick={() => query.refetch()}>
-          {t("common.retry")}
-        </Button>
-      </div>
+  if (query.isPending) return <Skeleton aria-hidden="true" className="h-48 w-full" />;
+  if (query.isError) {
+    return (
+      <ErrorState
+        variant="inline"
+        title={t("community.feed.error")}
+        onRetry={() => query.refetch()}
+      />
     );
-  } else if (posts.length === 0) {
-    body = (
+  }
+  if (posts.length === 0) {
+    return (
       <EmptyState
         icon={UsersIcon}
         title={t("community.feed.emptyTitle", { pincode })}
         hint={t("community.feed.emptyHint")}
-        action={writeButton}
       />
     );
-  } else {
-    body = (
+  }
+  return (
+    <section aria-labelledby="feed-title" className="flex flex-col gap-4">
+      {/* The post titles are h3s; this keeps the outline whole without a second visible heading. */}
+      <h2 id="feed-title" className="sr-only">
+        {t("community.feed.listTitle", { pincode })}
+      </h2>
       <m.ul
         variants={list}
         initial={reduce ? false : "hidden"}
@@ -78,22 +75,6 @@ function Feed({ pincode, canPost }) {
           </m.li>
         ))}
       </m.ul>
-    );
-  }
-
-  return (
-    <>
-      <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-        <div className="flex flex-col gap-4">
-          <PincodeStamp pincode={pincode} />
-          <h1 className="font-display text-3xl font-semibold text-foreground md:text-4xl">
-            {t("community.feed.heading")}
-          </h1>
-          <p className="max-w-prose text-muted-foreground">{t("community.feed.intro")}</p>
-        </div>
-        {posts.length > 0 && writeButton}
-      </header>
-      {body}
       {query.hasNextPage && (
         <div className="flex justify-center">
           <Button variant="outline" onClick={loadMore} loading={query.isFetchingNextPage}>
@@ -104,43 +85,67 @@ function Feed({ pincode, canPost }) {
       <p role="status" className="sr-only">
         {announcement}
       </p>
-      {canPost && <PostComposer pincode={pincode} open={composing} onOpenChange={setComposing} />}
-    </>
+    </section>
+  );
+}
+
+/** No home pincode yet: one left-aligned group, the way to add one, then the labelled switch. */
+function NoHomePincode({ onShow }) {
+  return (
+    <div className="flex flex-col items-start gap-2">
+      <EmptyState
+        variant="inline"
+        title={t("community.feed.noPincodeTitle")}
+        hint={t("community.feed.noPincodeHint")}
+        action={
+          <Button asChild variant="outline">
+            <Link to="/profile">{t("community.feed.addPincode")}</Link>
+          </Button>
+        }
+      />
+      <PincodeSwitch onShow={onShow} />
+    </div>
   );
 }
 
 function CommunityPage() {
   const { user } = useMe();
   const [params, setParams] = useSearchParams();
+  const [composing, setComposing] = useState(false);
   const home = user?.defaultPincode ?? null;
   const pincode = params.get("pincode") ?? home;
   const show = (pin) => setParams(pin === home ? {} : { pincode: pin });
+  const canPost = Boolean(home) && pincode === home;
+
+  const writeButton = canPost && (
+    <Button onClick={() => setComposing(true)}>
+      <PenLineIcon aria-hidden="true" />
+      {t("community.composer.open")}
+    </Button>
+  );
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 md:px-6 md:py-12 lg:px-8">
-      {pincode ? (
-        <Feed key={pincode} pincode={pincode} canPost={Boolean(home) && pincode === home} />
-      ) : (
-        <EmptyState
-          icon={UsersIcon}
-          titleAs="h1"
-          title={t("community.feed.noPincodeTitle")}
-          hint={t("community.feed.noPincodeHint")}
-          action={
-            <Button asChild variant="secondary">
-              <Link to="/profile">{t("community.composer.profileLink")}</Link>
-            </Button>
-          }
-        />
-      )}
-      <div className="flex flex-col gap-3 border-t pt-6">
-        <PincodeSwitch onShow={show} />
-        {home && pincode !== home && (
-          <Button variant="link" className="self-start px-0" onClick={() => show(home)}>
-            {t("community.switch.backHome")}
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title={t("community.page.title")}
+        description={t("community.feed.intro")}
+        meta={pincode && <PincodeStamp pincode={pincode} />}
+        actions={
+          pincode && (
+            <div className="flex flex-col items-start gap-3 lg:items-end">
+              {writeButton}
+              <PincodeSwitch onShow={show} />
+              {home && pincode !== home && (
+                <Button variant="link" className="px-0" onClick={() => show(home)}>
+                  {t("community.switch.backHome")}
+                </Button>
+              )}
+            </div>
+          )
+        }
+      />
+      {pincode ? <Feed key={pincode} pincode={pincode} /> : <NoHomePincode onShow={show} />}
+      {canPost && <PostComposer pincode={pincode} open={composing} onOpenChange={setComposing} />}
     </div>
   );
 }

@@ -50,6 +50,11 @@ function ticketRoute(path) {
   };
 }
 
+// A community post page (/community/<id>): its code only; the post loads on arrival.
+const POST = /^\/community\/[^/]+$/;
+const postRoute = (path) =>
+  POST.test(path) ? { key: "/community/:id", load: pageLoaders.CommunityPost } : null;
+
 // Page code already requested this session; the browser caches the file after that.
 const loaded = new Set();
 
@@ -59,7 +64,7 @@ const loaded = new Set();
  * staleTime stops repeat hovers from refetching.
  */
 export function prefetchRoute(path, { queryClient, api, signedIn }) {
-  const route = routes[path] ?? ticketRoute(path);
+  const route = routes[path] ?? ticketRoute(path) ?? postRoute(path);
   if (!route) return;
   const key = route.key ?? path;
   if (!loaded.has(key)) {

@@ -6,9 +6,14 @@ import { CommentForm } from "./CommentForm";
 import { ContentMenu } from "./ContentMenu";
 import { bylineOf, threadOf } from "./communityText";
 
+// A comment you just sent appears at once (optimistic) and fades in `fast`; the server's copy that
+// replaces it has no fade, so the swap is invisible.
 function CommentBody({ comment, postId, children }) {
   return (
-    <article className="flex flex-col gap-1" aria-busy={comment.pending || undefined}>
+    <article
+      className={comment.pending ? "fade-in-fast flex flex-col gap-1" : "flex flex-col gap-1"}
+      aria-busy={comment.pending || undefined}
+    >
       <div className="flex items-start justify-between gap-2">
         <p className="pt-2 text-sm text-muted-foreground">
           {comment.pending ? t("community.comments.sending") : bylineOf(comment)}

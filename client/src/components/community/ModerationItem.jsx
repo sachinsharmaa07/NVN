@@ -10,6 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -35,9 +36,12 @@ export function ModerationItem({ type, item, onAct, busy }) {
     <article className="flex flex-col gap-3 rounded-lg border bg-card p-4">
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
         <span>{bylineOf(item)}</span>
-        <span className="flex items-center gap-1.5 tabular-nums">
-          <FlagIcon aria-hidden="true" className="size-4" />
-          {reportsLabel(item.flagCount)}
+        <span className="flex items-center gap-3">
+          {item.status && <Badge variant="outline">{t(`moderation.status.${item.status}`)}</Badge>}
+          <span className="flex items-center gap-1.5 tabular-nums">
+            <FlagIcon aria-hidden="true" className="size-4" />
+            {reportsLabel(item.flagCount)}
+          </span>
         </span>
       </div>
       {item.title && <h2 className="text-lg font-semibold leading-snug">{item.title}</h2>}

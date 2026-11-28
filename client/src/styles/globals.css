@@ -419,6 +419,10 @@
 @utility fade-in {
   animation: fade-in var(--duration-base) var(--ease-enter) both;
 }
+/* Small things that appear in place, such as an optimistic comment (UI.md §4: fast). */
+@utility fade-in-fast {
+  animation: fade-in var(--duration-fast) var(--ease-enter) both;
+}
 
 /*
  * Scroll-driven reveal (UI.md §4). Browsers without view timelines just show the content.

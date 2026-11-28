@@ -18,8 +18,10 @@
   "profile.form.areaNone": "तय नहीं",
   "profile.form.areaAll": "सभी क्षेत्र",
   "profile.form.save": "बदलाव सहेजें",
-  "profile.form.saving": "सहेजा जा रहा है",
   "profile.form.cancel": "रद्द करें",
   "profile.toast.saved": "प्रोफ़ाइल सहेज ली गई",
-  "profile.load.error": "आपकी प्रोफ़ाइल लोड नहीं हो सकी। फिर से कोशिश करें।"
+  "profile.load.error": "आपकी प्रोफ़ाइल लोड नहीं हो सकी। फिर से कोशिश करें।",
+  "profile.section.details": "आपकी जानकारी",
+  "profile.section.pincode": "घर का पिनकोड",
+  "profile.section.language": "भाषा"
 }
