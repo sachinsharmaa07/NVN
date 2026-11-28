@@ -15,7 +15,7 @@
   "citySettings.saved": "{category} सहेजा गया। नई शिकायतें इसी से चलेंगी।",
   "citySettings.hoursError": "1 से 2160 तक पूरे घंटे लिखें, और ठीक करने का समय जवाब देने के समय जितना या उससे ज़्यादा रखें।",
   "citySettings.failed": "यह सहेजा नहीं गया। मान जाँचें और फिर से कोशिश करें।",
-  "citySettings.error": "सेटिंग लोड नहीं हो सकीं।",
+  "citySettings.error": "सेटिंग लोड नहीं हो सकीं",
   "citySettings.pickCity": "नगर",
   "citySettings.searchCity": "नगर खोजें",
   "citySettings.pickCityHint": "सेटिंग देखने के लिए नगर चुनें।"

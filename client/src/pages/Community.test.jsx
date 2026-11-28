@@ -162,8 +162,6 @@ describe("Post page", () => {
     renderPost({
       "/api/community/posts/p1": [404, { error: { code: "NOT_FOUND", message: "x" } }],
     });
-    expect(
-      await screen.findByText("This post isn't available. It may have been removed."),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("This post isn't here")).toBeInTheDocument();
   });
 });

@@ -2,7 +2,7 @@
   "staff.queue.title": "Queue",
   "staff.queue.description": "Open issues in your area, the ones due soonest first.",
   "staff.queue.caption": "Issues in your queue, sorted by expected-by date, soonest first",
-  "staff.queue.error": "Couldn't load the queue. Try again.",
+  "staff.queue.error": "Couldn't load the queue",
   "staff.queue.empty": "No open issues in your queue",
   "staff.queue.emptyHint": "New reports for your department will appear here.",
   "staff.queue.noMatch": "No issues match these filters",

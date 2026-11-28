@@ -24,7 +24,7 @@
   "moderation.failed": "That didn't go through. The item is back in the queue; try again.",
   "moderation.emptyTitle": "Nothing waiting for review",
   "moderation.emptyHint": "Posts and comments that collect three reports appear here.",
-  "moderation.error": "Couldn't load the queue.",
+  "moderation.error": "Couldn't load the queue",
   "moderation.loadMore": "Load more",
   "moderation.status.hidden": "Hidden",
   "moderation.status.published": "Published",

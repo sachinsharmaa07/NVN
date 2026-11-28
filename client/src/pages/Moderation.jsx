@@ -8,7 +8,7 @@ import { EmptyState } from "@/components/system/EmptyState";
 import { ErrorState } from "@/components/system/ErrorState";
 import { PageHeader } from "@/components/system/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonList } from "@/components/system/SkeletonList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useModerate, useModerationQueue } from "@/hooks/useCommunity";
 import { t } from "@/i18n/t";
@@ -25,7 +25,16 @@ function List({ type }) {
   const moderate = useModerate(type);
   const items = query.data?.pages.flatMap((p) => p.items) ?? [];
 
-  if (query.isPending) return <Skeleton aria-hidden="true" className="h-48 w-full" />;
+  if (query.isPending) {
+    // Shaped like the review cards: same two-column grid from 1024px.
+    return (
+      <SkeletonList
+        count={2}
+        itemClassName="h-56 rounded-lg"
+        className="grid gap-3 lg:grid-cols-2"
+      />
+    );
+  }
   if (query.isError) {
     return (
       <ErrorState variant="inline" title={t("moderation.error")} onRetry={() => query.refetch()} />

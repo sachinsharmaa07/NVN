@@ -13,7 +13,7 @@ import { ErrorState } from "@/components/system/ErrorState";
 import { durations, easings } from "@/components/system/motionTokens";
 import { PageHeader } from "@/components/system/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonList } from "@/components/system/SkeletonList";
 import { useFeed } from "@/hooks/useCommunity";
 import { useMe } from "@/hooks/useMe";
 import { t } from "@/i18n/t";
@@ -38,7 +38,16 @@ function Feed({ pincode }) {
     setAnnouncement(t("community.feed.loaded", { count: after - posts.length }));
   }
 
-  if (query.isPending) return <Skeleton aria-hidden="true" className="h-48 w-full" />;
+  if (query.isPending) {
+    // Shaped like the post cards: same two-column grid from 768px.
+    return (
+      <SkeletonList
+        count={4}
+        itemClassName="h-40 rounded-lg"
+        className="grid gap-3 md:grid-cols-2"
+      />
+    );
+  }
   if (query.isError) {
     return (
       <ErrorState

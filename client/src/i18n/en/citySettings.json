@@ -15,7 +15,7 @@
   "citySettings.saved": "{category} saved. New reports use it.",
   "citySettings.hoursError": "Enter whole hours, 1 to 2160, with fix-by at least respond-by.",
   "citySettings.failed": "That wasn't saved. Check the values and try again.",
-  "citySettings.error": "Couldn't load the settings.",
+  "citySettings.error": "Couldn't load the settings",
   "citySettings.pickCity": "City",
   "citySettings.searchCity": "Search cities",
   "citySettings.pickCityHint": "Choose a city to see its settings."

@@ -78,6 +78,36 @@ const ROUTES = [
   },
 ];
 
+// Error, empty and not-found states (step 12): one shot each at 360 light, where they're tightest.
+const DOWN = [503, { error: { code: "DB_UNAVAILABLE", message: "x" } }];
+const GONE = [404, { error: { code: "NOT_FOUND", message: "x" } }];
+const EMPTY = [200, { items: [], nextCursor: null }];
+const STATES = [
+  { name: "issues-error", path: "/issues", setup: (api) => (api.answers.mine = DOWN) },
+  { name: "issues-empty", path: "/issues", setup: (api) => (api.answers.mine = EMPTY) },
+  {
+    name: "issue-error",
+    path: `/issues/${RESOLVED.ticketId}`,
+    setup: (api) => (api.answers.detail = DOWN),
+  },
+  {
+    name: "issue-404",
+    path: `/issues/${RESOLVED.ticketId}`,
+    setup: (api) => (api.answers.detail = GONE),
+  },
+  { name: "post-404", path: `/community/${POST.id}`, setup: (api) => (api.answers.post = GONE) },
+  {
+    name: "staff-error",
+    path: "/staff",
+    setup: (api) => Object.assign(api.answers, { me: STAFF_ME, staffIssues: DOWN }),
+  },
+  {
+    name: "audit-empty",
+    path: "/admin/audit",
+    setup: (api) => Object.assign(api.answers, { me: ADMIN_ME, audit: EMPTY }),
+  },
+];
+
 test.skip(process.env.SHOTS !== "1", "visual shots run only with SHOTS=1");
 
 async function shoot(page, api, route, { width, theme, file }) {
@@ -129,6 +159,16 @@ for (const route of ROUTES) {
       width: 360,
       theme: "light",
       file: `${route.name}-360-reduced`,
+    });
+  });
+}
+
+for (const route of STATES) {
+  test(`visual state ${route.name} 360 light`, async ({ page, api }) => {
+    await shoot(page, api, route, {
+      width: 360,
+      theme: "light",
+      file: `state-${route.name}-360-light`,
     });
   });
 }

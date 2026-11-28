@@ -7,6 +7,8 @@ import { PhotoGrid } from "@/components/issues/PhotoGrid";
 import { ResolveCard } from "@/components/issues/ResolvePrompt";
 import { CATEGORIES } from "@/components/report/categories";
 import { EmptyState } from "@/components/system/EmptyState";
+import { ErrorState } from "@/components/system/ErrorState";
+import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { PageHeader } from "@/components/system/PageHeader";
 import { StatusBadge } from "@/components/system/StatusBadge";
 import { StatusTimeline } from "@/components/system/StatusTimeline";
@@ -61,16 +63,17 @@ function Ticket() {
   const { ticketId } = useParams();
   const query = useIssue(ticketId);
 
-  if (query.isPending) return <Skeleton aria-hidden="true" className="h-96 w-full" />;
+  if (query.isPending) return <TicketSkeleton />;
   if (query.isError) {
     if (query.error.status === 404 || query.error.status === 400) return <NotFound />;
+    // The whole page failed: the page variant (announced), with Try again.
     return (
-      <div role="alert" className="flex flex-col items-start gap-3">
-        <p>{t("issues.detail.error")}</p>
-        <Button variant="secondary" onClick={() => query.refetch()}>
-          {t("common.retry")}
-        </Button>
-      </div>
+      <ErrorState
+        titleAs="h1"
+        title={t("issues.detail.error")}
+        onRetry={() => query.refetch()}
+        retrying={query.isFetching}
+      />
     );
   }
 
@@ -78,7 +81,8 @@ function Ticket() {
   const open = OPEN_STATUSES.includes(issue.status);
   const category = categoryName(issue.category);
   return (
-    <>
+    // fade-in: the ticket takes the skeleton's place in the same box.
+    <div className="fade-in flex flex-col gap-6">
       <PageHeader
         backTo="/issues"
         backLabel={t("shell.issues.title")}
@@ -143,7 +147,22 @@ function Ticket() {
           emptyLabel={t("issues.photos.afterPending")}
         />
       </div>
-    </>
+    </div>
+  );
+}
+
+// Shaped like the ticket: back link, title, meta, the dashed stub, then the history. After 200ms only.
+function TicketSkeleton() {
+  const show = useDelayedFlag(true);
+  if (!show) return null;
+  return (
+    <div aria-hidden="true" className="flex flex-col gap-6">
+      <Skeleton className="h-5 w-24" />
+      <Skeleton className="h-10 w-3/4" />
+      <Skeleton className="h-6 w-48" />
+      <Skeleton className="h-28 w-full rounded-lg" />
+      <Skeleton className="h-64 w-full rounded-lg" />
+    </div>
   );
 }
 

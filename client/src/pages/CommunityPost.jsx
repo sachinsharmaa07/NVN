@@ -1,12 +1,14 @@
-import { ArrowLeftIcon, EyeOffIcon } from "lucide-react";
+import { ArrowLeftIcon, EyeOffIcon, SearchXIcon } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { CommentForm } from "@/components/community/CommentForm";
 import { CommentThread } from "@/components/community/CommentThread";
 import { ContentMenu } from "@/components/community/ContentMenu";
 import { bylineOf, commentCountLabel } from "@/components/community/communityText";
+import { EmptyState } from "@/components/system/EmptyState";
+import { ErrorState } from "@/components/system/ErrorState";
+import { SkeletonList } from "@/components/system/SkeletonList";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useAddComment, useComments, usePost } from "@/hooks/useCommunity";
 import { useMe } from "@/hooks/useMe";
 import { t } from "@/i18n/t";
@@ -23,14 +25,15 @@ function Comments({ post }) {
       <h2 id="comments-heading" className="font-display text-2xl font-semibold">
         {t("community.comments.heading")}
       </h2>
-      {query.isPending && <Skeleton aria-hidden="true" className="h-24 w-full" />}
+      {query.isPending && <SkeletonList count={2} itemClassName="h-16 rounded-md" />}
       {query.isError && (
-        <div role="alert" className="flex flex-col items-start gap-3">
-          <p>{t("community.comments.error")}</p>
-          <Button variant="secondary" onClick={() => query.refetch()}>
-            {t("common.retry")}
-          </Button>
-        </div>
+        <ErrorState
+          variant="inline"
+          titleAs="h3"
+          title={t("community.comments.error")}
+          onRetry={() => query.refetch()}
+          retrying={query.isFetching}
+        />
       )}
       {query.isSuccess && (
         <CommentThread comments={comments} postId={post.id} onReply={(body) => add.mutate(body)} />
@@ -58,21 +61,38 @@ function PostPage() {
   const post = query.data;
 
   if (query.isPending) {
-    return <Skeleton aria-hidden="true" className="h-64 w-full" />;
+    // Shaped like the post: back link, title, byline, body.
+    return <SkeletonList count={1} itemClassName="h-72 rounded-lg" />;
   }
   if (query.isError) {
+    // Gone (deleted, or hidden from you): a designed not-found with the way back, not an error.
+    if (query.error?.status === 404) {
+      return (
+        <EmptyState
+          icon={SearchXIcon}
+          titleAs="h1"
+          title={t("community.post.notFoundTitle")}
+          hint={t("community.post.notFound")}
+          action={
+            <Button asChild variant="secondary">
+              <Link to="/community">{t("community.post.backToCommunity")}</Link>
+            </Button>
+          }
+        />
+      );
+    }
     return (
-      <div role="alert" className="flex flex-col items-start gap-3">
-        <p>{t(query.error?.status === 404 ? "community.post.notFound" : "community.feed.error")}</p>
-        <Button asChild variant="secondary">
-          <Link to="/community">{t("shell.community.title")}</Link>
-        </Button>
-      </div>
+      <ErrorState
+        titleAs="h1"
+        title={t("community.post.error")}
+        onRetry={() => query.refetch()}
+        retrying={query.isFetching}
+      />
     );
   }
 
   return (
-    <>
+    <div className="fade-in flex flex-col gap-6">
       <Button asChild variant="link" className="self-start px-0">
         <Link to={`/community?pincode=${post.pincode}`}>
           <ArrowLeftIcon aria-hidden="true" />
@@ -103,7 +123,7 @@ function PostPage() {
         <p className="max-w-prose whitespace-pre-line text-lg leading-relaxed">{post.body}</p>
       </article>
       <Comments post={post} />
-    </>
+    </div>
   );
 }
 

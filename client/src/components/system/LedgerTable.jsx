@@ -62,7 +62,7 @@ export function LedgerTable({
   const motionProps = { layout: true, transition: { layout: slide }, exit: LEAVE };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="fade-in flex flex-col gap-4">
       {countLabel && (
         <p aria-live="polite" className="text-sm text-muted-foreground">
           {countLabel}

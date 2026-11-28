@@ -26,7 +26,7 @@
   "admin.users.noMatch": "No users match",
   "admin.users.noMatchHint": "Try a different search or clear the filters.",
   "admin.users.clear": "Clear filters",
-  "admin.users.error": "Couldn't load users. Try again.",
+  "admin.users.error": "Couldn't load users",
   "admin.users.actionsFor": "Actions for {name}",
   "admin.users.changeRole": "Change role",
   "admin.users.suspend": "Suspend",

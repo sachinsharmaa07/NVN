@@ -26,7 +26,7 @@
   "admin.users.noMatch": "कोई उपयोगकर्ता मेल नहीं खाता",
   "admin.users.noMatchHint": "कुछ और खोजें या फ़िल्टर हटाएँ।",
   "admin.users.clear": "फ़िल्टर हटाएँ",
-  "admin.users.error": "उपयोगकर्ता लोड नहीं हो सके। फिर से कोशिश करें।",
+  "admin.users.error": "उपयोगकर्ता लोड नहीं हो सके",
   "admin.users.actionsFor": "{name} के लिए कार्रवाई",
   "admin.users.changeRole": "भूमिका बदलें",
   "admin.users.suspend": "निलंबित करें",
