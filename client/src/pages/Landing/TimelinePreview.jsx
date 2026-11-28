@@ -56,7 +56,8 @@ export function TimelinePreview({ className }) {
           </div>
         </div>
         <div className="p-4 md:p-6">
-          <StatusTimeline steps={SAMPLE_STEPS} />
+          {/* Static: the section's CSS reveal-on-scroll is the only reveal on the public page. */}
+          <StatusTimeline steps={SAMPLE_STEPS} animate={false} />
         </div>
       </article>
     </section>

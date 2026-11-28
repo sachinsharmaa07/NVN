@@ -2,15 +2,13 @@ import { useReducedMotion } from "motion/react";
 import * as m from "motion/react-m";
 import { cn } from "@/lib/utils";
 import { t } from "@/i18n/t";
+import { stagger } from "@/lib/motion";
 import { durations, easings } from "./motionTokens";
 import { STATUS_META } from "./statusMeta";
 
-// Reveal: steps fade and rise 8px one after another; each connector then draws downwards.
+// Reveal: steps fade and rise 8px 30ms apart (max 8 staggered, UI.md §4.2); each connector then draws down.
 // Every single animation is at most 320ms (the `slow` token); only the stagger adds up.
-const listVariants = {
-  hidden: {},
-  visible: { transition: { staggerChildren: durations.fast } },
-};
+const listVariants = stagger(0.03, 8);
 const stepVariants = {
   hidden: { opacity: 0, y: 8 },
   visible: { opacity: 1, y: 0, transition: { duration: durations.base, ease: easings.enter } },
@@ -26,8 +24,8 @@ const lineVariants = {
 /**
  * Vertical status history for an issue, oldest at the top (UI.md §7).
  * steps: [{ status, label?, at?, note?, state: "done" | "current" | "upcoming" }]
- * The current step carries aria-current="step". With `animate` (default) the steps reveal when the
- * list scrolls into view, once; with reduced motion or animate={false} everything is there at once.
+ * The current step carries aria-current="step". With `animate` (default) the steps draw once on mount
+ * (no in-view trigger, UI.md §4.2); with reduced motion or animate={false} everything is there at once.
  */
 export function StatusTimeline({ steps, animate = true, className }) {
   const reduceMotion = useReducedMotion();
@@ -35,7 +33,7 @@ export function StatusTimeline({ steps, animate = true, className }) {
 
   // initial={false} tells motion to start in the "visible" state, so nothing animates.
   const motionProps = reveal
-    ? { initial: "hidden", whileInView: "visible", viewport: { once: true, amount: 0.2 } }
+    ? { initial: "hidden", animate: "visible" }
     : { initial: false, animate: "visible" };
 
   return (

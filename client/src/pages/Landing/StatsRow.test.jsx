@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { fakeFetch } from "@/test/renderWithAuth";
 import { StatsRow } from "./StatsRow";
 
@@ -15,17 +15,6 @@ function show(answer) {
   );
   return { spy, ...view };
 }
-// StatCard counts up when in view (motion's useInView); jsdom has no IntersectionObserver.
-beforeEach(() =>
-  vi.stubGlobal(
-    "IntersectionObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    },
-  ),
-);
 afterEach(() => vi.unstubAllGlobals());
 
 describe("Landing StatsRow", () => {
@@ -39,7 +28,11 @@ describe("Landing StatsRow", () => {
         openByCategory: { pothole: 2, garbage: 0, other: 1 },
       },
     ]);
-    expect(await screen.findByText("1,25,000")).toBeInTheDocument();
+    expect(
+      await screen.findByText("1,25,000", {
+        ignore: '[aria-hidden="true"], [aria-hidden="true"] *',
+      }),
+    ).toBeInTheDocument();
     expect(screen.getByText("Open right now").nextSibling).toHaveTextContent(/^3/);
     expect(spy.mock.calls[0][1].headers.Authorization).toBeUndefined();
   });
