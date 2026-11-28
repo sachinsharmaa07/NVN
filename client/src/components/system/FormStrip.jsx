@@ -16,8 +16,16 @@ const COLUMNS = {
  * Screen readers hear each item as number, title, body; the current one is announced as the current step.
  * `collapsed`: below 768px only the current step shows (the wizard on a phone, where three stacked rows
  * would push the form below the fold); the page must still say "Step n of N" for screen readers.
+ * `stepLabel` ("Step 3 of 3") shows beside the number while collapsed, so a lone "3" reads as progress.
  */
-export function FormStrip({ steps, current, collapsed = false, as: List = "ol", className }) {
+export function FormStrip({
+  steps,
+  current,
+  collapsed = false,
+  stepLabel,
+  as: List = "ol",
+  className,
+}) {
   return (
     <List
       data-slot="form-strip"
@@ -38,13 +46,21 @@ export function FormStrip({ steps, current, collapsed = false, as: List = "ol", 
               collapsed && !isCurrent && "max-md:hidden",
             )}
           >
-            <span
-              className={cn(
-                "flex size-8 items-center justify-center rounded-sm border border-input font-display font-semibold tabular-nums transition-colors duration-fast ease-standard",
-                isCurrent && "border-primary bg-primary text-primary-foreground",
+            <span className="flex items-center gap-3">
+              <span
+                className={cn(
+                  "flex size-8 items-center justify-center rounded-sm border border-input font-display font-semibold tabular-nums transition-colors duration-fast ease-standard",
+                  isCurrent && "border-primary bg-primary text-primary-foreground",
+                )}
+              >
+                {i + 1}
+              </span>
+              {/* Visual only: the page's own "Step n of N" heading speaks for screen readers. */}
+              {collapsed && isCurrent && stepLabel && (
+                <span aria-hidden="true" className="text-sm text-muted-foreground md:hidden">
+                  {stepLabel}
+                </span>
               )}
-            >
-              {i + 1}
             </span>
             <span className="font-display text-h3 font-semibold text-foreground">{step.title}</span>
             {step.body && <span className="text-muted-foreground">{step.body}</span>}

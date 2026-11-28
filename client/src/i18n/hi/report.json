@@ -1,5 +1,6 @@
 {
   "report.wizard.stepOf": "{total} में से चरण {step}: {title}",
+  "report.wizard.stepCount": "{total} में से चरण {step}",
   "report.wizard.step1": "पिनकोड",
   "report.wizard.step2": "पिन लगाएँ",
   "report.wizard.step3": "फ़ोटो और जानकारी",

@@ -145,6 +145,11 @@ describe("Report step 3: submit", () => {
     release();
     expect(await screen.findByText("NIV-2026-000007")).toBeInTheDocument();
     expect(screen.getByText("Roads")).toBeInTheDocument();
+    // One heading on the receipt: the page h1, focused so screen readers hear it.
+    const h1 = screen.getByRole("heading", { level: 1 });
+    expect(h1).toHaveTextContent("Report submitted");
+    expect(screen.getAllByRole("heading", { name: "Report submitted" })).toHaveLength(1);
+    await waitFor(() => expect(h1).toHaveFocus());
     const calls = issueCalls(spy);
     expect(calls).toHaveLength(1);
     expect(calls[0][1].headers["Idempotency-Key"]).toMatch(/^[0-9a-f-]{36}$/);

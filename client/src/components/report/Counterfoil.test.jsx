@@ -17,7 +17,8 @@ const show = (over) =>
 describe("Counterfoil", () => {
   it("shows the full ticket ID with Copy, the department, and expected-by in IST", () => {
     show();
-    expect(screen.getByRole("heading", { name: "Report submitted" })).toHaveFocus();
+    // Its heading is the page's h1 now (Report.test.jsx checks it and its focus).
+    expect(screen.queryByRole("heading")).not.toBeInTheDocument();
     expect(screen.getByText("NIV-2026-000123")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Copy ticket ID NIV-2026-000123" }),
