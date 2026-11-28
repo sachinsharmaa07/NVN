@@ -21,8 +21,11 @@ describe("manageItemsFor", () => {
     expect(itemsFor("city_admin")).toEqual(["/moderation", "/admin/users", "/admin/city-settings"]);
   });
 
-  it("never shows a page that is not built yet", () => {
-    expect(itemsFor("super_admin")).not.toContain("/admin/cities");
+  it("gives a super admin Cities and Waitlist, and never a page that is not built yet", () => {
+    expect(itemsFor("super_admin")).toEqual(
+      expect.arrayContaining(["/admin/cities", "/admin/waitlist"]),
+    );
     expect(itemsFor("super_admin")).not.toContain("/admin/audit");
+    expect(itemsFor("city_admin")).not.toContain("/admin/cities");
   });
 });

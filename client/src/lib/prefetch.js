@@ -19,6 +19,8 @@ export const pageLoaders = {
   Forbidden: () => import("@/pages/Forbidden"),
   AdminUsers: () => import("@/pages/admin/AdminUsers"),
   CitySettings: () => import("@/pages/admin/CitySettings"),
+  AdminCities: () => import("@/pages/admin/AdminCities"),
+  AdminWaitlist: () => import("@/pages/admin/AdminWaitlist"),
   NotFound: () => import("@/pages/NotFound"),
 };
 
@@ -36,6 +38,8 @@ export const routes = {
   "/profile": { load: pageLoaders.Profile },
   "/admin/users": { load: pageLoaders.AdminUsers },
   "/admin/city-settings": { load: pageLoaders.CitySettings },
+  "/admin/cities": { load: pageLoaders.AdminCities },
+  "/admin/waitlist": { load: pageLoaders.AdminWaitlist },
 };
 
 // A ticket page (/issues/NIV-2026-000042): one code file for all of them, data per ticket.

@@ -1,6 +1,16 @@
 // Visual QA harness: full-page shots of every route at three widths in light and dark, plus a reduced-motion
 // pass, against the fake backend. Opt-in only: `SHOTS=1 npx playwright test visual --project=desktop`.
-import { ADMIN_ME, HEAD_ME, MOD_ME, POST, RESOLVED, STAFF_ME, expect, test } from "./fixtures.js";
+import {
+  ADMIN_ME,
+  HEAD_ME,
+  MOD_ME,
+  POST,
+  RESOLVED,
+  STAFF_ME,
+  SUPER_ME,
+  expect,
+  test,
+} from "./fixtures.js";
 import { fillDetails, toDetailsStep, toMapStep } from "./steps.js";
 
 // Must match THEME_STORAGE_KEY in src/components/theme/themeContext.js.
@@ -48,6 +58,18 @@ const ROUTES = [
   },
   { name: "moderation", path: "/moderation", setup: (api) => (api.answers.me = MOD_ME) },
   { name: "admin-users", path: "/admin/users", setup: (api) => (api.answers.me = ADMIN_ME) },
+  { name: "admin-cities", path: "/admin/cities", setup: (api) => (api.answers.me = SUPER_ME) },
+  {
+    name: "admin-city-add",
+    path: "/admin/cities",
+    setup: (api) => (api.answers.me = SUPER_ME),
+    // The Add city form: a Dialog on a laptop, the draggable Drawer on a phone.
+    act: async (page) => {
+      await page.getByRole("button", { name: "Add city" }).click();
+      await expect(page.getByRole("dialog", { name: "Add a city" })).toBeVisible();
+    },
+  },
+  { name: "admin-waitlist", path: "/admin/waitlist", setup: (api) => (api.answers.me = SUPER_ME) },
   {
     name: "city-settings",
     path: "/admin/city-settings",

@@ -182,6 +182,85 @@ export const ADMIN_ME = {
   level: 5,
   permissions: [...MOD_ME.permissions, "user:read_scope", "user:promote", "user:suspend"],
 };
+// The super admin (level 7): onboards cities and reads the waitlist (city:onboard). Shapes from API.md.
+export const SUPER_ME = {
+  ...ADMIN_ME,
+  id: "6750e2e0e2e0e2e0e2e0e2ea",
+  email: "ravi@example.com",
+  name: "Ravi Menon",
+  role: "super_admin",
+  level: 7,
+  cityId: null,
+  permissions: [...ADMIN_ME.permissions, "city:onboard", "audit:read"],
+};
+// Admin > Users rows (GET /api/admin/users).
+export const ADMIN_USERS = [
+  {
+    id: "6750e2e0e2e0e2e0e2e0e301",
+    name: "Asha Rao",
+    email: "asha@example.com",
+    role: "citizen",
+    status: "active",
+    canManage: true,
+    emailVerified: true,
+    lastLoginAt: "2026-11-20T08:00:00.000Z",
+  },
+  {
+    id: "6750e2e0e2e0e2e0e2e0e302",
+    name: "Dev Singh",
+    email: "dev@example.com",
+    role: "staff",
+    status: "active",
+    canManage: true,
+    emailVerified: true,
+    cityName: "Kapurthala",
+    lastLoginAt: "2026-11-25T08:00:00.000Z",
+  },
+];
+// Admin > Cities (GET /api/admin/cities), one active and one onboarding.
+export const CITIES = [
+  {
+    id: "6750e2e0e2e0e2e0e2e0c001",
+    name: "Kapurthala",
+    code: "PB-KAPURTHALA",
+    stateCode: "PB",
+    status: "active",
+  },
+  {
+    id: "6750e2e0e2e0e2e0e2e0c002",
+    name: "Amritsar",
+    code: "PB-AMRITSAR",
+    stateCode: "PB",
+    status: "onboarding",
+  },
+];
+// Admin > Waitlist (GET /api/admin/waitlist), most sign-ups first, as the server sorts it.
+export const WAITLIST = [
+  {
+    pin: "110001",
+    count: 3,
+    latestAt: "2026-11-26T08:00:00.000Z",
+    district: "New Delhi",
+    state: "Delhi",
+    isServed: false,
+  },
+  {
+    pin: "141001",
+    count: 2,
+    latestAt: "2026-11-25T08:00:00.000Z",
+    district: "Ludhiana",
+    state: "Punjab",
+    isServed: false,
+  },
+  {
+    pin: "144601",
+    count: 1,
+    latestAt: "2026-11-24T08:00:00.000Z",
+    district: "Kapurthala",
+    state: "Punjab",
+    isServed: true,
+  },
+];
 export const CITY_SETTINGS = {
   city: { id: MOD_ME.cityId, name: "Kapurthala" },
   departments: [
@@ -261,6 +340,21 @@ export const test = base.extend({
         moderate: [200, { id: POST.id, status: "published", flagCount: 0 }],
         chat: [200, { kind: "list", tickets: [] }],
         citySettings: [200, CITY_SETTINGS],
+        adminUsers: listOf(ADMIN_USERS),
+        // GET filters by the `status` query, as the server does; tests may replace any of these.
+        cities: (req) => {
+          const status = new URL(req.url()).searchParams.get("status") ?? "active";
+          return [200, { items: CITIES.filter((c) => c.status === status), nextCursor: null }];
+        },
+        createCity: (req) => [
+          201,
+          { id: "6750e2e0e2e0e2e0e2e0c099", status: "onboarding", ...JSON.parse(req.postData()) },
+        ],
+        updateCity: (req) => [200, { ...CITIES[0], ...JSON.parse(req.postData()) }],
+        waitlist: (req) => {
+          const limit = Number(new URL(req.url()).searchParams.get("limit") ?? 20);
+          return [200, { items: WAITLIST.slice(0, limit) }];
+        },
         stats: [
           200,
           { totalReports: 0, resolved: 0, medianResolutionHours: null, openByCategory: {} },
@@ -324,6 +418,14 @@ export const test = base.extend({
             ])
           : reply(route, answers.citySettings),
       );
+      await page.route(/\/api\/admin\/users(\?.*)?$/, (route) => reply(route, answers.adminUsers));
+      await page.route(/\/api\/admin\/cities(\/\w+)?(\?.*)?$/, (route) => {
+        const method = route.request().method();
+        if (method === "POST") return reply(route, answers.createCity);
+        if (method === "PATCH") return reply(route, answers.updateCity);
+        return reply(route, answers.cities);
+      });
+      await page.route(/\/api\/admin\/waitlist(\?.*)?$/, (route) => reply(route, answers.waitlist));
       await page.route("**/api/chat", (route) => reply(route, answers.chat));
       await page.route("**/api/community/flags", (route) => reply(route, answers.flags));
       await page.route("**/api/stats", (route) => reply(route, answers.stats));

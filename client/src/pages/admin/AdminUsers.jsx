@@ -3,22 +3,18 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { RoleChangeDialog } from "@/components/admin/RoleChangeDialog";
 import { StatusDialog } from "@/components/admin/StatusDialog";
-import { UserCard } from "@/components/admin/UserCard";
 import { UserFilters } from "@/components/admin/UserFilters";
 import { UsersTable } from "@/components/admin/UsersTable";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { EmptyState } from "@/components/system/EmptyState";
 import { PageHeader } from "@/components/system/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { useAuth } from "@/hooks/useAuth";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { t } from "@/i18n/t";
 
 function AdminUsersContent() {
   const { user: actor } = useAuth();
-  const desktop = useMediaQuery("(min-width: 1024px)");
   const [params, setParams] = useSearchParams();
   const filters = {
     q: params.get("q") ?? "",
@@ -66,46 +62,20 @@ function AdminUsersContent() {
   }
 
   const filtered = Boolean(filters.q || filters.role || filters.status);
-  let body;
-  if (query.isPending) {
-    body = <Skeleton aria-hidden="true" className="h-64 w-full" />;
-  } else if (query.isError) {
-    body = (
-      <div role="alert" className="flex flex-col items-start gap-3">
-        <p>{t("admin.users.error")}</p>
-        <Button variant="secondary" onClick={() => query.refetch()}>
-          {t("common.retry")}
-        </Button>
-      </div>
-    );
-  } else if (users.length === 0) {
-    body = (
-      <EmptyState
-        icon={filtered ? SearchXIcon : UsersIcon}
-        title={filtered ? t("admin.users.noMatch") : t("admin.users.empty")}
-        hint={filtered ? t("admin.users.noMatchHint") : t("admin.users.emptyHint")}
-        action={
-          filtered && (
-            <Button variant="secondary" onClick={() => setFilters({ q: "", role: "", status: "" })}>
-              {t("admin.users.clear")}
-            </Button>
-          )
-        }
-      />
-    );
-  } else {
-    body = desktop ? (
-      <UsersTable users={users} actorId={actor.id} onAction={openDialog} />
-    ) : (
-      <ul className="grid gap-3">
-        {users.map((user) => (
-          <li key={user.id}>
-            <UserCard user={user} actorId={actor.id} onAction={openDialog} />
-          </li>
-        ))}
-      </ul>
-    );
-  }
+  const empty = (
+    <EmptyState
+      icon={filtered ? SearchXIcon : UsersIcon}
+      title={filtered ? t("admin.users.noMatch") : t("admin.users.empty")}
+      hint={filtered ? t("admin.users.noMatchHint") : t("admin.users.emptyHint")}
+      action={
+        filtered && (
+          <Button variant="secondary" onClick={() => setFilters({ q: "", role: "", status: "" })}>
+            {t("admin.users.clear")}
+          </Button>
+        )
+      }
+    />
+  );
 
   const dialogProps = dialog && {
     user: dialog.user,
@@ -118,14 +88,20 @@ function AdminUsersContent() {
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 md:px-6 md:py-12 lg:px-8">
       <PageHeader title={t("admin.users.title")} description={t("admin.users.description")} />
       <UserFilters filters={filters} onChange={setFilters} />
-      {body}
-      {query.hasNextPage && (
-        <div className="flex justify-center">
-          <Button variant="outline" onClick={loadMore} loading={query.isFetchingNextPage}>
-            {query.isFetchingNextPage ? t("admin.users.loading") : t("admin.users.loadMore")}
-          </Button>
-        </div>
-      )}
+      <UsersTable
+        users={users}
+        actorId={actor.id}
+        onAction={openDialog}
+        busy={query.isPlaceholderData}
+        isLoading={query.isPending}
+        isError={query.isError}
+        errorTitle={t("admin.users.error")}
+        onRetry={() => query.refetch()}
+        empty={empty}
+        hasMore={query.hasNextPage}
+        onLoadMore={loadMore}
+        loadingMore={query.isFetchingNextPage}
+      />
       {/* Announces new rows to screen readers; focus stays on the Load more button. */}
       <p role="status" className="sr-only">
         {announcement}

@@ -4,7 +4,9 @@ import { AppLayout } from "@/layouts/AppLayout";
 import { RouteError } from "@/layouts/RouteError";
 import { SuspendedLayout } from "@/layouts/SuspendedLayout";
 import {
+  AdminCities,
   AdminUsers,
+  AdminWaitlist,
   CitySettings,
   Community,
   CommunityPost,
@@ -37,6 +39,8 @@ const pages = [
   { path: "forbidden", element: <Forbidden /> },
   { path: "admin/users", element: <AdminUsers /> },
   { path: "admin/city-settings", element: <CitySettings /> },
+  { path: "admin/cities", element: <AdminCities /> },
+  { path: "admin/waitlist", element: <AdminWaitlist /> },
   { path: "issues", element: <Issues /> },
   { path: "issues/:ticketId", element: <IssueDetail /> },
   { path: "staff", element: <StaffQueue /> },

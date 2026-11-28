@@ -42,14 +42,14 @@ export const manageItems = [
     labelKey: "shell.manage.cities",
     icon: Building2Icon,
     permission: "city:onboard",
-    ready: false,
+    ready: true,
   },
   {
     to: "/admin/waitlist",
     labelKey: "shell.manage.waitlist",
     icon: ListOrderedIcon,
     permission: "city:onboard",
-    ready: false,
+    ready: true,
   },
   {
     to: "/admin/audit",
