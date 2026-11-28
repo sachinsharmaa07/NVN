@@ -18,7 +18,8 @@ const buttonClass =
 
 const LANGUAGES = [
   { value: "en", key: "landing.footer.english", lang: "en" },
-  { value: "hi", key: "landing.footer.hindi", lang: "hi" },
+  // System font: the Mukta Devanagari file (97 KB) loads only once the app itself is in Hindi.
+  { value: "hi", key: "landing.footer.hindi", lang: "hi", className: "font-system" },
 ];
 
 /** The brand, the language choice, a couple of links and the copyright line. */
@@ -44,7 +45,7 @@ export function LandingFooter() {
           >
             <span id="landing-language-label">{t("landing.footer.language")}</span>
             <div className="flex flex-wrap items-center gap-2">
-              {LANGUAGES.map(({ value, key, lang }) => (
+              {LANGUAGES.map(({ value, key, lang, className }) => (
                 <button
                   key={value}
                   type="button"
@@ -53,7 +54,9 @@ export function LandingFooter() {
                   onClick={() => current !== value && choose(value)}
                   className={buttonClass}
                 >
-                  <span lang={lang}>{t(key)}</span>
+                  <span lang={lang} className={className}>
+                    {t(key)}
+                  </span>
                 </button>
               ))}
             </div>

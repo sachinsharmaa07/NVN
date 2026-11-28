@@ -210,6 +210,8 @@
 
   --font-display: "Anek Devanagari Variable", "Mukta", system-ui, sans-serif;
   --font-sans: "Mukta", system-ui, sans-serif;
+  /* Language names in their own script (हिन्दी) on English pages: no Devanagari webfont for one word. */
+  --font-system: system-ui, sans-serif;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
