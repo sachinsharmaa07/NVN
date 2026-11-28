@@ -1,3 +1,4 @@
+import { BrandMark } from "@/components/system/BrandMark";
 import { useAuth } from "@/hooks/useAuth";
 import { useUpdateProfile } from "@/hooks/useUpdateProfile";
 import { setGuestLanguage } from "@/i18n/guestLanguage";
@@ -20,7 +21,7 @@ const LANGUAGES = [
   { value: "hi", key: "landing.footer.hindi", lang: "hi" },
 ];
 
-/** Language choice, a couple of links and the copyright line. */
+/** The brand, the language choice, a couple of links and the copyright line. */
 export function LandingFooter() {
   const { status } = useAuth();
   const saveProfile = useUpdateProfile();
@@ -34,21 +35,28 @@ export function LandingFooter() {
   return (
     <footer className="border-t">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between md:px-6 lg:px-8">
-        <div role="group" aria-labelledby="landing-language-label" className="flex flex-col gap-2">
-          <span id="landing-language-label">{t("landing.footer.language")}</span>
-          <div className="flex flex-wrap items-center gap-2">
-            {LANGUAGES.map(({ value, key, lang }) => (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={current === value}
-                disabled={saveProfile.isPending}
-                onClick={() => current !== value && choose(value)}
-                className={buttonClass}
-              >
-                <span lang={lang}>{t(key)}</span>
-              </button>
-            ))}
+        <div className="flex flex-col gap-4">
+          <BrandMark size="sm" className="text-foreground" />
+          <div
+            role="group"
+            aria-labelledby="landing-language-label"
+            className="flex flex-col gap-2"
+          >
+            <span id="landing-language-label">{t("landing.footer.language")}</span>
+            <div className="flex flex-wrap items-center gap-2">
+              {LANGUAGES.map(({ value, key, lang }) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={current === value}
+                  disabled={saveProfile.isPending}
+                  onClick={() => current !== value && choose(value)}
+                  className={buttonClass}
+                >
+                  <span lang={lang}>{t(key)}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 

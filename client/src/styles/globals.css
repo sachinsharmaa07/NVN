@@ -243,6 +243,21 @@
   --text-4xl: 2.4375rem; /* 39px: desktop h1 */
   --text-4xl--line-height: 1.2;
 
+  /* v2 type roles (UI.md §1 Typography). Desktop sizes; mobile pairs them down, e.g. `text-h2 lg:text-h1`. */
+  --text-display: 3.0625rem; /* 49px: Landing h1 only */
+  --text-display--line-height: 1.1;
+  --text-display--letter-spacing: -0.015em;
+  --text-h1: 2.4375rem; /* 39px */
+  --text-h1--line-height: 1.2;
+  --text-h1--letter-spacing: -0.01em;
+  --text-h2: 1.9375rem; /* 31px */
+  --text-h2--line-height: 1.2;
+  --text-h2--letter-spacing: -0.005em;
+  --text-h3: 1.25rem; /* 20px */
+  --text-h3--line-height: 1.3;
+  --tracking-wordmark: -0.01em; /* BrandMark wordmark (UI.md §1.2) */
+
+  --shadow-edge: inset 0 1px 0 oklch(1 0 0 / 0.05); /* dark only, on top of a level (UI.md §3) */
   --shadow-sm: 0 1px 2px oklch(0.22 0.02 235 / 0.06); /* inputs, pressed chips */
   --shadow-md:
     0 2px 6px oklch(0.22 0.02 235 / 0.08), 0 1px 2px oklch(0.22 0.02 235 / 0.06); /* bottom bar, popover, chat bubble */
@@ -257,9 +272,18 @@
   * {
     @apply border-border outline-ring/50;
   }
+  :root {
+    interpolate-size: allow-keywords; /* lets disclosures transition height to auto (UI.md §4) */
+  }
   html {
     /* Lets native controls (scrollbars, date pickers) follow the theme. */
     color-scheme: light;
+    scrollbar-gutter: stable; /* no sideways jump when a page gains a scrollbar */
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
   }
   html.dark {
     color-scheme: dark;
@@ -267,12 +291,21 @@
   body {
     @apply bg-background font-sans text-foreground antialiased;
     line-height: 1.6;
+    /* Crisp text (UI.md §1). */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-optical-sizing: auto;
   }
   h1,
   h2,
   h3 {
     @apply font-display font-semibold;
     line-height: 1.2;
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
   }
   /* Devanagari matras need more room (UI.md §1 Typography). */
   :lang(hi) body,
@@ -327,6 +360,114 @@
   }
 }
 
+/*
+ * Edge highlight (UI.md §3): in dark mode raised surfaces get a faint top edge on top of their shadow level.
+ * `:is(.dark *):not(.light *)` matches the `dark` custom variant, so a forced-light panel stays plain.
+ */
+:is([data-slot="dialog-content"], [data-slot="sheet-content"], [data-slot="drawer-content"]):is(
+    .dark *
+  ):not(.light *) {
+  box-shadow: var(--shadow-edge), var(--shadow-lg);
+}
+:is(
+    [data-slot="popover-content"],
+    [data-slot="dropdown-menu-content"],
+    [data-slot="bottom-bar"]
+  ):is(.dark *):not(.light *) {
+  box-shadow: var(--shadow-edge), var(--shadow-md);
+}
+/* The report wizard's Back/Next footer is only a raised bar below 1024px (a plain row above that). */
+@media (width < 64rem) {
+  [data-slot="wizard-footer"]:is(.dark *):not(.light *) {
+    box-shadow: var(--shadow-edge), var(--shadow-md);
+  }
+}
+
+/* Hairlines (UI.md §3): on 2x screens only table row dividers and separators drop to half a pixel. */
+@media (min-resolution: 2dppx) {
+  [data-slot="table-row"] {
+    border-bottom-width: 0.5px;
+  }
+  [data-slot="separator"][data-orientation="horizontal"] {
+    height: 0.5px;
+  }
+  [data-slot="separator"][data-orientation="vertical"] {
+    width: 0.5px;
+  }
+}
+
+/* Keeps the chat bubble's zone free below main (UI.md §5): bottom bar + 88px, 96px from 1024px. */
+@utility content-reserve {
+  padding-bottom: calc(64px + env(safe-area-inset-bottom) + 88px);
+  @media (width >= 64rem) {
+    padding-bottom: 96px;
+  }
+}
+
+/* The sticky sidebar column: the viewport minus the top bar (64px + its 1px border), so it never makes
+   a short page scroll. */
+@utility h-below-topbar {
+  height: calc(100dvh - 65px);
+}
+
+/* Image loads and skeleton-to-content swaps fade in (UI.md §4: base, enter). */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@utility fade-in {
+  animation: fade-in var(--duration-base) var(--ease-enter) both;
+}
+/* Small things that appear in place, such as an optimistic comment (UI.md §4: fast). */
+@utility fade-in-fast {
+  animation: fade-in var(--duration-fast) var(--ease-enter) both;
+}
+
+/*
+ * Scroll-driven reveal (UI.md §4). Browsers without view timelines just show the content.
+ * Opt-in on no-preference: a scroll timeline follows the scroll position, not a duration, so the
+ * reduced-motion block's 0.01ms override would not stop it; this way reduced motion never fades.
+ */
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@utility reveal-on-scroll {
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      animation: reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 40%;
+    }
+  }
+}
+
+/* Page view transitions (02-lld "Motion and transition contracts"): only the `.page` boundary animates. */
+@keyframes vt-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes vt-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+::view-transition-old(.page) {
+  animation: var(--duration-fast) var(--ease-exit) both vt-fade-out;
+}
+::view-transition-new(.page) {
+  animation: var(--duration-base) var(--ease-enter) both vt-rise-in;
+}
+::view-transition-group(*) {
+  animation-duration: var(--duration-base);
+  animation-timing-function: var(--ease-standard);
+}
+
 /* §4 Reduced motion: copied from docs/UI.md. */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -345,6 +486,11 @@
   [data-slot="dialog-content"] {
     transform: none !important;
   } /* appear, don't slide */
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
 }
 
 /* Report map (UI.md §5): Leaflet's zoom buttons are 30px; map controls need a 44px touch target. */

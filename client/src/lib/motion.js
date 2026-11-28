@@ -57,28 +57,14 @@ export const sheet = {
   exit: { y: "100%", transition: { duration: durations.base, ease: easings.exit } },
 };
 
-// Page transition: the new page fades in and rises 8px in `base`. No exit variant on purpose:
-// UI.md says the old page just goes, so a slow exit never delays the next page.
-export const page = {
-  hidden: { opacity: 0, y: 8 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: durations.base, ease: easings.enter },
-  },
-};
-
 /*
- * Spread onto a motion element to reveal it once when 20% of it scrolls into view:
- *   <motion.section {...revealProps}>...</motion.section>
- * For reduced motion, pass the variants through useMotionSafe:
- *   const variants = useMotionSafe(fadeUp); <motion.div {...revealProps} variants={variants} />
+ * Springs for things the user moves (drawer snap-back, tab indicator), 02-lld "Motion and transition
+ * contracts". visualDuration makes a spring read as the same length as the matching duration token.
+ * Page transitions are CSS view transitions now (globals.css), not a motion variant.
  */
-export const revealProps = {
-  initial: "hidden",
-  whileInView: "visible",
-  viewport: { once: true, amount: 0.2 },
-  variants: fadeUp,
+export const springs = {
+  snappy: { type: "spring", visualDuration: durations.base, bounce: 0 },
+  gentle: { type: "spring", visualDuration: durations.slow, bounce: 0.1 },
 };
 
 // Transform keys that move or resize something. Reduced motion removes them, so content
@@ -110,11 +96,15 @@ export function toInstantVariants(variants) {
 /*
  * Returns `variants` unchanged, or an instant version when the user has asked their device for
  * reduced motion (prefers-reduced-motion: reduce). Opacity changes still happen, just with no
- * duration, so content is never stuck hidden.
+ * duration, so content is never stuck hidden. A spring (a transition, not variants) becomes instant.
  *   const variants = useMotionSafe(fadeUp);
+ *   const transition = useMotionSafe(springs.snappy);
  */
 export function useMotionSafe(variants) {
   // motion's own hook reads the media query (and listens for changes) once per component mount.
   const reduced = useReducedMotion();
-  return useMemo(() => (reduced ? toInstantVariants(variants) : variants), [reduced, variants]);
+  return useMemo(() => {
+    if (!reduced) return variants;
+    return variants?.type === "spring" ? { duration: 0 } : toInstantVariants(variants);
+  }, [reduced, variants]);
 }

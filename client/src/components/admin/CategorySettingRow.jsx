@@ -110,8 +110,15 @@ export function CategorySettingRow({ row, departments, save }) {
       <div role="alert">
         <FieldError>{error}</FieldError>
       </div>
-      <Button type="submit" variant="outline" className="self-start" loading={saving}>
-        {saving ? t("citySettings.saving") : t("citySettings.save", { category: name })}
+      {/* Visible "Save" stays short on a phone; the name keeps six Save buttons apart for screen readers. */}
+      <Button
+        type="submit"
+        variant="outline"
+        className="self-start"
+        loading={saving}
+        aria-label={saving ? undefined : t("citySettings.save", { category: name })}
+      >
+        {saving ? t("citySettings.saving") : t("citySettings.saveShort")}
       </Button>
     </form>
   );

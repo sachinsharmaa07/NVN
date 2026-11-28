@@ -83,7 +83,7 @@ test("d) staff on a stale version gets the 409 message and the queue refetches",
   await page.getByRole("button", { name: "Save status" }).click();
 
   await expect(
-    page.getByRole("status").filter({ hasText: "Someone updated this issue. Reload" }),
+    page.getByRole("status").filter({ hasText: "This ticket changed. Showing the latest." }),
   ).toBeVisible();
   await expect.poll(() => api.count("GET", "/api/staff/issues")).toBeGreaterThan(before);
 });

@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useState } from "react";
+import { flushSync } from "react-dom";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { THEMES, THEME_STORAGE_KEY, ThemeContext } from "./themeContext";
 
@@ -18,14 +19,21 @@ export function ThemeProvider({ children }) {
   const systemDark = useMediaQuery("(prefers-color-scheme: dark)");
   const resolvedTheme = theme === "system" ? (systemDark ? "dark" : "light") : theme;
 
-  // Keep the class on <html> in sync (index.html set it before first paint).
-  useEffect(() => {
+  // Keep the class on <html> in sync (index.html set it before first paint). A layout effect, so it
+  // runs inside flushSync below and the view transition's "after" snapshot has the new theme.
+  useLayoutEffect(() => {
     document.documentElement.classList.toggle("dark", resolvedTheme === "dark");
   }, [resolvedTheme]);
 
   const setTheme = useCallback((next) => {
     if (!THEMES.includes(next)) return;
-    setThemeState(next);
+    // Cross-fade the whole page between themes (UI.md §4) where the browser can; otherwise switch at once.
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (document.startViewTransition && !reduced) {
+      document.startViewTransition(() => flushSync(() => setThemeState(next)));
+    } else {
+      setThemeState(next);
+    }
     try {
       localStorage.setItem(THEME_STORAGE_KEY, next);
     } catch {

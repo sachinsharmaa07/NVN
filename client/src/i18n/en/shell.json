@@ -24,6 +24,17 @@
   "shell.community.emptyTitle": "No posts yet",
   "shell.community.emptyHint": "Share an update about an issue you reported, so neighbours know what is being fixed.",
   "shell.notFound.title": "Page not found",
-  "shell.notFound.emptyTitle": "Nothing at this address",
-  "shell.notFound.emptyHint": "The link may be old or have a typo. Check the address, or go back to the home page."
+  "shell.notFound.emptyTitle": "This page doesn't exist",
+  "shell.notFound.emptyHint": "The link may be old or mistyped.",
+  "shell.manage.label": "Manage",
+  "shell.manage.moderation": "Moderation",
+  "shell.manage.users": "Users",
+  "shell.manage.citySettings": "City settings",
+  "shell.manage.cities": "Cities",
+  "shell.manage.waitlist": "Waitlist",
+  "shell.manage.audit": "Audit log",
+  "shell.offline": "You're offline. Your draft is saved on this phone.",
+  "shell.routeError.title": "This page didn't load",
+  "shell.routeError.body": "Something stopped this page from loading. Go back to the home page and try again.",
+  "shell.routeError.home": "Go to home"
 }

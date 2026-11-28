@@ -85,10 +85,30 @@ describe("AuthProvider status", () => {
     expect(screen.getByTestId("me").textContent).toBe("");
   });
 
-  it("not signed in -> signedOut", () => {
+  it("not signed in -> signedOut (after the lazy Auth0 chunk, loading until then)", async () => {
     setAuth0({ isAuthenticated: false });
     mount();
-    expect(status()).toBe("signedOut");
+    expect(status()).toBe("loading");
+    await waitFor(() => expect(status()).toBe("signedOut"));
+  });
+
+  it("a request made before the Auth0 chunk arrives waits for it and gets the real token", async () => {
+    setAuth0({ isAuthenticated: false });
+    let early;
+    function Grab() {
+      const a = useAuth();
+      early ??= a.getAuthHeaders;
+      return null;
+    }
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <AuthProvider>
+          <Grab />
+        </AuthProvider>
+      </QueryClientProvider>,
+    );
+    await expect(early()).resolves.toEqual({ Authorization: "Bearer tok" });
   });
 
   it("/api/me ok -> signedIn with the user (useMe)", async () => {
@@ -152,7 +172,7 @@ describe("AuthProvider status", () => {
   it("an Auth0 error -> error of kind session; Try again signs in", async () => {
     const a0 = setAuth0({ isAuthenticated: false, error: new Error("boom") });
     mount();
-    expect(status()).toBe("error");
+    await waitFor(() => expect(status()).toBe("error"));
     expect(screen.getByTestId("kind").textContent).toBe("session");
     act(() => screen.getByText("retry").click());
     await waitFor(() => expect(a0.loginWithRedirect).toHaveBeenCalled());

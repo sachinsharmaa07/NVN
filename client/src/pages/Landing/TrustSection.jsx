@@ -2,11 +2,11 @@ import {
   ClockIcon,
   ConstructionIcon,
   DropletsIcon,
-  ImageIcon,
   LightbulbIcon,
   Trash2Icon,
   WavesIcon,
 } from "lucide-react";
+import { PhotoSlot } from "@/components/system/PhotoSlot";
 import { Badge } from "@/components/ui/badge";
 import { t } from "@/i18n/t";
 
@@ -19,10 +19,10 @@ const DEPARTMENTS = [
 ];
 
 /** What a citizen can hold the city to: a deadline, photos of the fix, and a named department. */
-export function TrustSection() {
+export function TrustSection({ className }) {
   return (
-    <section aria-labelledby="landing-trust-title" className="flex flex-col gap-6">
-      <h2 id="landing-trust-title" className="font-display text-2xl font-semibold">
+    <section aria-labelledby="landing-trust-title" className={className}>
+      <h2 id="landing-trust-title" className="mb-6 font-display text-2xl font-semibold lg:text-h2">
         {t("landing.trust.title")}
       </h2>
 
@@ -84,10 +84,7 @@ function BeforeAfter() {
       <div className="grid grid-cols-2 gap-3 md:gap-4">
         {slots.map((slot) => (
           <figure key={slot} className="flex flex-col gap-2">
-            <div className="flex aspect-4/3 w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed bg-muted p-3 text-center text-sm text-muted-foreground">
-              <ImageIcon aria-hidden="true" className="size-6" />
-              {t(`landing.trust.${slot}Placeholder`)}
-            </div>
+            <PhotoSlot label={t(`landing.trust.${slot}Placeholder`)} />
             <figcaption className="font-medium">{t(`landing.trust.${slot}`)}</figcaption>
           </figure>
         ))}

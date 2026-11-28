@@ -3,6 +3,7 @@ import { SlaBadge } from "@/components/system/SlaBadge";
 import { StatusTimeline } from "@/components/system/StatusTimeline";
 import { TicketId } from "@/components/system/TicketId";
 import { t } from "@/i18n/t";
+import { cn } from "@/lib/utils";
 
 // MOCK: an example ticket to show what tracking looks like. Not a real report.
 // Dates are IST and already in display form (docs/UI.md §8: "21 Nov, 6:00 PM").
@@ -20,14 +21,14 @@ const SAMPLE_STEPS = [
 }));
 
 /** An example ticket: the counterfoil header (ticket ID, what, where, deadline) and its timeline. */
-export function TimelinePreview() {
+export function TimelinePreview({ className }) {
   return (
     <section
       aria-labelledby="landing-timeline-title"
-      className="grid gap-6 lg:grid-cols-5 lg:items-start lg:gap-12"
+      className={cn("grid gap-6 lg:grid-cols-5 lg:items-start lg:gap-12", className)}
     >
       <div className="flex flex-col gap-2 lg:col-span-2">
-        <h2 id="landing-timeline-title" className="font-display text-2xl font-semibold">
+        <h2 id="landing-timeline-title" className="font-display text-2xl font-semibold lg:text-h2">
           {t("landing.timeline.title")}
         </h2>
         <p className="max-w-prose text-muted-foreground">{t("landing.timeline.body")}</p>

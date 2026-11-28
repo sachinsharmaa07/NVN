@@ -1,8 +1,10 @@
 import { useId, useState } from "react";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { CategorySettingRow } from "@/components/admin/CategorySettingRow";
+import { DepartmentsSection } from "@/components/admin/DepartmentsSection";
+import { ErrorState } from "@/components/system/ErrorState";
 import { PageHeader } from "@/components/system/PageHeader";
-import { Button } from "@/components/ui/button";
+import { SkeletonList } from "@/components/system/SkeletonList";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -12,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { useCities } from "@/hooks/useCities";
 import { useCitySettings, useSaveCategory } from "@/hooks/useCitySettings";
@@ -68,17 +69,24 @@ function Settings() {
         }
       />
       {isRoot && <CityPicker value={cityId} onChange={setCityId} />}
-      {query.isLoading && <Skeleton aria-hidden="true" className="h-64 w-full" />}
+      {query.isLoading && (
+        // Shaped like the category cards: two columns from 1024px.
+        <SkeletonList
+          count={4}
+          itemClassName="h-80 rounded-lg"
+          className="grid gap-3 lg:grid-cols-2"
+        />
+      )}
       {query.isError && (
-        <div role="alert" className="flex flex-col items-start gap-3">
-          <p>{t("citySettings.error")}</p>
-          <Button variant="secondary" onClick={() => query.refetch()}>
-            {t("common.retry")}
-          </Button>
-        </div>
+        <ErrorState
+          variant="inline"
+          title={t("citySettings.error")}
+          onRetry={() => query.refetch()}
+          retrying={query.isFetching}
+        />
       )}
       {data && (
-        <div className="grid gap-3 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           {data.categories.map((row) => (
             <CategorySettingRow
               key={`${data.city.id}-${row.category}`}
@@ -89,6 +97,7 @@ function Settings() {
           ))}
         </div>
       )}
+      {data && <DepartmentsSection cityId={data.city.id} sendCityId={isRoot} />}
     </div>
   );
 }

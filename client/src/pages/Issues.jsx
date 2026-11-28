@@ -4,16 +4,21 @@ import { Link } from "react-router";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { IssueCard } from "@/components/issues/IssueCard";
 import { EmptyState } from "@/components/system/EmptyState";
+import { ErrorState } from "@/components/system/ErrorState";
 import { PageHeader } from "@/components/system/PageHeader";
+import { SkeletonList } from "@/components/system/SkeletonList";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useMyIssues } from "@/hooks/useIssues";
 import { t } from "@/i18n/t";
+import { plural } from "@/lib/plural";
+import { useClaimPagePrimary } from "@/hooks/usePagePrimary";
 
 function MyIssues() {
   const query = useMyIssues();
   const [announcement, setAnnouncement] = useState("");
   const issues = query.data?.pages.flatMap((p) => p.items) ?? [];
+  // The empty state's Report an issue: its own primary button, so the sidebar's Report turns outline (one primary per screen).
+  useClaimPagePrimary(query.isSuccess && issues.length === 0);
 
   async function loadMore() {
     const result = await query.fetchNextPage();
@@ -23,15 +28,22 @@ function MyIssues() {
 
   let body;
   if (query.isPending) {
-    body = <Skeleton aria-hidden="true" className="h-40 w-full" />;
+    // Shaped like the cards that are coming: same grid, same height.
+    body = (
+      <SkeletonList
+        count={4}
+        itemClassName="h-32 rounded-lg"
+        className="grid gap-3 md:grid-cols-2"
+      />
+    );
   } else if (query.isError) {
     body = (
-      <div role="alert" className="flex flex-col items-start gap-3">
-        <p>{t("issues.mine.error")}</p>
-        <Button variant="secondary" onClick={() => query.refetch()}>
-          {t("common.retry")}
-        </Button>
-      </div>
+      <ErrorState
+        variant="inline"
+        title={t("issues.mine.error")}
+        onRetry={() => query.refetch()}
+        retrying={query.isFetching}
+      />
     );
   } else if (issues.length === 0) {
     body = (
@@ -48,7 +60,8 @@ function MyIssues() {
     );
   } else {
     body = (
-      <ul className="grid gap-3 md:grid-cols-2">
+      // fade-in: the cards take the skeleton's place in the same box, so nothing moves.
+      <ul className="fade-in grid gap-3 md:grid-cols-2">
         {issues.map((issue) => (
           <li key={issue.ticketId}>
             <IssueCard issue={issue} />
@@ -60,7 +73,20 @@ function MyIssues() {
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 md:px-6 md:py-12 lg:px-8">
-      <PageHeader title={t("shell.issues.title")} description={t("shell.issues.description")} />
+      <PageHeader
+        title={t("shell.issues.title")}
+        description={t("shell.issues.description")}
+        // "3 issues", or "20+ issues" while more pages are still on the server.
+        meta={
+          issues.length > 0 && (
+            <span>
+              {query.hasNextPage
+                ? t("issues.mine.countMore", { count: issues.length })
+                : plural(issues.length, "issues.mine.count")}
+            </span>
+          )
+        }
+      />
       {body}
       {query.hasNextPage && (
         <div className="flex justify-center">

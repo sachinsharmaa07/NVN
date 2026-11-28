@@ -10,9 +10,19 @@ const BOXES = [0, 1, 2, 3, 4, 5];
  * The pincode as six boxes, like the PIN boxes on an India Post envelope (docs/UI.md §1).
  * It is ONE real <input> (screen readers hear one field, autofill and paste just work) laid
  * over six decorative boxes. The input's own text is transparent; the boxes draw the digits.
- * Controlled: `value` is digits only; onChange gets the cleaned value.
+ * Controlled: `value` is digits only; onChange gets the cleaned value. `label`, `hint` and `name` default to
+ * the report's ("Your pincode"); the profile passes its own.
  */
-export function PincodeField({ value, onChange, onBlur, error, inputRef }) {
+export function PincodeField({
+  value,
+  onChange,
+  onBlur,
+  error,
+  inputRef,
+  label = t("landing.pincode.label"),
+  hint = t("landing.pincode.hint"),
+  name = "pincode",
+}) {
   const id = useId();
   const hintId = `${id}-hint`;
   const errorId = `${id}-error`;
@@ -23,17 +33,17 @@ export function PincodeField({ value, onChange, onBlur, error, inputRef }) {
   return (
     <div className="flex flex-col gap-2">
       <label htmlFor={id} className="text-base font-medium">
-        {t("landing.pincode.label")}
+        {label}
       </label>
       {/* Keyboard focus ring goes around the whole row because the input itself is invisible.
-          Boxes are 40px wide at 360px screens so all six fit; the tap target is the 56px-tall row. */}
+          Boxes are 36px under 360px and 40px from 360px so all six fit at 320px; the tap target is the 56px-tall row. */}
       <div className="relative w-fit rounded-md has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-ring has-[input:focus-visible]:ring-offset-4 has-[input:focus-visible]:ring-offset-background">
         <div aria-hidden="true" className="flex gap-2 sm:gap-3">
           {BOXES.map((i) => (
             <span
               key={i}
               className={cn(
-                "flex h-14 w-10 items-center justify-center rounded-sm border-2 bg-card font-display text-3xl font-semibold tabular-nums transition-colors duration-fast ease-standard sm:h-16 sm:w-12",
+                "flex h-14 w-9 items-center justify-center rounded-sm border-2 bg-card font-display text-3xl font-semibold tabular-nums transition-colors duration-fast ease-standard min-[360px]:w-10 sm:h-16 sm:w-12",
                 error ? "border-destructive" : "border-input",
                 focused && i === activeIndex && !error && "border-primary",
               )}
@@ -46,7 +56,7 @@ export function PincodeField({ value, onChange, onBlur, error, inputRef }) {
         <input
           ref={inputRef}
           id={id}
-          name="pincode"
+          name={name}
           type="text"
           inputMode="numeric"
           autoComplete="postal-code"
@@ -67,7 +77,7 @@ export function PincodeField({ value, onChange, onBlur, error, inputRef }) {
         />
       </div>
       <p id={hintId} className="text-sm text-muted-foreground">
-        {t("landing.pincode.hint")}
+        {hint}
       </p>
       {/* The wrapper stays in the DOM so screen readers announce the message when it appears. */}
       <div aria-live="polite">

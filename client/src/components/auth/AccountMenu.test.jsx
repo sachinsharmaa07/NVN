@@ -28,24 +28,36 @@ describe("AccountMenu", () => {
     expect(openSignIn).toHaveBeenCalledWith({ returnTo: "/community?x=1" });
   });
 
-  it("signed in: shows who, Profile and Sign out; no Admin link for a citizen", () => {
+  it("signed in: shows who, Profile and Sign out; no Manage group for a citizen", () => {
     const auth = authState("verified");
     renderWithAuth(<AccountMenu />, { auth });
     open();
     expect(screen.getByText("Asha Rao")).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Profile" })).toHaveAttribute("href", "/profile");
-    expect(screen.queryByRole("menuitem", { name: "Admin: Users" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Manage")).not.toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Users" })).not.toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "Verify your email" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
     expect(auth.logout).toHaveBeenCalled();
   });
 
-  it("admin: the Admin: Users link is there", () => {
+  it("admin: Users and City settings under Manage", () => {
     renderWithAuth(<AccountMenu />, { auth: authState("admin") });
     open();
-    expect(screen.getByRole("menuitem", { name: "Admin: Users" })).toHaveAttribute(
+    expect(screen.getByText("Manage")).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Users" })).toHaveAttribute("href", "/admin/users");
+    expect(screen.getByRole("menuitem", { name: "City settings" })).toHaveAttribute(
       "href",
-      "/admin/users",
+      "/admin/city-settings",
+    );
+  });
+
+  it("signed in: the theme lives in a Theme submenu", () => {
+    renderWithAuth(<AccountMenu />, { auth: authState("verified") });
+    open();
+    expect(screen.getByRole("menuitem", { name: "Theme" })).toHaveAttribute(
+      "aria-haspopup",
+      "menu",
     );
   });
 

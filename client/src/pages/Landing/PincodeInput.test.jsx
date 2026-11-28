@@ -1,8 +1,31 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider, useLocation } from "react-router";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { t } from "@/i18n/t";
+import { fakeFetch } from "@/test/renderWithAuth";
 import { PincodeInput } from "./PincodeInput";
+
+// The public pincode lookup: 144401 is served, 999999 is unknown, 110001 is known but not covered.
+const PLACE = {
+  served: true,
+  cityName: "Phagwara",
+  district: "Kapurthala",
+  state: "Punjab",
+  localities: ["Model Town"],
+};
+const NOT_FOUND = { error: { code: "PINCODE_NOT_FOUND", message: "We don't know that pincode." } };
+beforeEach(() =>
+  vi.stubGlobal(
+    "fetch",
+    fakeFetch({
+      "/api/pincodes/144401": [200, PLACE],
+      "/api/pincodes/999999": [404, NOT_FOUND],
+      "/api/pincodes/110001": [200, { ...PLACE, served: false, localities: [] }],
+    }),
+  ),
+);
+afterEach(() => vi.unstubAllGlobals());
 
 // Stand-in for the report page: prints the URL it was opened with so the test can read it.
 function ReportProbe() {
@@ -15,7 +38,12 @@ function renderPincodeInput() {
     { path: "/", element: <PincodeInput /> },
     { path: "/report", element: <ReportProbe /> },
   ]);
-  render(<RouterProvider router={router} />);
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(
+    <QueryClientProvider client={client}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  );
   return {
     input: screen.getByLabelText(t("landing.pincode.label")),
     submit: screen.getByRole("button", { name: t("landing.pincode.submit") }),
@@ -69,10 +97,27 @@ describe("PincodeInput", () => {
     expect(input).not.toHaveAttribute("aria-invalid");
   });
 
-  it("opens the report page with the pincode when it is valid", async () => {
-    const { input, submit } = renderPincodeInput();
+  it("shows the area for a served pincode, then opens the report page from Report in", async () => {
+    const { input } = renderPincodeInput();
     fireEvent.change(input, { target: { value: "144401" } });
-    fireEvent.click(submit);
+    expect(await screen.findByText(/Phagwara/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Report in 144401" }));
     expect(await screen.findByTestId("report-url")).toHaveTextContent("/report?pincode=144401");
+  });
+
+  it("offers the waitlist and no Report button for a pincode we don't cover", async () => {
+    const { input } = renderPincodeInput();
+    fireEvent.change(input, { target: { value: "110001" } });
+    expect(await screen.findByLabelText(/email/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Report in/ })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: t("landing.pincode.submit") }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("offers the waitlist for a pincode that doesn't exist", async () => {
+    const { input } = renderPincodeInput();
+    fireEvent.change(input, { target: { value: "999999" } });
+    expect(await screen.findByLabelText(/email/i)).toBeInTheDocument();
   });
 });

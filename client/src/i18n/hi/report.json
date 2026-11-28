@@ -1,6 +1,6 @@
 {
   "report.wizard.stepOf": "{total} में से चरण {step}: {title}",
-  "report.wizard.step1": "आपका पिनकोड",
+  "report.wizard.step1": "पिनकोड",
   "report.wizard.step2": "पिन लगाएँ",
   "report.wizard.step3": "फ़ोटो और जानकारी",
   "report.wizard.next": "आगे",
@@ -44,6 +44,7 @@
   "report.details.descLabel": "क्या गड़बड़ है, और ठीक कहाँ?",
   "report.details.descShort": "समस्या कम से कम 20 अक्षरों में बताएँ, ताकि विभाग उसे ढूँढकर ठीक कर सके।",
   "report.details.countShort": "{count} अक्षर। कम से कम {min} लिखें।",
+  "report.details.countEmpty": "कम से कम {min} अक्षर।",
   "report.details.count": "{max} में से {count} अक्षर",
   "report.details.photoTooLarge": "यह फ़ोटो 5 MB से बड़ी है। छोटी फ़ोटो चुनें या नई फ़ोटो लें।",
   "report.photos.label": "फ़ोटो (वैकल्पिक)",
@@ -74,5 +75,14 @@
   "report.done.expectedBy": "अपेक्षित तारीख",
   "report.done.track": "इस शिकायत पर नज़र रखें",
   "report.done.another": "एक और शिकायत दर्ज करें",
-  "report.review.draftSaved": "आपका ड्राफ़्ट सहेजा गया है।"
+  "report.review.draftSaved": "आपका ड्राफ़्ट सहेजा गया है।",
+  "report.wizard.stepsLabel": "रिपोर्ट के चरण",
+  "report.wizard.hintPincode": "आगे बढ़ने के लिए सभी 6 अंक डालें।",
+  "report.wizard.hintPin": "आगे बढ़ने के लिए पिन को छायांकित क्षेत्र के अंदर रखें।",
+  "report.wizard.hintPhotos": "अपनी फ़ोटो अपलोड होने तक रुकें।",
+  "report.startOver.trigger": "फिर से शुरू करें",
+  "report.startOver.title": "यह रिपोर्ट फिर से शुरू करें?",
+  "report.startOver.body": "आपका पिनकोड, पिन और फ़ोटो हटा दिए जाएँगे।",
+  "report.startOver.confirm": "फिर से शुरू करें",
+  "report.startOver.keep": "मेरी रिपोर्ट रखें"
 }

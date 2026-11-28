@@ -163,3 +163,57 @@ test("keyboard only: pincode, then the pin placed with Enter and nudged with arr
   expect(lat).toBeLessThan(31.3806);
   expect(lng).toBeCloseTo(75.38, 3);
 });
+
+test("Start over discards the uploaded photo in one request and returns to an empty step 1", async ({
+  page,
+  api,
+}) => {
+  await toDetailsStep(page);
+  await fillDetails(page);
+  await page.getByRole("button", { name: "Start over" }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Start over" }).click();
+
+  await expect(page).toHaveURL(/\/report\?step=1$/);
+  await expect(page.getByRole("textbox", { name: "Your pincode", exact: true })).toHaveValue("");
+  const discards = api.requests.filter((r) => r.path === "/api/uploads/discard");
+  expect(discards).toHaveLength(1);
+  expect(JSON.parse(discards[0].body)).toEqual({
+    publicIds: ["nivaran/development/reports/e2e-photo"],
+  });
+});
+
+test("a disabled Next says why", async ({ page }) => {
+  await page.goto("/report");
+  await page.getByRole("textbox", { name: "Your pincode", exact: true }).fill("1446");
+  await expect(nextButton(page)).toBeDisabled();
+  await expect(nextButton(page)).toHaveAccessibleDescription("Enter all 6 digits to continue.");
+});
+
+test("at 360 the Back/Next bar sits just above the bottom bar on every step", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 740 });
+  // The footer's bottom edge meets the bottom bar's top edge (both fixed), on all three steps.
+  const footerOnBar = () =>
+    page.evaluate(() => {
+      const footer = document.querySelector('[data-slot="wizard-footer"]').getBoundingClientRect();
+      const bar = document.querySelector('[data-slot="bottom-bar"]').getBoundingClientRect();
+      return Math.abs(footer.bottom - bar.top) <= 1;
+    });
+  await page.goto(`/report?pincode=${PIN}`);
+  await expect(page.getByText("Kapurthala, Punjab")).toBeVisible();
+  expect(await footerOnBar()).toBe(true);
+  await nextButton(page).click();
+  await expect(map(page)).toBeVisible();
+  expect(await footerOnBar()).toBe(true);
+  await tapMap(page, 0.5, 0.5);
+  await nextButton(page).click();
+  await expect(page.getByLabel("Short title")).toBeVisible();
+  expect(await footerOnBar()).toBe(true);
+});
+
+test("Start over shows only once there is a draft to throw away", async ({ page }) => {
+  await page.goto("/report");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Start over" })).toHaveCount(0);
+  await toMapStep(page);
+  await expect(page.getByRole("button", { name: "Start over" })).toBeVisible();
+});

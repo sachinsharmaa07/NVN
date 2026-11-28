@@ -39,6 +39,17 @@ function setup(table) {
 const bodyOf = (spy, part) =>
   JSON.parse(spy.mock.calls.find(([u, init]) => String(u).includes(part) && init?.body)[1].body);
 
+// Once answered, "Is it fixed?" folds away: inert at once, removed when its fade ends. jsdom runs no
+// CSS transitions, so the test sends the transitionend itself.
+function expectPromptFoldsAway() {
+  const card = screen
+    .getByRole("heading", { name: "Is it fixed?", hidden: true })
+    .closest("[inert]");
+  expect(card).not.toBeNull();
+  fireEvent.transitionEnd(card, { propertyName: "opacity" });
+  expect(screen.queryByText("Is it fixed?")).not.toBeInTheDocument();
+}
+
 // StatusTimeline reveals on scroll (motion's whileInView); jsdom has no IntersectionObserver.
 beforeEach(() =>
   vi.stubGlobal(
@@ -65,9 +76,9 @@ describe("Ticket page", () => {
   it("Confirm sends the version and shows the server's closed ticket", async () => {
     const spy = setup({ "/confirm": [200, { ...resolved, status: "closed", version: 4 }] });
     fireEvent.click(await screen.findByRole("button", { name: "Yes, it's fixed" }));
-    await waitFor(() => expect(screen.queryByText("Is it fixed?")).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.getAllByText("Closed").length).toBeGreaterThan(0));
     expect(bodyOf(spy, "/confirm")).toEqual({ version: 3 });
-    expect(screen.getAllByText("Closed").length).toBeGreaterThan(0);
+    expectPromptFoldsAway();
   });
 
   it("Reopen needs 10+ characters before anything is sent", async () => {
@@ -82,8 +93,9 @@ describe("Ticket page", () => {
       target: { value: "The hole is back after rain" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Reopen ticket" }));
-    await waitFor(() => expect(screen.queryByText("Is it fixed?")).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.getAllByText("Reopened").length).toBeGreaterThan(0));
     expect(bodyOf(spy, "/reopen")).toEqual({ note: "The hole is back after rain", version: 3 });
+    expectPromptFoldsAway();
   });
 
   it("a 409 refetches the ticket", async () => {

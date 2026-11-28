@@ -1,17 +1,19 @@
 import { SearchXIcon } from "lucide-react";
 import { Link } from "react-router";
 import { EmptyState } from "@/components/system/EmptyState";
-import { PageHeader } from "@/components/system/PageHeader";
 import { Button } from "@/components/ui/button";
 import { t } from "@/i18n/t";
+import { useClaimPagePrimary } from "@/hooks/usePagePrimary";
 
-// Any address the router doesn't know: says so plainly and offers the way back.
+// Any address the router doesn't know: one designed state, its title the page's h1, and the way home.
 export function NotFound() {
+  // Go to home: its own primary button, so the sidebar's Report turns outline (one primary per screen).
+  useClaimPagePrimary();
   return (
     <div className="mx-auto flex w-full max-w-160 flex-col gap-8 px-4 py-8 md:px-6 md:py-12 lg:px-8">
-      <PageHeader title={t("shell.notFound.title")} />
       <EmptyState
         icon={SearchXIcon}
+        titleAs="h1"
         title={t("shell.notFound.emptyTitle")}
         hint={t("shell.notFound.emptyHint")}
         action={

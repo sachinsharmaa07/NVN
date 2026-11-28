@@ -1,24 +1,29 @@
 import { lazy } from "react";
+import { pageLoaders as load } from "@/lib/prefetch";
 
 /*
  * Every page, loaded lazily: each one is a separate file that downloads the first time it is
  * opened, so the first screen loads fast on a cheap phone. React.lazy needs a default export,
- * which every page file has. Kept apart from router.jsx so that file holds only the route table.
+ * which every page file has. The import functions live in lib/prefetch.js, so a nav hover that
+ * prefetches a page and the click that opens it share one download.
  */
-export const Landing = lazy(() => import("@/pages/Landing"));
-export const Report = lazy(() => import("@/pages/Report"));
-export const Issues = lazy(() => import("@/pages/Issues"));
-export const IssueDetail = lazy(() => import("@/pages/IssueDetail"));
-export const StaffQueue = lazy(() => import("@/pages/staff/StaffQueue"));
-export const Community = lazy(() => import("@/pages/Community"));
-export const CommunityPost = lazy(() => import("@/pages/CommunityPost"));
-export const Moderation = lazy(() => import("@/pages/Moderation"));
-export const Profile = lazy(() => import("@/pages/Profile"));
-export const Suspended = lazy(() => import("@/pages/Suspended"));
-export const Forbidden = lazy(() => import("@/pages/Forbidden"));
-export const AdminUsers = lazy(() => import("@/pages/admin/AdminUsers"));
-export const CitySettings = lazy(() => import("@/pages/admin/CitySettings"));
-export const NotFound = lazy(() => import("@/pages/NotFound"));
+export const Landing = lazy(load.Landing);
+export const Report = lazy(load.Report);
+export const Issues = lazy(load.Issues);
+export const IssueDetail = lazy(load.IssueDetail);
+export const StaffQueue = lazy(load.StaffQueue);
+export const Community = lazy(load.Community);
+export const CommunityPost = lazy(load.CommunityPost);
+export const Moderation = lazy(load.Moderation);
+export const Profile = lazy(load.Profile);
+export const Suspended = lazy(load.Suspended);
+export const Forbidden = lazy(load.Forbidden);
+export const AdminUsers = lazy(load.AdminUsers);
+export const CitySettings = lazy(load.CitySettings);
+export const AdminCities = lazy(load.AdminCities);
+export const AdminWaitlist = lazy(load.AdminWaitlist);
+export const AdminAudit = lazy(load.AdminAudit);
+export const NotFound = lazy(load.NotFound);
 
 // Style guide for developers only. import.meta.env.DEV is false in a production build, so the
 // file is left out of the bundle entirely.

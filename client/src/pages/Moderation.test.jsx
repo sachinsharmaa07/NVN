@@ -34,7 +34,8 @@ describe("Moderation queue", () => {
     setup();
     expect(await screen.findByRole("heading", { name: hidden.title })).toBeInTheDocument();
     expect(screen.getByText("3 reports")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Posts" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("tab", { name: "Posts" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByText("Hidden")).toBeInTheDocument();
   });
 
   it("restores at once and sends the action", async () => {

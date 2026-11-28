@@ -6,11 +6,14 @@ import { DetailsStep } from "@/components/report/DetailsStep";
 import { MapStep } from "@/components/report/MapStep";
 import { PincodeStep } from "@/components/report/PincodeStep";
 import { clearDraft, readDraft, saveDraft } from "@/components/report/reportDraft";
+import { StartOver } from "@/components/report/StartOver";
 import { usePhotoUploads } from "@/components/report/usePhotoUploads";
+import { FormStrip } from "@/components/system/FormStrip";
 import { PageHeader } from "@/components/system/PageHeader";
 import { useApi } from "@/hooks/useApi";
 import { t } from "@/i18n/t";
 import { isValidPincode } from "@/pages/Landing/pincode";
+import { useClaimPagePrimary } from "@/hooks/usePagePrimary";
 
 const STEP_TITLES = ["report.wizard.step1", "report.wizard.step2", "report.wizard.step3"];
 
@@ -26,6 +29,8 @@ function stepFrom(param, draft) {
 // A landing link /report?pincode=144401 prefills step 1; otherwise the session draft does.
 export function Report() {
   const api = useApi();
+  // Next / Submit report / Track this issue: its own primary button, so the sidebar's Report turns outline (one primary per screen).
+  useClaimPagePrimary();
   const [searchParams, setSearchParams] = useSearchParams();
   const draft = readDraft();
   const step = stepFrom(searchParams.get("step"), draft);
@@ -38,6 +43,8 @@ export function Report() {
   // Set when a submit comes back 422 OUTSIDE_PINCODE, shown once the map step opens again.
   const [mapNotice, setMapNotice] = useState("");
   const [issue, setIssue] = useState(null);
+  // Bumped by Start over, so step 1 remounts empty even when it is already showing.
+  const [resets, setResets] = useState(0);
   // Set synchronously on the first click: a double click lands before React re-renders Submit as disabled.
   const inFlight = useRef(false);
 
@@ -70,9 +77,37 @@ export function Report() {
       ? `${send.error.message} ${t("report.review.draftSaved")}`
       : "";
 
+  function startOver() {
+    clearDraft();
+    uploads.clear();
+    send.reset();
+    setMapNotice("");
+    setResets((n) => n + 1);
+    setSearchParams({ step: "1" });
+  }
+
+  const steps = STEP_TITLES.map((key) => ({ title: t(key) }));
+  // Start over only once there is something to throw away (a saved draft, a later step or a photo).
+  const hasDraft = step > 1 || Object.keys(draft).length > 0 || uploads.publicIds.length > 0;
   return (
-    <div className="mx-auto flex w-full max-w-160 flex-col gap-8 px-4 py-8 md:px-6 md:py-12 lg:px-8">
-      <PageHeader title={t("shell.report.title")} description={t("shell.report.description")} />
+    // pb-16 below 1024px: with content-reserve, keeps the last field clear of the fixed Back/Next bar,
+    // even when it shows its hint line (measured at 360 on all three steps).
+    <div className="mx-auto flex w-full max-w-160 flex-col gap-8 px-4 pt-8 pb-16 md:px-6 md:pt-12 lg:px-8 lg:pb-12">
+      <PageHeader
+        title={t("shell.report.title")}
+        // The "three steps" line is for the task; above a finished receipt it would be instructions for nothing.
+        description={issue ? undefined : t("shell.report.description")}
+        actions={
+          !issue && hasDraft ? (
+            <StartOver publicIds={uploads.publicIds} onReset={startOver} />
+          ) : null
+        }
+      />
+      {!issue && (
+        <nav aria-label={t("report.wizard.stepsLabel")}>
+          <FormStrip steps={steps} current={step - 1} collapsed />
+        </nav>
+      )}
       {issue ? (
         <Counterfoil
           issue={issue}
@@ -84,11 +119,13 @@ export function Report() {
         />
       ) : (
         <>
-          <p className="text-sm font-medium text-muted-foreground">
+          {/* The strip shows the step; screen readers hear the change here. */}
+          <h2 aria-live="polite" className="sr-only">
             {t("report.wizard.stepOf", { step, total: 3, title: t(STEP_TITLES[step - 1]) })}
-          </p>
+          </h2>
           {step === 1 && (
             <PincodeStep
+              key={resets}
               initialPin={initialPin}
               onNext={(pin) => {
                 saveDraft({ pincode: pin });

@@ -3,8 +3,8 @@ import { CategoryCards } from "@/components/report/CategoryCards";
 import { CATEGORIES } from "@/components/report/categories";
 import { PhotoPicker } from "@/components/report/PhotoPicker";
 import { saveDraft } from "@/components/report/reportDraft";
+import { WizardFooter } from "@/components/report/WizardFooter";
 import { FieldError } from "@/components/system/FieldError";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -95,9 +95,12 @@ export function DetailsStep({ draft, uploads, submit, onBack, onSubmit }) {
           aria-describedby={`${id}-count ${problems.description ? `${id}-desc-error` : ""}`.trim()}
         />
         <p id={`${id}-count`} className="text-sm text-muted-foreground tabular-nums">
-          {count < LIMITS.descMin
-            ? t("report.details.countShort", { count, min: LIMITS.descMin })
-            : t("report.details.count", { count, max: LIMITS.descMax })}
+          {/* Before any typing, a neutral hint: "0 characters" on arrival reads like an error. */}
+          {count === 0
+            ? t("report.details.countEmpty", { min: LIMITS.descMin })
+            : count < LIMITS.descMin
+              ? t("report.details.countShort", { count, min: LIMITS.descMin })
+              : t("report.details.count", { count, max: LIMITS.descMax })}
         </p>
         <FieldError id={`${id}-desc-error`}>{problems.description}</FieldError>
       </div>
@@ -130,14 +133,14 @@ export function DetailsStep({ draft, uploads, submit, onBack, onSubmit }) {
       <p role="alert" className="text-sm text-destructive empty:hidden">
         {submit.error}
       </p>
-      <div className="flex justify-between gap-3">
-        <Button type="button" variant="outline" size="lg" onClick={onBack}>
-          {t("report.wizard.back")}
-        </Button>
-        <Button type="submit" size="lg" disabled={submit.pending || !uploads.ready}>
-          {t(submit.pending ? "report.review.submitting" : "report.review.submit")}
-        </Button>
-      </div>
+      <WizardFooter
+        onBack={onBack}
+        nextType="submit"
+        nextLabel={t(submit.pending ? "report.review.submitting" : "report.review.submit")}
+        nextDisabled={!uploads.ready}
+        disabledHint={t("report.wizard.hintPhotos")}
+        submitting={submit.pending}
+      />
     </form>
   );
 }

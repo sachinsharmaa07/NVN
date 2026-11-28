@@ -1,4 +1,10 @@
-import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  infiniteQueryOptions,
+  keepPreviousData,
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useApi } from "@/hooks/useApi";
@@ -7,22 +13,31 @@ import { t } from "@/i18n/t";
 
 export const STAFF_KEY = ["staff", "issues"];
 
-/** The staff queue, sorted by the server (expectedBy, then createdAt). Filters are part of the key. */
-export function useStaffIssues({ status = "", sla = "", category = "" }) {
-  const api = useApi();
-  return useInfiniteQuery({
-    queryKey: [...STAFF_KEY, { status, sla, category }],
+/** Staff queue query options, shared by the hook and the nav prefetch (default filters there). */
+export const staffQueueQuery = (api, { status = "", sla = "", category = "", queue = "" } = {}) =>
+  infiniteQueryOptions({
+    queryKey: [...STAFF_KEY, { status, sla, category, queue }],
     initialPageParam: "",
     queryFn: ({ pageParam, signal }) => {
       const params = new URLSearchParams({ limit: "25" });
       if (status) params.set("status", status);
       if (sla) params.set("sla", sla);
       if (category) params.set("category", category);
+      if (queue) params.set("queue", queue);
       if (pageParam) params.set("cursor", pageParam);
       return api(`/api/staff/issues?${params}`, { signal });
     },
     getNextPageParam: (last) => last.nextCursor ?? undefined,
   });
+
+/**
+ * The staff queue, sorted by the server (expectedBy, then createdAt). Filters are part of the key.
+ * keepPreviousData: a filter change keeps the old rows on screen (dimmed by the page) until the new
+ * ones arrive, so the list never blanks to a skeleton.
+ */
+export function useStaffIssues(filters) {
+  const api = useApi();
+  return useInfiniteQuery({ ...staffQueueQuery(api, filters), placeholderData: keepPreviousData });
 }
 
 /**

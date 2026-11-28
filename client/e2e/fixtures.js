@@ -180,7 +180,138 @@ export const ADMIN_ME = {
   name: "Meera Iyer",
   role: "city_admin",
   level: 5,
-  permissions: [...MOD_ME.permissions, "user:read_scope", "user:promote", "user:suspend"],
+  // audit:read: a city admin reads their city's audit log (server/src/utils/permissions.js).
+  permissions: [
+    ...MOD_ME.permissions,
+    "user:read_scope",
+    "user:promote",
+    "user:suspend",
+    "audit:read",
+  ],
+};
+// The super admin (level 7): onboards cities and reads the waitlist (city:onboard). Shapes from API.md.
+export const SUPER_ME = {
+  ...ADMIN_ME,
+  id: "6750e2e0e2e0e2e0e2e0e2ea",
+  email: "ravi@example.com",
+  name: "Ravi Menon",
+  role: "super_admin",
+  level: 7,
+  cityId: null,
+  permissions: [...ADMIN_ME.permissions, "city:onboard", "audit:read"],
+};
+// Admin > Users rows (GET /api/admin/users).
+export const ADMIN_USERS = [
+  {
+    id: "6750e2e0e2e0e2e0e2e0e301",
+    name: "Asha Rao",
+    email: "asha@example.com",
+    role: "citizen",
+    status: "active",
+    canManage: true,
+    emailVerified: true,
+    lastLoginAt: "2026-11-20T08:00:00.000Z",
+  },
+  {
+    id: "6750e2e0e2e0e2e0e2e0e302",
+    name: "Dev Singh",
+    email: "dev@example.com",
+    role: "staff",
+    status: "active",
+    canManage: true,
+    emailVerified: true,
+    cityName: "Kapurthala",
+    lastLoginAt: "2026-11-25T08:00:00.000Z",
+  },
+];
+// Admin > Cities (GET /api/admin/cities), one active and one onboarding.
+export const CITIES = [
+  {
+    id: "6750e2e0e2e0e2e0e2e0c001",
+    name: "Kapurthala",
+    code: "PB-KAPURTHALA",
+    stateCode: "PB",
+    status: "active",
+  },
+  {
+    id: "6750e2e0e2e0e2e0e2e0c002",
+    name: "Amritsar",
+    code: "PB-AMRITSAR",
+    stateCode: "PB",
+    status: "onboarding",
+  },
+];
+// Admin > Waitlist (GET /api/admin/waitlist), most sign-ups first, as the server sorts it.
+export const WAITLIST = [
+  {
+    pin: "110001",
+    count: 3,
+    latestAt: "2026-11-26T08:00:00.000Z",
+    district: "New Delhi",
+    state: "Delhi",
+    isServed: false,
+  },
+  {
+    pin: "141001",
+    count: 2,
+    latestAt: "2026-11-25T08:00:00.000Z",
+    district: "Ludhiana",
+    state: "Punjab",
+    isServed: false,
+  },
+  {
+    pin: "144601",
+    count: 1,
+    latestAt: "2026-11-24T08:00:00.000Z",
+    district: "Kapurthala",
+    state: "Punjab",
+    isServed: true,
+  },
+];
+// Admin > Audit log (GET /api/admin/audit), two pages, so "Load more" has a cursor to send. The
+// shape is auditService.listAudit's: ids and a role, never a name or email.
+export const AUDIT_PAGE_1 = {
+  items: [
+    {
+      id: "6750e2e0e2e0e2e0e2e0a001",
+      at: "2026-11-27T09:30:00.000Z",
+      action: "user.role_change",
+      targetType: "user",
+      targetId: "6750e2e0e2e0e2e0e2e0e302",
+      actor: { type: "user", id: "6750e2e0e2e0e2e0e2e0e2e6", role: "city_admin" },
+      before: { role: "citizen" },
+      after: { role: "staff" },
+      reason: null,
+    },
+    {
+      id: "6750e2e0e2e0e2e0e2e0a002",
+      at: "2026-11-27T08:00:00.000Z",
+      action: "city.category_update",
+      targetType: "city",
+      targetId: "6750e2e0e2e0e2e0e2e0c001",
+      actor: { type: "user", id: "6750e2e0e2e0e2e0e2e0e2e6", role: "city_admin" },
+      before: null,
+      after: { category: "pothole", resolveHours: 48 },
+      reason: null,
+    },
+  ],
+  nextCursor: "cursor-page-2",
+};
+export const AUDIT_PAGE_2 = {
+  items: [
+    {
+      id: "6750e2e0e2e0e2e0e2e0a003",
+      at: "2026-11-26T07:00:00.000Z",
+      action: "issue.created",
+      targetType: "issue",
+      targetId: "6750e2e0e2e0e2e0e2e0b001",
+      actor: { type: "system", label: "sla-job" },
+      before: null,
+      after: { ticketId: "NIV-2026-000042" },
+      reason: null,
+    },
+  ],
+  nextCursor: null,
 };
 export const CITY_SETTINGS = {
   city: { id: MOD_ME.cityId, name: "Kapurthala" },
@@ -261,6 +392,29 @@ export const test = base.extend({
         moderate: [200, { id: POST.id, status: "published", flagCount: 0 }],
         chat: [200, { kind: "list", tickets: [] }],
         citySettings: [200, CITY_SETTINGS],
+        adminUsers: listOf(ADMIN_USERS),
+        // GET filters by the `status` query, as the server does; tests may replace any of these.
+        cities: (req) => {
+          const status = new URL(req.url()).searchParams.get("status") ?? "active";
+          return [200, { items: CITIES.filter((c) => c.status === status), nextCursor: null }];
+        },
+        createCity: (req) => [
+          201,
+          { id: "6750e2e0e2e0e2e0e2e0c099", status: "onboarding", ...JSON.parse(req.postData()) },
+        ],
+        updateCity: (req) => [200, { ...CITIES[0], ...JSON.parse(req.postData()) }],
+        waitlist: (req) => {
+          const limit = Number(new URL(req.url()).searchParams.get("limit") ?? 20);
+          return [200, { items: WAITLIST.slice(0, limit) }];
+        },
+        // The second page when the cursor is sent, the first otherwise.
+        audit: (req) =>
+          new URL(req.url()).searchParams.get("cursor") ? [200, AUDIT_PAGE_2] : [200, AUDIT_PAGE_1],
+        createDepartment: (req) => [
+          201,
+          { id: "6750e2e0e2e0e2e0e2e0d099", cityId: MOD_ME.cityId, ...JSON.parse(req.postData()) },
+        ],
+        renameDepartment: (req) => [200, { ...JSON.parse(req.postData()) }],
         stats: [
           200,
           { totalReports: 0, resolved: 0, medianResolutionHours: null, openByCategory: {} },
@@ -324,6 +478,21 @@ export const test = base.extend({
             ])
           : reply(route, answers.citySettings),
       );
+      await page.route(/\/api\/admin\/users(\?.*)?$/, (route) => reply(route, answers.adminUsers));
+      await page.route(/\/api\/admin\/cities(\/\w+)?(\?.*)?$/, (route) => {
+        const method = route.request().method();
+        if (method === "POST") return reply(route, answers.createCity);
+        if (method === "PATCH") return reply(route, answers.updateCity);
+        return reply(route, answers.cities);
+      });
+      await page.route(/\/api\/admin\/waitlist(\?.*)?$/, (route) => reply(route, answers.waitlist));
+      await page.route(/\/api\/admin\/audit(\?.*)?$/, (route) => reply(route, answers.audit));
+      await page.route(/\/api\/admin\/departments(\/\w+)?$/, (route) =>
+        reply(
+          route,
+          route.request().method() === "POST" ? answers.createDepartment : answers.renameDepartment,
+        ),
+      );
       await page.route("**/api/chat", (route) => reply(route, answers.chat));
       await page.route("**/api/community/flags", (route) => reply(route, answers.flags));
       await page.route("**/api/stats", (route) => reply(route, answers.stats));
@@ -339,6 +508,8 @@ export const test = base.extend({
       );
       await page.route("**/api/waitlist", (route) => json(route, [200, { joined: true }]));
       await page.route("**/api/uploads/sign", (route) => json(route, [200, SIGNED]));
+      // POST /api/uploads/discard answers 204 with no body (docs/API.md).
+      await page.route("**/api/uploads/discard", (route) => route.fulfill({ status: 204 }));
       await page.route(SIGNED.uploadUrl, (route) =>
         json(route, [
           200,

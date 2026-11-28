@@ -8,6 +8,8 @@ import {
   FieldSection,
   SkeletonSection,
 } from "./StyleGuideBasics";
+import { BrandSection, EdgeSection, RevealSection, TypeSection } from "./StyleGuideFoundations";
+import { ErrorStateSection, FormStripSection, PhotoSlotSection } from "./StyleGuideFeedback";
 import {
   CountdownSection,
   EmptyStateSection,
@@ -53,6 +55,9 @@ function ThemePanel({ theme }) {
       <h2 id={headingId} className="text-2xl">
         {t(`system.styleGuide.${theme}`)}
       </h2>
+      <TypeSection />
+      <BrandSection />
+      <EdgeSection />
       <ButtonSection />
       <CardSection />
       <BadgeSection />
@@ -60,10 +65,14 @@ function ThemePanel({ theme }) {
       <SkeletonSection />
       <PageHeaderSection />
       <EmptyStateSection />
+      <ErrorStateSection />
+      <FormStripSection />
+      <PhotoSlotSection />
       <TimelineSection />
       <CountdownSection />
-      <TicketSection />
+      <TicketSection idPrefix={idPrefix} />
       <StatSection />
+      <RevealSection />
     </section>
   );
 }

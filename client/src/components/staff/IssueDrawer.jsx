@@ -30,9 +30,10 @@ import { AssignPanel, HoldPanel, StatusPanel } from "./ActionPanels";
 /*
  * Issue quick view for staff (UI.md 6): a Sheet from the right on desktop, a bottom Drawer on phones.
  * `issue` is the row from the cached queue, so after a write or a 409 refetch it is already the latest.
- * Actions open as panels in the same overlay; `panel` is which one.
+ * Actions open as panels in the same overlay; `panel` is which one. The header holds the title, the
+ * ticket ID with Copy and the badges; `onCloseAutoFocus` lets the page put focus back on the row.
  */
-export function IssueDrawer({ issue, open, onOpenChange }) {
+export function IssueDrawer({ issue, open, onOpenChange, onCloseAutoFocus }) {
   const desktop = useMediaQuery("(min-width: 1024px)");
   const [panel, setPanel] = useState("details");
   const back = () => setPanel("details");
@@ -43,6 +44,17 @@ export function IssueDrawer({ issue, open, onOpenChange }) {
 
   const title = issue?.title ?? "";
   const description = issue?.ticketId ?? "";
+  // Ticket and badges sit in the header, under the title, on both shapes.
+  const meta = issue && (
+    <div className="flex flex-col gap-2">
+      {/* Small, so the issue's title above stays the first thing read. */}
+      <TicketId id={issue.ticketId} size="sm" />
+      <div className="flex flex-wrap items-center gap-2">
+        <StatusBadge status={issue.status} />
+        <IssueSla issue={issue} />
+      </div>
+    </div>
+  );
   const body = issue && (
     <div className="flex flex-col gap-6 overflow-y-auto px-4 pb-6">
       {panel === "details" && <Details issue={issue} onPanel={setPanel} />}
@@ -55,10 +67,11 @@ export function IssueDrawer({ issue, open, onOpenChange }) {
   if (desktop) {
     return (
       <Sheet open={open} onOpenChange={change}>
-        <SheetContent className="w-full gap-0 sm:max-w-lg">
+        <SheetContent className="w-full gap-0 sm:max-w-lg" onCloseAutoFocus={onCloseAutoFocus}>
           <SheetHeader>
-            <SheetTitle>{title}</SheetTitle>
+            <SheetTitle className="font-display text-h3">{title}</SheetTitle>
             <SheetDescription className="sr-only">{description}</SheetDescription>
+            {meta}
           </SheetHeader>
           {body}
         </SheetContent>
@@ -67,10 +80,11 @@ export function IssueDrawer({ issue, open, onOpenChange }) {
   }
   return (
     <Drawer open={open} onOpenChange={change}>
-      <DrawerContent className="max-h-[90dvh]">
+      <DrawerContent className="max-h-[90dvh]" onCloseAutoFocus={onCloseAutoFocus}>
         <DrawerHeader className="text-left">
-          <DrawerTitle>{title}</DrawerTitle>
+          <DrawerTitle className="font-display text-h3">{title}</DrawerTitle>
           <DrawerDescription className="sr-only">{description}</DrawerDescription>
+          {meta}
         </DrawerHeader>
         {body}
       </DrawerContent>
@@ -89,11 +103,6 @@ function Details({ issue, onPanel }) {
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-2">
-        <StatusBadge status={issue.status} />
-        <IssueSla issue={issue} />
-      </div>
-      <TicketId id={issue.ticketId} />
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
         <dt className="text-muted-foreground">{t("staff.col.category")}</dt>
         <dd>{categoryLabel(issue.category)}</dd>

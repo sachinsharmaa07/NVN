@@ -24,6 +24,9 @@
   "moderation.failed": "यह नहीं हो पाया। आइटम फिर से कतार में है; फिर से कोशिश करें।",
   "moderation.emptyTitle": "देखने के लिए कुछ नहीं",
   "moderation.emptyHint": "तीन रिपोर्ट वाली पोस्ट और टिप्पणियाँ यहाँ दिखती हैं।",
-  "moderation.error": "कतार लोड नहीं हो सकी।",
-  "moderation.loadMore": "और दिखाएँ"
+  "moderation.error": "कतार लोड नहीं हो सकी",
+  "moderation.loadMore": "और दिखाएँ",
+  "moderation.status.hidden": "छिपाया गया",
+  "moderation.status.published": "प्रकाशित",
+  "moderation.status.deleted": "हटाया गया"
 }

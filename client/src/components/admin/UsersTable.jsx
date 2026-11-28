@@ -1,59 +1,58 @@
 import { RoleBadge } from "@/components/auth/RoleBadge";
+import { UserCard } from "@/components/admin/UserCard";
 import { StatusText, UserIdentity } from "@/components/admin/UserParts";
 import { areaText } from "@/components/admin/userText";
 import { UserActionsMenu } from "@/components/admin/UserActionsMenu";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { LedgerTable } from "@/components/system/LedgerTable";
 import { t } from "@/i18n/t";
 import { formatDate } from "@/lib/format";
 
-// The desktop list (1024px and up): a real table. The caption is read by
-// screen readers only. The name cell is a row header so each row is announced by its person.
-export function UsersTable({ users, actorId, onAction }) {
+/**
+ * People in the admin's scope as a ledger: a real table from 1024px (caption read by screen readers
+ * only; the name cell is the row header, so each row is announced by its person), one card per person
+ * below. Loading, error, empty and "Load more" come from LedgerTable (`ledger` props).
+ */
+export function UsersTable({ users, actorId, onAction, ...ledger }) {
+  const columns = [
+    {
+      key: "name",
+      header: t("admin.users.colName"),
+      className: "max-w-72 text-foreground",
+      cell: (user) => <UserIdentity user={user} />,
+    },
+    {
+      key: "role",
+      header: t("admin.users.colRole"),
+      cell: (user) => <RoleBadge role={user.role} />,
+    },
+    { key: "area", header: t("admin.users.colArea"), cell: areaText },
+    {
+      key: "status",
+      header: t("admin.users.colStatus"),
+      cell: (user) => <StatusText user={user} />,
+    },
+    {
+      key: "lastSeen",
+      header: t("admin.users.colLastSeen"),
+      className: "whitespace-nowrap",
+      cell: (user) => formatDate(user.lastLoginAt) || t("admin.users.never"),
+    },
+    {
+      key: "actions",
+      header: <span className="sr-only">{t("admin.users.colActions")}</span>,
+      className: "w-16",
+      cell: (user) => <UserActionsMenu user={user} actorId={actorId} onAction={onAction} />,
+    },
+  ];
+
   return (
-    <Table>
-      <TableCaption className="sr-only">{t("admin.users.caption")}</TableCaption>
-      <TableHeader>
-        <TableRow className="hover:bg-transparent">
-          <TableHead>{t("admin.users.colName")}</TableHead>
-          <TableHead>{t("admin.users.colRole")}</TableHead>
-          <TableHead>{t("admin.users.colArea")}</TableHead>
-          <TableHead>{t("admin.users.colStatus")}</TableHead>
-          <TableHead>{t("admin.users.colLastSeen")}</TableHead>
-          <TableHead className="w-16">
-            <span className="sr-only">{t("admin.users.colActions")}</span>
-          </TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {users.map((user) => (
-          <TableRow key={user.id}>
-            <TableHead scope="row" className="max-w-72 py-3 font-normal text-foreground">
-              <UserIdentity user={user} />
-            </TableHead>
-            <TableCell>
-              <RoleBadge role={user.role} />
-            </TableCell>
-            <TableCell>{areaText(user)}</TableCell>
-            <TableCell>
-              <StatusText user={user} />
-            </TableCell>
-            <TableCell className="whitespace-nowrap">
-              {formatDate(user.lastLoginAt) || t("admin.users.never")}
-            </TableCell>
-            <TableCell>
-              <UserActionsMenu user={user} actorId={actorId} onAction={onAction} />
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <LedgerTable
+      columns={columns}
+      rows={users}
+      getRowKey={(user) => user.id}
+      caption={t("admin.users.caption")}
+      renderCard={(user) => <UserCard user={user} actorId={actorId} onAction={onAction} />}
+      {...ledger}
+    />
   );
 }

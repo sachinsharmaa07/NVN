@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { dictionaries, dictionary as en, getLanguage, setLanguage, t } from "./t";
 
 describe("t()", () => {
@@ -49,6 +49,25 @@ describe("t()", () => {
       expect(Object.hasOwn(en, key), key).toBe(true);
       expect(names(text), key).toEqual(names(en[key]));
     }
+  });
+
+  it("loads Hindi lazily once; until then setLanguage('hi') means English", async () => {
+    // A fresh copy of the module, as the app starts: English only (setup.js loaded Hindi into the shared one).
+    vi.resetModules();
+    const fresh = await import("./t");
+    expect(fresh.isLanguageLoaded("hi")).toBe(false);
+    fresh.setLanguage("hi");
+    expect(fresh.getLanguage()).toBe("en");
+    expect(fresh.t("app.name", undefined, "hi")).toBe("Nivaran");
+    const heard = vi.fn();
+    const stop = fresh.onLanguageLoaded(heard);
+    await Promise.all([fresh.loadLanguage("hi"), fresh.loadLanguage("hi")]);
+    stop();
+    expect(heard).toHaveBeenCalledTimes(1);
+    expect(fresh.isLanguageLoaded("hi")).toBe(true);
+    fresh.setLanguage("hi");
+    expect(fresh.t("app.name")).toBe("निवारण");
+    await expect(fresh.loadLanguage("en")).resolves.toBeUndefined();
   });
 
   it("uses the language set by setLanguage, and English for an unknown one", () => {

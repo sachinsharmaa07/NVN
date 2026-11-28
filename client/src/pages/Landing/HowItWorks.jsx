@@ -1,61 +1,29 @@
-import { motion, useReducedMotion } from "motion/react";
-import { MapPinnedIcon, MailboxIcon, TicketIcon } from "lucide-react";
+import { FormStrip } from "@/components/system/FormStrip";
 import { t } from "@/i18n/t";
-import { fadeUp, stagger } from "@/lib/motion";
 import { HOW_IT_WORKS_ID } from "./constants";
 
-const STEPS = [
-  { key: "pincode", Icon: MailboxIcon },
-  { key: "pin", Icon: MapPinnedIcon },
-  { key: "ticket", Icon: TicketIcon },
-];
+const STEPS = ["pincode", "pin", "ticket"];
 
 /**
- * Three steps, in order, so a numbered list is honest here. They fade up one after another the
- * first time they scroll into view (transform + opacity only, space already reserved, so no
- * layout shift). With reduced motion they are simply there.
+ * Three steps, in order, so a numbered list is honest here. One ruled strip (UI.md §5.1 form strip)
+ * instead of three identical cards; no current step, because nobody has started yet.
  */
-export function HowItWorks() {
-  const reduce = useReducedMotion();
-  const reveal = reduce
-    ? {}
-    : {
-        initial: "hidden",
-        whileInView: "visible",
-        viewport: { once: true, amount: 0.2 },
-        variants: stagger(),
-      };
-
+export function HowItWorks({ className }) {
+  const steps = STEPS.map((key) => ({
+    title: t(`landing.how.${key}Title`),
+    body: t(`landing.how.${key}Body`),
+  }));
   return (
-    <section aria-labelledby={HOW_IT_WORKS_ID} className="flex flex-col gap-6">
+    <section aria-labelledby={HOW_IT_WORKS_ID} className={className}>
       {/* tabIndex -1 lets the hero link move focus here; scroll-mt clears the sticky header. */}
       <h2
         id={HOW_IT_WORKS_ID}
         tabIndex={-1}
-        className="scroll-mt-16 font-display text-2xl font-semibold outline-none"
+        className="mb-6 scroll-mt-16 font-display text-2xl font-semibold lg:text-h2 outline-none"
       >
         {t("landing.how.title")}
       </h2>
-      <motion.ol {...reveal} className="grid gap-4 md:grid-cols-3 md:gap-6">
-        {STEPS.map(({ key, Icon }, index) => (
-          <motion.li
-            key={key}
-            variants={reduce ? undefined : fadeUp}
-            className="flex flex-col gap-3 rounded-lg border bg-card p-4 md:p-6"
-          >
-            <div className="flex items-center gap-3">
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-md bg-accent text-accent-foreground">
-                <Icon aria-hidden="true" className="size-5" />
-              </span>
-              <span className="text-sm font-medium text-muted-foreground">
-                {t("landing.how.stepNumber", { number: index + 1, total: STEPS.length })}
-              </span>
-            </div>
-            <h3 className="font-display text-xl font-semibold">{t(`landing.how.${key}Title`)}</h3>
-            <p className="text-muted-foreground">{t(`landing.how.${key}Body`)}</p>
-          </motion.li>
-        ))}
-      </motion.ol>
+      <FormStrip steps={steps} />
     </section>
   );
 }

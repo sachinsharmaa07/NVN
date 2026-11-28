@@ -18,8 +18,10 @@
   "profile.form.areaNone": "Not set",
   "profile.form.areaAll": "All areas",
   "profile.form.save": "Save changes",
-  "profile.form.saving": "Saving",
   "profile.form.cancel": "Cancel",
   "profile.toast.saved": "Profile saved",
-  "profile.load.error": "We couldn't load your profile. Try again."
+  "profile.load.error": "We couldn't load your profile. Try again.",
+  "profile.section.details": "Your details",
+  "profile.section.pincode": "Home pincode",
+  "profile.section.language": "Language"
 }

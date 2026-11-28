@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from "react-router";
 import { vi } from "vitest";
 import { AuthContext } from "@/components/auth/authContext";
 import { SignInPromptContext } from "@/components/auth/signInPromptContext";
+import { ThemeContext } from "@/components/theme/themeContext";
 import { hasPermission, levelOf } from "@/lib/roles";
 
 // Test users, one per kind of person the screens treat differently.
@@ -77,30 +78,34 @@ export function authState(kind, extra = {}) {
 export function renderWithAuth(ui, { auth, path = "/", state, routePath = "*", routes = {} } = {}) {
   const openSignIn = vi.fn();
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  // A fixed theme: the real ThemeProvider reads matchMedia, which jsdom lacks.
+  const theme = { theme: "system", resolvedTheme: "light", setTheme: vi.fn() };
   const result = render(
     <QueryClientProvider client={client}>
-      <AuthContext.Provider value={auth}>
-        <SignInPromptContext.Provider value={{ openSignIn }}>
-          <MemoryRouter
-            initialEntries={[
-              state
-                ? {
-                    pathname: path.split("?")[0],
-                    search: path.includes("?") ? "?" + path.split("?")[1] : "",
-                    state,
-                  }
-                : path,
-            ]}
-          >
-            <Routes>
-              <Route path={routePath} element={ui} />
-              {Object.entries(routes).map(([p, el]) => (
-                <Route key={p} path={p} element={el} />
-              ))}
-            </Routes>
-          </MemoryRouter>
-        </SignInPromptContext.Provider>
-      </AuthContext.Provider>
+      <ThemeContext.Provider value={theme}>
+        <AuthContext.Provider value={auth}>
+          <SignInPromptContext.Provider value={{ openSignIn }}>
+            <MemoryRouter
+              initialEntries={[
+                state
+                  ? {
+                      pathname: path.split("?")[0],
+                      search: path.includes("?") ? "?" + path.split("?")[1] : "",
+                      state,
+                    }
+                  : path,
+              ]}
+            >
+              <Routes>
+                <Route path={routePath} element={ui} />
+                {Object.entries(routes).map(([p, el]) => (
+                  <Route key={p} path={p} element={el} />
+                ))}
+              </Routes>
+            </MemoryRouter>
+          </SignInPromptContext.Provider>
+        </AuthContext.Provider>
+      </ThemeContext.Provider>
     </QueryClientProvider>,
   );
   return { ...result, auth, openSignIn, client };

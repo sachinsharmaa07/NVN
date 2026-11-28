@@ -24,6 +24,8 @@ import { ChatPanel } from "./ChatPanel";
  * Desktop: 24px from the corner. Signed in, it opens the conversation; signed out, a sign-in step.
  *
  * Hidden on report step 2 (/report?step=2): the bubble would cover the map (UI.md §5).
+ * Below 1024px it is hidden on every /report step too: the wizard's fixed Back/Next footer sits
+ * exactly where the bubble floats, and would lose its Next button under it (decision FE-2).
  * The open Sheet (z-sheet) covers the bubble (z-chat), so it is never shown over its own panel.
  */
 export function ChatBubble() {
@@ -45,6 +47,7 @@ export function ChatBubble() {
           className={cn(
             "fixed right-4 bottom-[calc(4rem+env(safe-area-inset-bottom)+1rem)] z-chat size-14 rounded-full shadow-md",
             "lg:right-6 lg:bottom-6",
+            pathname === "/report" && "max-lg:hidden",
           )}
         >
           <MessageCircleIcon aria-hidden="true" className="size-6" />

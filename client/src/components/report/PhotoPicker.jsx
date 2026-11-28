@@ -1,7 +1,10 @@
+import { AnimatePresence } from "motion/react";
+import * as m from "motion/react-m";
 import { ImagePlusIcon, RotateCwIcon, XIcon } from "lucide-react";
-import { useId } from "react";
+import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { t } from "@/i18n/t";
+import { durations, easings, springs, useMotionSafe } from "@/lib/motion";
 import { ACCEPT } from "@/lib/photoUpload";
 
 const STATUS_KEY = {
@@ -13,11 +16,16 @@ const STATUS_KEY = {
   refused: "errors.report.invalidPhoto",
 };
 
-/** Up to 3 photos: camera or gallery (no `capture`, so phones offer both), each with progress and Retry. */
+/**
+ * Up to 3 photos: camera or gallery (no `capture`, so phones offer both), each with progress and Retry.
+ * Removing one fades it out in `fast` while the others slide over (layout, springs.snappy); popLayout
+ * takes the leaving card out of the flow at once, so the grid never jumps.
+ */
 export function PhotoPicker({ uploads, label = t("report.photos.label") }) {
   const inputId = useId();
   const hintId = `${inputId}-hint`;
   const { photos, add, retry, remove, full } = uploads;
+  const slide = useMotionSafe(springs.snappy);
 
   return (
     <fieldset className="flex flex-col gap-3">
@@ -27,56 +35,19 @@ export function PhotoPicker({ uploads, label = t("report.photos.label") }) {
       </p>
       {photos.length > 0 && (
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          {photos.map((p, i) => {
-            const failed = ["error", "too_large", "refused"].includes(p.status);
-            return (
-              <li key={p.id} className="flex flex-col gap-2 rounded-lg border bg-card p-2">
-                <img
-                  src={p.previewUrl}
-                  alt={t("report.photos.alt", { n: i + 1 })}
-                  className="aspect-4/3 w-full rounded-md object-cover"
-                />
-                {p.status === "uploading" && (
-                  <div
-                    role="progressbar"
-                    aria-label={t("report.photos.progressLabel", { n: i + 1 })}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-valuenow={Math.round(p.progress * 100)}
-                    className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
-                  >
-                    <div
-                      className="h-full bg-primary"
-                      style={{ width: `${Math.round(p.progress * 100)}%` }}
-                    />
-                  </div>
-                )}
-                <p
-                  aria-live="polite"
-                  className={failed ? "text-sm text-destructive" : "text-sm text-muted-foreground"}
-                >
-                  {t(STATUS_KEY[p.status])}
-                </p>
-                <div className="flex gap-2">
-                  {p.status === "error" && (
-                    <Button type="button" variant="outline" onClick={() => retry(p.id)}>
-                      <RotateCwIcon aria-hidden="true" />
-                      {t("common.retry")}
-                    </Button>
-                  )}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => remove(p.id)}
-                    aria-label={t("report.photos.remove", { n: i + 1 })}
-                  >
-                    <XIcon aria-hidden="true" />
-                  </Button>
-                </div>
-              </li>
-            );
-          })}
+          <AnimatePresence mode="popLayout" initial={false}>
+            {photos.map((p, i) => (
+              <m.li
+                key={p.id}
+                layout
+                transition={{ layout: slide }}
+                exit={{ opacity: 0, transition: { duration: durations.fast, ease: easings.exit } }}
+                className="flex flex-col gap-2 rounded-lg border bg-card p-2"
+              >
+                <PhotoCard photo={p} n={i + 1} retry={retry} remove={remove} />
+              </m.li>
+            ))}
+          </AnimatePresence>
         </ul>
       )}
       {!full && (
@@ -107,5 +78,66 @@ export function PhotoPicker({ uploads, label = t("report.photos.label") }) {
         </div>
       )}
     </fieldset>
+  );
+}
+
+// One photo: a reserved 4:3 box (no layout shift) the preview fades into once decoded, a thin
+// progress bar along its bottom edge while uploading, its status, and Retry / Remove.
+function PhotoCard({ photo: p, n, retry, remove }) {
+  const [loaded, setLoaded] = useState(false);
+  const grow = useMotionSafe(springs.snappy);
+  const failed = ["error", "too_large", "refused"].includes(p.status);
+  return (
+    <>
+      <div className="relative aspect-4/3 w-full overflow-hidden rounded-md bg-muted">
+        <img
+          src={p.previewUrl}
+          alt={t("report.photos.alt", { n })}
+          onLoad={() => setLoaded(true)}
+          className={loaded ? "fade-in size-full object-cover" : "size-full object-cover opacity-0"}
+        />
+        {p.status === "uploading" && (
+          <div
+            role="progressbar"
+            aria-label={t("report.photos.progressLabel", { n })}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(p.progress * 100)}
+            className="absolute inset-x-0 bottom-0 h-1 bg-background/60"
+          >
+            {/* scaleX, not width: a transform, so the bar never makes the browser re-layout. */}
+            <m.div
+              className="h-full origin-left bg-primary"
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: p.progress }}
+              transition={grow}
+            />
+          </div>
+        )}
+      </div>
+      <p
+        aria-live="polite"
+        className={failed ? "text-sm text-destructive" : "text-sm text-muted-foreground"}
+      >
+        {t(STATUS_KEY[p.status])}
+      </p>
+      <div className="flex gap-2">
+        {p.status === "error" && (
+          <Button type="button" variant="outline" onClick={() => retry(p.id)}>
+            <RotateCwIcon aria-hidden="true" />
+            {t("common.retry")}
+          </Button>
+        )}
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={() => remove(p.id)}
+          aria-label={t("report.photos.remove", { n })}
+        >
+          <XIcon aria-hidden="true" />
+        </Button>
+      </div>
+    </>
   );
 }

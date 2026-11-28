@@ -132,7 +132,7 @@ describe("Admin Users", () => {
 
   it("a failed load shows an error with Try again", async () => {
     setup({ "/api/admin/users": [500, { error: { code: "INTERNAL", message: "x" } }] });
-    expect(await screen.findByText("Couldn't load users. Try again.")).toBeInTheDocument();
+    expect(await screen.findByText("Couldn't load users")).toBeInTheDocument();
   });
 
   describe("role dialog", () => {

@@ -44,6 +44,23 @@ describe("Landing StatsRow", () => {
     expect(spy.mock.calls[0][1].headers.Authorization).toBeUndefined();
   });
 
+  it("says the counts are coming instead of showing four zeros before the first report", async () => {
+    show([200, { totalReports: 0, resolved: 0, medianResolutionHours: null, openByCategory: {} }]);
+    expect(
+      await screen.findByText("Counts appear here once the first reports are in."),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("listitem")).not.toBeInTheDocument();
+  });
+
+  it("shows four tiles and no made-up 0 h when nothing has been fixed yet", async () => {
+    show([
+      200,
+      { totalReports: 6, resolved: 0, medianResolutionHours: null, openByCategory: { pothole: 6 } },
+    ]);
+    expect(await screen.findAllByRole("listitem")).toHaveLength(4);
+    expect(screen.getByText("Typical time to fix").nextSibling).toHaveTextContent("No reports yet");
+  });
+
   it("hides the whole row when the stats fail", async () => {
     const { spy, container } = show([500, { error: { code: "INTERNAL_ERROR", message: "x" } }]);
     await waitFor(() => expect(spy).toHaveBeenCalled());

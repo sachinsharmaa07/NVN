@@ -5,16 +5,42 @@ import common from "./en.json";
 // import.meta.glob is a Vite feature: it bundles every matching file at build time.
 const areaFiles = import.meta.glob("./en/*.json", { eager: true, import: "default" });
 
-// One flat dictionary per language. Hindi files (hi.json, hi/*.json) are optional until they are written.
+// One flat dictionary per language. English is in the main bundle; Hindi (i18n/hi.js) is its own chunk,
+// loaded by loadLanguage("hi") when someone picks it, so English readers never download it (UI.md §5.2).
 export const dictionary = Object.assign({}, common, ...Object.values(areaFiles));
-const hiFiles = import.meta.glob(["./hi.json", "./hi/*.json"], { eager: true, import: "default" });
-export const dictionaries = { en: dictionary, hi: Object.assign({}, ...Object.values(hiFiles)) };
+export const dictionaries = { en: dictionary };
+const loaders = { hi: () => import("./hi.js").then((m) => m.default) };
+const pending = {};
+const listeners = new Set();
+
+export const isLanguageLoaded = (lang) => Object.hasOwn(dictionaries, lang);
+/** Subscribe to "a dictionary finished loading" (for useSyncExternalStore). */
+export const onLanguageLoaded = (fn) => {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+};
+/** Fetches a language's dictionary once. Resolves at once for English or an unknown language. */
+export function loadLanguage(lang) {
+  if (isLanguageLoaded(lang) || !loaders[lang]) return Promise.resolve();
+  pending[lang] ??= loaders[lang]().then(
+    (dict) => {
+      dictionaries[lang] = dict;
+      listeners.forEach((fn) => fn());
+    },
+    (error) => {
+      delete pending[lang]; // a later call may try again (e.g. after going back online)
+      throw error;
+    },
+  );
+  return pending[lang];
+}
 
 // The language every t() call uses unless it names one. AppLayout sets it from the signed-in user's
 // preferredLanguage while rendering and remounts the page when it changes, so screens never mix languages.
+// A language whose dictionary hasn't arrived yet counts as English, so t() stays synchronous.
 let current = "en";
 export const setLanguage = (lang) => {
-  current = Object.hasOwn(dictionaries, lang) ? lang : "en";
+  current = isLanguageLoaded(lang) ? lang : "en";
 };
 export const getLanguage = () => current;
 

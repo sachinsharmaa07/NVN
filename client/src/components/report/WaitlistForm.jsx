@@ -4,19 +4,21 @@ import { FieldError } from "@/components/system/FieldError";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useApi } from "@/hooks/useApi";
 import { t } from "@/i18n/t";
+import { apiPost } from "@/lib/api";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/** Inline waitlist for a pincode we don't cover (or don't know). POST /api/waitlist is idempotent. */
+/**
+ * Inline waitlist for a pincode we don't cover (or don't know). POST /api/waitlist is public and
+ * idempotent, so it goes without a token: the landing page shows this to signed-out visitors too.
+ */
 export function WaitlistForm({ pin }) {
-  const api = useApi();
   const id = useId();
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const join = useMutation({
-    mutationFn: () => api("/api/waitlist", { method: "POST", body: { pin, email: email.trim() } }),
+    mutationFn: () => apiPost("/api/waitlist", { body: { pin, email: email.trim() } }),
     onError: (err) => setError(err.message),
   });
 

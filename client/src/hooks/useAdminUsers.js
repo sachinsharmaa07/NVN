@@ -1,4 +1,4 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery } from "@tanstack/react-query";
 import { useApi } from "@/hooks/useApi";
 
 export const PAGE_SIZE = 25;
@@ -24,5 +24,7 @@ export function useAdminUsers({ q = "", role = "", status = "" }) {
       return api(`/api/admin/users?${params}`, { signal });
     },
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    // A filter change keeps the old rows (dimmed) until the new ones arrive: no blank list.
+    placeholderData: keepPreviousData,
   });
 }

@@ -3,29 +3,30 @@ import { t } from "@/i18n/t";
 import { PincodeInput } from "./PincodeInput";
 import { HOW_IT_WORKS_ID } from "./constants";
 
-// Scrolls to "How it works" and moves focus there, so keyboard and screen reader users land
-// in the same place as everyone else. Smooth only when the user hasn't asked for less motion.
+// An in-page anchor. Smooth or instant comes from CSS (html scroll-behavior, off under reduced
+// motion); this only moves focus to the heading too, so keyboard and screen reader users land
+// in the same place as everyone else.
 function goToHowItWorks(event) {
   const target = document.getElementById(HOW_IT_WORKS_ID);
   if (!target) return; // let the plain #anchor do its job
   event.preventDefault();
-  const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-  target.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  target.scrollIntoView({ block: "start" });
   target.focus({ preventScroll: true });
 }
 
 /**
- * First screen. Renders straight away with no entrance animation: the h1 is the LCP element,
- * and hiding it behind an opacity-0 start would delay it.
+ * First screen: the promise on the left, the pincode slip on the right as the page's one bold
+ * object. Renders straight away with no entrance animation: the h1 is the LCP element.
  */
 export function Hero() {
   return (
-    <section aria-labelledby="landing-hero-title" className="border-b">
-      <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-12 md:px-6 lg:grid-cols-2 lg:items-center lg:gap-16 lg:px-8 lg:py-16">
-        <div className="flex flex-col gap-4">
+    <section aria-labelledby="landing-hero-title">
+      <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-8 px-4 py-12 md:px-6 lg:grid-cols-12 lg:items-center lg:gap-12 lg:px-8 lg:py-16">
+        <div className="flex flex-col gap-4 lg:col-span-7">
           <h1
             id="landing-hero-title"
-            className="max-w-xl font-display text-3xl font-semibold text-balance lg:text-4xl"
+            // UI.md §1 display role: 31px on phones, 49px on desktop (39px in between).
+            className="max-w-xl font-display text-h2 font-semibold md:text-h1 lg:max-w-2xl lg:text-display"
           >
             {t("landing.hero.title")}
           </h1>
@@ -40,8 +41,7 @@ export function Hero() {
           </a>
         </div>
 
-        {/* The one bold thing on the page: the pincode form, set like a counter slip. */}
-        <div className="rounded-lg border bg-card p-4 md:p-6">
+        <div className="rounded-lg border bg-card p-4 min-[360px]:p-6 lg:col-span-5 lg:p-8">
           <PincodeInput />
         </div>
       </div>

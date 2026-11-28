@@ -7,7 +7,10 @@ import { t } from "@/i18n/t";
 
 const PIN_RE = /^[1-9][0-9]{5}$/;
 
-/** "Read another pincode": a plain field, so the stamp above stays the only boxed pincode on the page. */
+/**
+ * Read another pincode's notices: one compact form, a labelled "Pincode" field and "Show posts".
+ * A plain field, so the stamp in the header stays the only boxed pincode on the page.
+ */
 export function PincodeSwitch({ onShow }) {
   const id = useId();
   const [value, setValue] = useState("");
@@ -37,7 +40,7 @@ export function PincodeSwitch({ onShow }) {
           onChange={(e) => setValue(e.target.value.replace(/\D/g, ""))}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? `${id}-error` : undefined}
-          className="w-36 tabular-nums"
+          className="w-32 tabular-nums"
         />
         <Button type="submit" variant="outline">
           {t("community.switch.submit")}

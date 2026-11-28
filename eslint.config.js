@@ -40,6 +40,7 @@ export default defineConfig([
     "**/coverage/",
     "**/playwright-report/",
     "**/test-results/",
+    ".claude/", // agent worktrees hold full repo copies
   ]),
 
   // Every JS file: ESLint's recommended rules.

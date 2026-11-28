@@ -1,4 +1,4 @@
-import { FlagIcon } from "lucide-react";
+import { CircleCheckIcon, EyeOffIcon, FlagIcon, Trash2Icon } from "lucide-react";
 import { useId, useState } from "react";
 import { Link } from "react-router";
 import {
@@ -11,6 +11,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { StateBadge } from "@/components/system/StateBadge";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { t } from "@/i18n/t";
@@ -22,6 +23,13 @@ const reportsLabel = (n) =>
     : n === 1
       ? t("moderation.oneReport")
       : t("moderation.reports", { count: n });
+
+// A hidden post is waiting on a decision (neutral); published is fine; deleted is final.
+const STATE = {
+  hidden: { tone: "neutral", icon: EyeOffIcon },
+  published: { tone: "good", icon: CircleCheckIcon },
+  deleted: { tone: "bad", icon: Trash2Icon },
+};
 
 /** One hidden post or comment: what it says, how many reports, Restore or Delete (with a reason). */
 export function ModerationItem({ type, item, onAct, busy }) {
@@ -35,9 +43,16 @@ export function ModerationItem({ type, item, onAct, busy }) {
     <article className="flex flex-col gap-3 rounded-lg border bg-card p-4">
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
         <span>{bylineOf(item)}</span>
-        <span className="flex items-center gap-1.5 tabular-nums">
-          <FlagIcon aria-hidden="true" className="size-4" />
-          {reportsLabel(item.flagCount)}
+        <span className="flex items-center gap-3">
+          {STATE[item.status] && (
+            <StateBadge tone={STATE[item.status].tone} icon={STATE[item.status].icon}>
+              {t(`moderation.status.${item.status}`)}
+            </StateBadge>
+          )}
+          <span className="flex items-center gap-1.5 tabular-nums">
+            <FlagIcon aria-hidden="true" className="size-4" />
+            {reportsLabel(item.flagCount)}
+          </span>
         </span>
       </div>
       {item.title && <h2 className="text-lg font-semibold leading-snug">{item.title}</h2>}
@@ -55,7 +70,13 @@ export function ModerationItem({ type, item, onAct, busy }) {
         >
           {t("moderation.restore")}
         </Button>
-        <Button variant="outline" onClick={() => setConfirming(true)} disabled={busy}>
+        {/* Marked as the destructive choice (the confirm dialog still guards it). */}
+        <Button
+          variant="outline"
+          className="border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
+          onClick={() => setConfirming(true)}
+          disabled={busy}
+        >
           {t("moderation.delete")}
         </Button>
         {threadId && (

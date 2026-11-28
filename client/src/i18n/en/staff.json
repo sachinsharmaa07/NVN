@@ -2,7 +2,7 @@
   "staff.queue.title": "Queue",
   "staff.queue.description": "Open issues in your area, the ones due soonest first.",
   "staff.queue.caption": "Issues in your queue, sorted by expected-by date, soonest first",
-  "staff.queue.error": "Couldn't load the queue. Try again.",
+  "staff.queue.error": "Couldn't load the queue",
   "staff.queue.empty": "No open issues in your queue",
   "staff.queue.emptyHint": "New reports for your department will appear here.",
   "staff.queue.noMatch": "No issues match these filters",
@@ -39,5 +39,16 @@
   "staff.hold.submit": "Put on hold",
   "staff.hold.done": "Issue on hold. The SLA clock is paused.",
   "staff.resume.done": "Issue resumed. The SLA clock is running again.",
-  "staff.status.afterPhoto": "Photo after the fix (needed to resolve)"
+  "staff.status.afterPhoto": "Photo after the fix (needed to resolve)",
+  "staff.filter.queue": "Queue",
+  "staff.filter.queueDepartment": "Department",
+  "staff.filter.queueTriage": "Triage",
+  "staff.col.pincode": "Pincode",
+  "staff.col.reported": "Reported",
+  "staff.due.in": "in {span}",
+  "staff.due.overdue": "overdue by {span}",
+  "staff.queue.countOpen.one": "{count} open issue, due soonest first",
+  "staff.queue.countOpen.other": "{count} open issues, due soonest first",
+  "staff.queue.count.one": "{count} issue, due soonest first",
+  "staff.queue.count.other": "{count} issues, due soonest first"
 }

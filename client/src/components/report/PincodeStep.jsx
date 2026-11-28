@@ -3,7 +3,7 @@ import { PincodeField } from "@/components/report/PincodeField";
 import { pincodeError } from "@/pages/Landing/pincode";
 import { PincodeResult } from "@/components/report/PincodeResult";
 import { saveDraft } from "@/components/report/reportDraft";
-import { Button } from "@/components/ui/button";
+import { WizardFooter } from "@/components/report/WizardFooter";
 import { useLookupPincode } from "@/hooks/useLookupPincode";
 import { t } from "@/i18n/t";
 
@@ -36,11 +36,12 @@ export function PincodeStep({ initialPin, onNext }) {
       <section aria-live="polite" aria-label={t("report.pincode.resultLabel")}>
         {complete && <PincodeResult pin={pin} lookup={lookup} />}
       </section>
-      <div className="flex justify-end">
-        <Button size="lg" disabled={!canGoOn} onClick={() => onNext(pin)}>
-          {t("report.wizard.next")}
-        </Button>
-      </div>
+      <WizardFooter
+        onNext={() => onNext(pin)}
+        nextDisabled={!canGoOn}
+        // Only "too short" has a hint: a full pincode we don't serve shows the waitlist above instead.
+        disabledHint={complete ? undefined : t("report.wizard.hintPincode")}
+      />
     </div>
   );
 }

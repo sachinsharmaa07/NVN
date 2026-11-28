@@ -2,7 +2,7 @@
   "staff.queue.title": "कतार",
   "staff.queue.description": "आपके क्षेत्र की खुली शिकायतें, जिनकी समय-सीमा सबसे पास है वे पहले।",
   "staff.queue.caption": "आपकी कतार की शिकायतें, अपेक्षित तारीख के क्रम में, सबसे पास वाली पहले",
-  "staff.queue.error": "कतार लोड नहीं हो सकी। फिर से कोशिश करें।",
+  "staff.queue.error": "कतार लोड नहीं हो सकी",
   "staff.queue.empty": "आपकी कतार में कोई खुली शिकायत नहीं",
   "staff.queue.emptyHint": "आपके विभाग की नई शिकायतें यहाँ दिखेंगी।",
   "staff.queue.noMatch": "इन फ़िल्टर से कोई शिकायत मेल नहीं खाती",
@@ -39,5 +39,16 @@
   "staff.hold.submit": "रोकें",
   "staff.hold.done": "शिकायत रोकी गई। समय-सीमा की घड़ी रुकी है।",
   "staff.resume.done": "शिकायत पर काम फिर शुरू। समय-सीमा की घड़ी फिर चल रही है।",
-  "staff.status.afterPhoto": "ठीक होने के बाद की फ़ोटो (हल करने के लिए ज़रूरी)"
+  "staff.status.afterPhoto": "ठीक होने के बाद की फ़ोटो (हल करने के लिए ज़रूरी)",
+  "staff.filter.queue": "कतार",
+  "staff.filter.queueDepartment": "विभाग",
+  "staff.filter.queueTriage": "ट्राइएज",
+  "staff.col.pincode": "पिनकोड",
+  "staff.col.reported": "रिपोर्ट की गई",
+  "staff.due.in": "{span} में",
+  "staff.due.overdue": "{span} की देरी",
+  "staff.queue.countOpen.one": "{count} खुली समस्या, सबसे पहले जिसकी तारीख नज़दीक है",
+  "staff.queue.countOpen.other": "{count} खुली समस्याएँ, सबसे पहले जिनकी तारीख नज़दीक है",
+  "staff.queue.count.one": "{count} समस्या, सबसे पहले जिसकी तारीख नज़दीक है",
+  "staff.queue.count.other": "{count} समस्याएँ, सबसे पहले जिनकी तारीख नज़दीक है"
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, ViewTransition } from "react";
 import { Check, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -6,16 +6,20 @@ import { cn } from "@/lib/utils";
 import { t } from "@/i18n/t";
 
 const SIZES = {
+  sm: "text-sm", // list cards (My issues)
   md: "text-xl",
   lg: "text-2xl sm:text-3xl md:text-4xl",
+  // The counterfoil (UI.md §1: 39px). 31px below 640px, where 39px would not fit beside Copy.
+  xl: "text-3xl sm:text-4xl",
 };
 
 /**
  * A ticket ID such as NIV-2026-000123, always in full (UI.md §8), in the display font with
  * tabular figures so the digits line up like a stamped counterfoil. Not monospace (UI.md §1).
  * The copy button is a 44px target with a translated aria-label; success and failure both toast.
+ * `transitionName` (e.g. "ticket-" + id, unique on the page) makes the ID travel between pages.
  */
-export function TicketId({ id, size = "md", copyable = true, className }) {
+export function TicketId({ id, size = "md", copyable = true, transitionName, className }) {
   const [copied, setCopied] = useState(false);
 
   // Swap the icon back to "copy" two seconds after a successful copy.
@@ -38,21 +42,24 @@ export function TicketId({ id, size = "md", copyable = true, className }) {
   }
 
   const Icon = copied ? Check : Copy;
+  const text = (
+    <span
+      className={cn(
+        // nowrap: an ID never breaks at its hyphens; on a narrow screen the button wraps instead.
+        "font-display font-bold tracking-wide whitespace-nowrap text-foreground tabular-nums",
+        SIZES[size] ?? SIZES.md,
+      )}
+    >
+      {id}
+    </span>
+  );
 
   return (
     <span
       data-slot="ticket-id"
       className={cn("inline-flex flex-wrap items-center gap-2", className)}
     >
-      <span
-        className={cn(
-          // nowrap: an ID never breaks at its hyphens; on a narrow screen the button wraps instead.
-          "font-display font-bold tracking-wide whitespace-nowrap text-foreground tabular-nums",
-          SIZES[size] ?? SIZES.md,
-        )}
-      >
-        {id}
-      </span>
+      {transitionName ? <ViewTransition name={transitionName}>{text}</ViewTransition> : text}
       {copyable && (
         <Button
           type="button"
