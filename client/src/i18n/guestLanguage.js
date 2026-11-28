@@ -5,7 +5,7 @@ import { useSyncExternalStore } from "react";
 const KEY = "nivaran-language";
 const listeners = new Set();
 
-function read() {
+export function read() {
   try {
     return localStorage.getItem(KEY) === "hi" ? "hi" : "en";
   } catch {

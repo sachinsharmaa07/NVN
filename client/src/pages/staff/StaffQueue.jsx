@@ -1,5 +1,5 @@
 import { InboxIcon, SearchXIcon } from "lucide-react";
-import { useCallback, useState } from "react";
+import { startTransition, useCallback, useState } from "react";
 import { useSearchParams } from "react-router";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { IssueDrawer } from "@/components/staff/IssueDrawer";
@@ -49,9 +49,13 @@ function Queue() {
     setAnnouncement(t("issues.mine.loaded", { count: after - issues.length }));
   }
 
+  // A transition: the press paints at once and the drawer (the heavy render) follows in yieldable slices,
+  // which keeps this interaction's INP down on slow phones (UI.md §5.2).
   function open(row, button) {
-    setOpenedFrom(button);
-    setSelected(row.ticketId);
+    startTransition(() => {
+      setOpenedFrom(button);
+      setSelected(row.ticketId);
+    });
   }
 
   const filtered = QUEUE_FILTER_KEYS.some((k) => filters[k]);

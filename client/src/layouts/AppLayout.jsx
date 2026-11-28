@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { Navigate, ScrollRestoration } from "react-router";
 import { ChatBubble } from "@/components/chat/ChatBubble";
 import { BottomBar } from "@/components/nav/BottomBar";
@@ -8,7 +8,7 @@ import { OfflineBanner } from "@/components/system/OfflineBanner";
 import { TopBar } from "@/components/nav/TopBar";
 import { useAuth } from "@/hooks/useAuth";
 import { useGuestLanguage } from "@/i18n/guestLanguage";
-import { setLanguage } from "@/i18n/t";
+import { isLanguageLoaded, loadLanguage, onLanguageLoaded, setLanguage } from "@/i18n/t";
 import { PageTransition } from "./PageTransition";
 
 /*
@@ -23,7 +23,14 @@ export function AppLayout() {
   // A suspended account may only see /suspended, on every route (public ones too).
   const { status, user } = useAuth();
   const guest = useGuestLanguage();
-  const lang = (user?.preferredLanguage ?? guest) === "hi" ? "hi" : "en";
+  const wanted = (user?.preferredLanguage ?? guest) === "hi" ? "hi" : "en";
+  // Hindi is a lazy chunk: until it arrives the current (English) page stays, then the frame remounts in
+  // Hindi. Never a flash of raw keys.
+  const ready = useSyncExternalStore(onLanguageLoaded, () => isLanguageLoaded(wanted));
+  const lang = ready ? wanted : "en";
+  useEffect(() => {
+    if (!ready) loadLanguage(wanted).catch(() => {}); // offline: stay in English, retry on next change
+  }, [wanted, ready]);
   // Set before the children render, so every t() below uses it (see i18n/t.js).
   setLanguage(lang);
   // <html lang> picks the Devanagari line heights in globals.css and tells screen readers what to speak.
