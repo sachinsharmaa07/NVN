@@ -10,7 +10,7 @@ export function NotFound() {
   // Go to home: its own primary button, so the sidebar's Report turns outline (one primary per screen).
   useClaimPagePrimary();
   return (
-    <div className="mx-auto flex w-full max-w-160 flex-col gap-8 px-4 py-8 md:px-6 md:py-12 lg:px-8">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 *:max-w-160 md:px-6 md:py-12 lg:px-8">
       <EmptyState
         icon={SearchXIcon}
         titleAs="h1"

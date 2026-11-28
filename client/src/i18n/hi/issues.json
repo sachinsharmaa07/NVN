@@ -15,6 +15,8 @@
   "issues.timeline.by": "{date}, {who} द्वारा",
   "issues.photos.before": "शिकायत के समय की फ़ोटो",
   "issues.photos.after": "ठीक होने के बाद की फ़ोटो",
+  "issues.photos.beforeCaption": "पहले",
+  "issues.photos.afterCaption": "बाद में",
   "issues.resolve.title": "क्या यह ठीक हो गया?",
   "issues.resolve.hint": "विभाग ने इसे हल बताया है। टिकट बंद करने के लिए पुष्टि करें, या समस्या अब भी है तो इसे फिर से खोलें।",
   "issues.resolve.confirm": "हाँ, ठीक हो गया",

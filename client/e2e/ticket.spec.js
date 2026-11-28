@@ -43,3 +43,15 @@ test("hovering a card loads the ticket, so the click shows it with no skeleton",
   expect(api.count("GET", `/api/issues/${ID}`)).toBe(1);
   await expect(page.locator('[data-slot="skeleton"]')).toHaveCount(0);
 });
+
+test("at 375 the before and after photos sit side by side (review m10)", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto(`/issues/${ID}`);
+  const before = page.getByRole("img", { name: "Photo from the report, photo 1" });
+  const after = page.getByRole("img", { name: "Photo after the fix, photo 1" });
+  await before.scrollIntoViewIfNeeded();
+  const a = await before.boundingBox();
+  const b = await after.boundingBox();
+  expect(Math.abs(a.y - b.y)).toBeLessThan(1);
+  expect(b.x).toBeGreaterThan(a.x + a.width);
+});

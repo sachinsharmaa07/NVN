@@ -2,7 +2,7 @@ import { Separator } from "@/components/ui/separator";
 import { Hero } from "./Hero";
 import { HowItWorks } from "./HowItWorks";
 import { LandingFooter } from "./LandingFooter";
-import { StatsRow } from "./StatsRow";
+import { StatsNote, StatsRow } from "./StatsRow";
 import { TimelinePreview } from "./TimelinePreview";
 import { TrustSection } from "./TrustSection";
 import { useClaimPagePrimary } from "@/hooks/usePagePrimary";
@@ -13,7 +13,7 @@ const REVEAL = "reveal-on-scroll";
 
 /**
  * Public landing page. Order: what Nivaran does + the pincode form (hero), the three steps,
- * the numbers so far, an example ticket, and why you can trust it. One <h1>, in the hero.
+ * the numbers so far (or, before the first report, one line closing the steps), an example ticket, and why you can trust it. One <h1>, in the hero.
  */
 export function Landing() {
   // Check my pincode: its own primary button, so the sidebar's Report turns outline (one primary per screen).
@@ -25,7 +25,9 @@ export function Landing() {
         <Separator />
       </div>
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-12 px-4 py-12 md:px-6 lg:gap-16 lg:px-8 lg:py-16">
-        <HowItWorks className={REVEAL} />
+        <HowItWorks className={REVEAL}>
+          <StatsNote />
+        </HowItWorks>
         <StatsRow className={REVEAL} />
         <TimelinePreview className={REVEAL} />
         <TrustSection className={REVEAL} />

@@ -95,9 +95,10 @@ export function Report() {
   // Start over only once there is something to throw away (a saved draft, a later step or a photo).
   const hasDraft = step > 1 || Object.keys(draft).length > 0 || uploads.publicIds.length > 0;
   return (
-    // pb-16 below 1024px: with content-reserve, keeps the last field clear of the fixed Back/Next bar,
+    // The same centred max-w-6xl frame as every page, so the title starts at the same x (review m12); the
+    // wizard itself stays a 640px column, aligned left. pb-16 below 1024px: with content-reserve, keeps the last field clear of the fixed Back/Next bar,
     // even when it shows its hint line (measured at 360 on all three steps).
-    <div className="mx-auto flex w-full max-w-160 flex-col gap-8 px-4 pt-8 pb-16 md:px-6 md:pt-12 lg:px-8 lg:pb-12">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 pt-8 pb-16 *:max-w-160 md:px-6 md:pt-12 lg:px-8 lg:pb-12">
       <PageHeader
         title={issue ? t("report.done.title") : t("shell.report.title")}
         titleRef={title}

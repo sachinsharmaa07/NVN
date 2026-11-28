@@ -4,10 +4,16 @@ import { PIN, expect, test } from "./fixtures.js";
 
 const stats = (page) => page.getByRole("region", { name: "Reports at a glance" });
 
-test("before the first report, the stats are one sentence, not four zeros", async ({ page }) => {
+// Review m11: no empty section with an h2 for one sentence; the line closes "How it works" instead.
+test("before the first report, one sentence closes How it works, with no stats section", async ({
+  page,
+}) => {
   await page.goto("/");
-  await expect(stats(page)).toContainText("Counts appear here once the first reports are in.");
-  await expect(stats(page).getByRole("listitem")).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "How it works" })).toContainText(
+    "Counts appear here once the first reports are in.",
+  );
+  await expect(stats(page)).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Reports at a glance" })).toHaveCount(0);
 });
 
 test("with reports, the stats are four tiles", async ({ page, api }) => {
@@ -37,7 +43,7 @@ test("with reduced motion, every section is visible at once, below the fold too"
   await page.goto("/");
   const trust = page.getByRole("region", { name: "What you can count on" });
   await expect(trust).toHaveCSS("opacity", "1");
-  await expect(page.getByRole("region", { name: "Reports at a glance" })).toHaveCSS("opacity", "1");
+  await expect(page.getByRole("region", { name: "How it works" })).toHaveCSS("opacity", "1");
 });
 
 test("a section below the fold fades in once it scrolls into view", async ({ page }) => {

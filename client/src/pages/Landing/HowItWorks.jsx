@@ -7,8 +7,9 @@ const STEPS = ["pincode", "pin", "ticket"];
 /**
  * Three steps, in order, so a numbered list is honest here. One ruled strip (UI.md §5.1 form strip)
  * instead of three identical cards; no current step, because nobody has started yet.
+ * `children` close the section (Landing's StatsNote, when there are no reports yet).
  */
-export function HowItWorks({ className }) {
+export function HowItWorks({ className, children }) {
   const steps = STEPS.map((key) => ({
     title: t(`landing.how.${key}Title`),
     body: t(`landing.how.${key}Body`),
@@ -24,6 +25,7 @@ export function HowItWorks({ className }) {
         {t("landing.how.title")}
       </h2>
       <FormStrip steps={steps} />
+      {children}
     </section>
   );
 }

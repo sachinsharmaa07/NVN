@@ -130,7 +130,7 @@ function PostPage() {
 export function CommunityPost() {
   return (
     <RequireAuth>
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 md:px-6 md:py-12">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 *:max-w-3xl md:px-6 md:py-12 lg:px-8">
         <PostPage />
       </div>
     </RequireAuth>
